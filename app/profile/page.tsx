@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useRouter } from 'next/navigation';
 import {
   Edit,
   Mail,
@@ -29,8 +28,7 @@ import { Button } from "@/components/ui/button";
 import { useUserData } from "@/hooks/useUserData";
 
 const ProfilePage = () => {
-  const router = useRouter();
-
+  
   // État pour le modal d'image
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
