@@ -77,7 +77,16 @@ const Sidebar = () => {
         </nav>
       </div>
       {/* Utilisateur */}
-      <div className="flex flex-col items-center md:flex-row md:items-center gap-2 mt-8">
+      <Link
+        href="/profile"
+        className={`flex flex-col items-center md:flex-row md:items-center gap-2 mt-8 cursor-pointer p-2 rounded-lg transition-all
+          ${
+            pathname === "/profile"
+              ? "bg-[#0e357a]/70"
+              : "hover:bg-[#0e357a]/40"
+          }
+        `}
+      >
         <Image
           src="/images/Avatar.png"
           alt="Avatar"
@@ -89,7 +98,7 @@ const Sidebar = () => {
           <span className="text-white font-bold leading-tight">Valentin</span>
           <span className="text-white/80 text-xs leading-tight">Dupont</span>
         </div>
-      </div>
+      </Link>
     </div>
   );
 };
