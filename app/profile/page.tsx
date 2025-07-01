@@ -74,8 +74,6 @@ const ProfilePage = () => {
     );
   }
 
-  const router = useRouter();
-
 
   const handleLogout = async () => {
     try {
