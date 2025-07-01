@@ -1,5 +1,6 @@
 import Sidebar from "@/components/Sidebar/Sidebar";
 import { ReactNode } from "react";
+import Header from "@/components/Header/Header";
 
 function DashboardCard({
   title,
@@ -27,14 +28,12 @@ function DashboardCard({
 
 export default function Dashboard() {
   return (
-    <div className="relative min-h-screen flex">
-      {/* Sidebar */}
-      <Sidebar />
-      {/* Contenu principal */}
-      <main className="flex-1 ml-4 md:ml-8 pr-4 py-8 w-full">
-        <h1 className="text-4xl font-extrabold text-white mb-10 text-left">
-          A venir aujourd'hui
-        </h1>
+    <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
+      {/* Header */}
+        <Header
+          title="Tableau de bord"
+          description="Vue d'ensemble de votre journée"
+        />
         <div className="w-full grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-x-8 gap-y-6 items-start">
           {/* Colonne principale (gauche) */}
           <div className="flex flex-col gap-6">
@@ -143,7 +142,6 @@ export default function Dashboard() {
             </section>
           </div>
         </div>
-      </main>
     </div>
   );
 }
