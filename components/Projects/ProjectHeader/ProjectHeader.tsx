@@ -8,7 +8,7 @@ const font = Russo_One({
 });
 
 interface ProjectHeaderProps {
-  title: string;
+  title?: string;
   description?: string;
   backHref: string;
   backIcon: React.ReactNode;

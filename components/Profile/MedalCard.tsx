@@ -5,7 +5,7 @@ import { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 interface MedalCardProps {
   name: string;
   icon: IconDefinition;
-  color: string;
+  index?: number;
   obtained: boolean;
   className?: string;
 }
@@ -13,10 +13,24 @@ interface MedalCardProps {
 const MedalCard: React.FC<MedalCardProps> = ({
   name,
   icon,
-  color,
+  index = 0,
   obtained,
   className = "",
 }) => {
+  // Palette de couleurs pour les médailles
+  const colorPalette = [
+    "text-yellow-500",
+    "text-orange-500",
+    "text-purple-500",
+    "text-blue-500",
+    "text-red-500",
+    "text-green-500",
+    "text-indigo-500",
+    "text-pink-500",
+  ];
+
+  const color = colorPalette[index % colorPalette.length];
+
   return (
     <div
       className={`flex flex-col items-center p-3 rounded-lg transition-all ${className} ${

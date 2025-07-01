@@ -1,133 +1,79 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   Edit,
   Mail,
   Phone,
-  MapPin,
-  Clock,
-  Trophy,
   Target,
   TrendingUp,
   BookOpen,
   Users,
-  Star,
-  CheckCircle,
-  BarChart3,
-  PieChart as PieChartIcon,
   LogOut,
+  Loader2,
+  Badge,
 } from "lucide-react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMedal, faCrown, faFire } from "@fortawesome/free-solid-svg-icons";
 import Header from "@/components/Header/Header";
-import {
-  StatCard,
-  SkillCard,
-  MedalCard,
-  ProjectCard,
-  ProfileSection,
-  ProgressRing,
-  BarChart,
-  RadarChart,
-  PieChart,
-  ImageUploadModal,
-} from "@/components/Profile";
+import SkillCard from "@/components/Profile/SkillCard";
+import MedalCard from "@/components/Profile/MedalCard";
+import ProjectCard from "@/components/Profile/ProjectCard";
+import ProfileSection from "@/components/Profile/ProfileSection";
+import ProgressRing from "@/components/Profile/ProgressRing";
+import RadarChart from "@/components/Profile/RadarChart";
+import ImageUploadModal from "@/components/Profile/ImageUploadModal";
 import { Button } from "@/components/ui/button";
+import { useUserData } from "@/hooks/useUserData";
 
 const ProfilePage = () => {
-  // État pour l'image de profil
-  const [profileImage, setProfileImage] = useState("/images/Avatar.png");
+  const router = useRouter();
+
+  // État pour le modal d'image
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
-  // Données fictives pour l'exemple
-  const userStats = {
-    totalHours: 1247,
-    projectsCompleted: 23,
-    averageGrade: 16.8,
-    attendanceRate: 94.5,
-    skills: [
-      { name: "React", level: 85, color: "bg-blue-500" },
-      { name: "Node.js", level: 78, color: "bg-green-500" },
-      { name: "Python", level: 92, color: "bg-yellow-500" },
-      { name: "TypeScript", level: 88, color: "bg-purple-500" },
-      { name: "Docker", level: 75, color: "bg-blue-600" },
-      { name: "AWS", level: 70, color: "bg-orange-500" },
-    ],
-    medals: [
-      {
-        name: "Premier Projet",
-        icon: faMedal,
-        color: "text-yellow-500",
-        obtained: true,
-      },
-      {
-        name: "100h de Code",
-        icon: faFire,
-        color: "text-orange-500",
-        obtained: true,
-      },
-      {
-        name: "Excellence",
-        icon: faCrown,
-        color: "text-purple-500",
-        obtained: true,
-      },
-      {
-        name: "Team Player",
-        icon: faMedal,
-        color: "text-blue-500",
-        obtained: false,
-      },
-      {
-        name: "Innovation",
-        icon: faFire,
-        color: "text-red-500",
-        obtained: true,
-      },
-      {
-        name: "Mentor",
-        icon: faCrown,
-        color: "text-green-500",
-        obtained: false,
-      },
-    ],
-    recentProjects: [
-      { name: "T-DEV-500", grade: 18, status: "completed" as const },
-      { name: "T-YOP-700", grade: 16, status: "completed" as const },
-      { name: "T-SEN-700", grade: 17, status: "in-progress" as const },
-      { name: "T-CEN-100", grade: null, status: "pending" as const },
-    ],
+  // Hook pour les données utilisateur
+  const { userData, loading, error, updateProfileImageUrl } = useUserData();
+
+  // Gestion du changement d'image
+  const handleImageChange = async (newImageUrl: string) => {
+    try {
+      await updateProfileImageUrl(newImageUrl);
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de l'image:", error);
+    }
   };
 
-  // Données pour les diagrammes
-  const chartData = {
-    // Données pour le graphique en barres des heures par mois
-    monthlyHours: [
-      { label: "Jan", value: 120, color: "#3B82F6" },
-      { label: "Fév", value: 95, color: "#10B981" },
-      { label: "Mar", value: 140, color: "#F59E0B" },
-      { label: "Avr", value: 110, color: "#8B5CF6" },
-      { label: "Mai", value: 160, color: "#EF4444" },
-      { label: "Juin", value: 135, color: "#06B6D4" },
-    ],
-    // Données pour le radar chart des compétences
-    skillsRadar: userStats.skills.map((skill) => ({
-      label: skill.name,
-      value: skill.level,
-    })),
-    // Données pour le pie chart des projets
-    projectsPie: [
-      { label: "Terminés", value: 18, color: "#10B981" },
-      { label: "En cours", value: 3, color: "#3B82F6" },
-      { label: "En attente", value: 2, color: "#6B7280" },
-    ],
-  };
+  // Affichage du loading
+  if (loading) {
+    return (
+      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <p className="text-gray-600">Chargement du profil...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const handleImageChange = (newImageUrl: string) => {
-    setProfileImage(newImageUrl);
-  };
+  // Affichage de l'erreur
+  if (error || !userData) {
+    return (
+      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">
+              Erreur lors du chargement du profil
+            </p>
+            <Button onClick={() => window.location.reload()}>Réessayer</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
@@ -144,7 +90,7 @@ const ProfilePage = () => {
             <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
               <div className="relative">
                 <Image
-                  src={profileImage}
+                  src={userData.profileImage}
                   alt="Photo de profil"
                   width={120}
                   height={120}
@@ -152,45 +98,36 @@ const ProfilePage = () => {
                 />
                 <button
                   onClick={() => setIsImageModalOpen(true)}
-                  className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-2 shadow-md hover:shadow-lg transition-shadow hover:bg-blue-700"
+                  className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-2 shadow-md hover:shadow-lg transition-shadow hover:bg-blue-700 cursor-pointer"
                 >
                   <Edit size={16} className="text-white" />
                 </button>
               </div>
               <div className="text-center md:text-left">
                 <h2 className="text-2xl font-bold text-blue-900 mb-2">
-                  Valentin Dupont
+                  {userData.firstName} {userData.lastName}
                 </h2>
                 <p className="text-blue-800/80 mb-1">
-                  Étudiant Epitech - Promotion 2024
+                  {userData.role} - {userData.promotion}
                 </p>
-                <p className="text-blue-700/70 text-sm">Campus Paris</p>
+                <p className="text-blue-700/70 text-sm">{userData.campus}</p>
               </div>
             </div>
 
             {/* Informations de contact */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex w-full justify-around">
               <div className="flex items-center gap-3">
                 <Mail size={20} className="text-blue-600" />
                 <div>
                   <p className="text-sm text-blue-800/60">Email</p>
-                  <p className="text-blue-900 font-medium">
-                    valentin.dupont@epitech.eu
-                  </p>
+                  <p className="text-blue-900 font-medium">{userData.email}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Phone size={20} className="text-blue-600" />
                 <div>
                   <p className="text-sm text-blue-800/60">Téléphone</p>
-                  <p className="text-blue-900 font-medium">+33 6 12 34 56 78</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <MapPin size={20} className="text-blue-600" />
-                <div>
-                  <p className="text-sm text-blue-800/60">Campus</p>
-                  <p className="text-blue-900 font-medium">Epitech Paris</p>
+                  <p className="text-blue-900 font-medium">{userData.phone}</p>
                 </div>
               </div>
             </div>
@@ -201,48 +138,52 @@ const ProfilePage = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
               <div className="flex flex-col items-center">
                 <ProgressRing
-                  progress={Math.round((userStats.totalHours / 1500) * 100)}
+                  progress={Math.round(
+                    (userData.stats.totalHours / 1500) * 100
+                  )}
                   size={70}
                   color="#3B82F6"
                   label="Heures totales"
                 />
                 <p className="text-base sm:text-lg font-bold text-blue-900 mt-2">
-                  {userStats.totalHours}h
+                  {userData.stats.totalHours}h
                 </p>
               </div>
               <div className="flex flex-col items-center">
                 <ProgressRing
                   progress={Math.round(
-                    (userStats.projectsCompleted / 30) * 100
+                    (userData.stats.projectsCompleted / 30) * 100
                   )}
                   size={70}
                   color="#10B981"
                   label="Projets terminés"
                 />
                 <p className="text-base sm:text-lg font-bold text-green-900 mt-2">
-                  {userStats.projectsCompleted}
+                  {userData.stats.projectsCompleted}
                 </p>
               </div>
               <div className="flex flex-col items-center">
                 <ProgressRing
-                  progress={Math.round((userStats.averageGrade / 20) * 100)}
+                  progress={Math.round(
+                    (userData.stats.ectsCredits / 180) * 100
+                  )}
                   size={70}
                   color="#8B5CF6"
-                  label="Note moyenne"
+                  label="Crédits ECTS"
                 />
                 <p className="text-base sm:text-lg font-bold text-purple-900 mt-2">
-                  {userStats.averageGrade}/20
+                  {userData.stats.ectsCredits}/180
                 </p>
               </div>
               <div className="flex flex-col items-center">
                 <ProgressRing
-                  progress={Math.round(userStats.attendanceRate)}
+                  progress={Math.round(userData.stats.attendanceRate)}
                   size={70}
                   color="#F59E0B"
                   label="Taux de présence"
                 />
                 <p className="text-base sm:text-lg font-bold text-orange-900 mt-2">
-                  {userStats.attendanceRate}%
+                  {userData.stats.attendanceRate}%
                 </p>
               </div>
             </div>
@@ -252,25 +193,28 @@ const ProfilePage = () => {
           <ProfileSection title="Compétences techniques" icon={Target}>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
               <div className="space-y-4">
-                {userStats.skills.map((skill, index) => (
+                {userData.stats.skills.map((skill, index) => (
                   <SkillCard
                     key={skill.name}
                     name={skill.name}
                     level={skill.level}
-                    color={skill.color}
+                    index={index}
                   />
                 ))}
               </div>
               <div className="flex justify-center items-center">
-                <RadarChart data={chartData.skillsRadar} size={250} />
+                <RadarChart data={userData.chartData.skillsRadar} size={250} />
               </div>
             </div>
           </ProfileSection>
+        </div>
 
+        {/* Colonne droite */}
+        <div className="flex flex-col gap-6">
           {/* Projets récents */}
           <ProfileSection title="Projets récents" icon={BookOpen}>
             <div className="space-y-3">
-              {userStats.recentProjects.map((project, index) => (
+              {userData.stats.recentProjects.map((project, index) => (
                 <ProjectCard
                   key={project.name}
                   name={project.name}
@@ -280,56 +224,40 @@ const ProfilePage = () => {
               ))}
             </div>
           </ProfileSection>
-        </div>
 
-        {/* Colonne droite */}
-        <div className="flex flex-col gap-6">
           {/* Médailles */}
           <ProfileSection
-            title={`Médailles (${
-              userStats.medals.filter((m) => m.obtained).length
-            }/${userStats.medals.length})`}
-            icon={Trophy}
+            title={`Badges (${
+              userData.stats.badges.filter((m) => m.obtained).length
+            }/${userData.stats.badges.length})`}
+            icon={Badge}
           >
             <div className="grid grid-cols-2 gap-4">
-              {userStats.medals.map((medal, index) => (
-                <MedalCard
-                  key={medal.name}
-                  name={medal.name}
-                  icon={medal.icon}
-                  color={medal.color}
-                  obtained={medal.obtained}
-                />
-              ))}
-            </div>
-          </ProfileSection>
+              {userData.stats.badges.map((badge, index) => {
+                // Mapping des icônes FontAwesome
+                const getIcon = (iconName: string) => {
+                  switch (iconName) {
+                    case "faMedal":
+                      return faMedal;
+                    case "faCrown":
+                      return faCrown;
+                    case "faFire":
+                      return faFire;
+                    default:
+                      return faMedal;
+                  }
+                };
 
-          {/* Répartition des projets */}
-          <ProfileSection title="Répartition des projets" icon={PieChartIcon}>
-            <PieChart data={chartData.projectsPie} size={150} />
-          </ProfileSection>
-
-          {/* Objectifs */}
-          <ProfileSection title="Objectifs" icon={Target}>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-blue-900">
-                  1500h de code (1247/1500)
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-sm text-blue-900">
-                  30 projets terminés (23/30)
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                <span className="text-sm text-gray-500">
-                  Médaille Mentor (0/1)
-                </span>
-              </div>
+                return (
+                  <MedalCard
+                    key={badge.name}
+                    name={badge.name}
+                    icon={getIcon(badge.icon)}
+                    index={index}
+                    obtained={badge.obtained}
+                  />
+                );
+              })}
             </div>
           </ProfileSection>
 
@@ -337,16 +265,11 @@ const ProfilePage = () => {
           <ProfileSection title="Actions rapides">
             <div className="space-y-3">
               <Button
+                onClick={() => router.push("/profile/edit")}
                 className="w-full !bg-blue-600 hover:!bg-blue-700 !text-white cursor-pointer"
                 variant="default"
               >
                 Modifier le profil
-              </Button>
-              <Button
-                className="w-full !border-blue-600 !text-blue-600 hover:!bg-blue-50 hover:!text-blue-700 cursor-pointer"
-                variant="outline"
-              >
-                Changer le mot de passe
               </Button>
               <Button
                 className="w-full !border-blue-600 !text-blue-600 hover:!bg-blue-50 hover:!text-blue-700 cursor-pointer"
@@ -371,7 +294,7 @@ const ProfilePage = () => {
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}
         onImageChange={handleImageChange}
-        currentImage={profileImage}
+        currentImage={userData.profileImage}
       />
     </div>
   );
