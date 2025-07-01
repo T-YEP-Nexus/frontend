@@ -26,6 +26,10 @@ import RadarChart from "@/components/Profile/RadarChart";
 import ImageUploadModal from "@/components/Profile/ImageUploadModal";
 import { Button } from "@/components/ui/button";
 import { useUserData } from "@/hooks/useUserData";
+import {
+  getUserIdFromToken,
+  isTokenExpired,
+} from "@/lib/auth";
 
 const ProfilePage = () => {
   const router = useRouter();
@@ -34,7 +38,7 @@ const ProfilePage = () => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   // Hook pour les données utilisateur
-  const { userData, loading, error, updateProfileImageUrl } = useUserData();
+  const { userData, loading, error, updateProfileImageUrl } = useUserData(getUserIdFromToken());
 
   // Gestion du changement d'image
   const handleImageChange = async (newImageUrl: string) => {

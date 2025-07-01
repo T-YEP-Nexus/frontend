@@ -1,3 +1,5 @@
+import { getUserEmailFromToken } from "./auth";
+
 export interface UserSkill {
   name: string;
   level: number;
@@ -56,6 +58,7 @@ export interface UserProfile {
 
 // Données utilisateur par défaut
 export const defaultUserData: UserProfile = {
+  
   id: "1",
   firstName: "Valentin",
   lastName: "Dupont",
@@ -120,13 +123,33 @@ export const defaultUserData: UserProfile = {
 
 // Fonction pour obtenir les données utilisateur (simulation d'API)
 export const getUserData = async (userId: string): Promise<UserProfile> => {
-  // Simulation d'un délai d'API
-  await new Promise(resolve => setTimeout(resolve, 100));
+  const emailToken = getUserEmailFromToken();
+  const res = await fetch(`http://localhost:3004/profile/user/${userId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
-  // Pour l'instant, retourne les données par défaut
-  // Plus tard, cela pourrait faire un appel API réel
-  return defaultUserData;
+  if (!res.ok) throw new Error("Erreur lors de la récupération des données utilisateur");
+
+  const user = await res.json();
+
+  return {
+    id: user.data.id,
+    firstName: user.data.first_name,
+    lastName: user.data.last_name,
+    email: emailToken,
+    phone: user.data.phone,
+    campus: user.data.campus,
+    promotion: user.data.promotion,
+    role: user.data.role,
+    profileImage: user.data.profileImage,
+    stats: user.data.stats,
+    chartData: user.data.chartData,
+  } as UserProfile;
 };
+
 
 // Fonction pour mettre à jour les données utilisateur
 export const updateUserData = async (userId: string, updates: Partial<UserProfile>): Promise<UserProfile> => {
