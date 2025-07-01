@@ -1,0 +1,439 @@
+"use client";
+
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Save,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  GraduationCap,
+  Building,
+  Loader2,
+  Lock,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Input from "@/components/ui/input";
+import PasswordInput from "@/components/ui/password-input";
+import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
+
+interface RegisterFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+  campus: string;
+  promotion: string;
+}
+
+const RegisterPage = () => {
+  const router = useRouter();
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
+
+  // État du formulaire
+  const [formData, setFormData] = useState<RegisterFormData>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    campus: "",
+    promotion: "",
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Effacer l'erreur du champ modifié
+    if (errors[name as keyof RegisterFormData]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: undefined,
+      }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<RegisterFormData> = {};
+
+    // Validation prénom
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "Le prénom est requis";
+    } else if (formData.firstName.length < 2) {
+      newErrors.firstName = "Le prénom doit contenir au moins 2 caractères";
+    }
+
+    // Validation nom
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Le nom est requis";
+    } else if (formData.lastName.length < 2) {
+      newErrors.lastName = "Le nom doit contenir au moins 2 caractères";
+    }
+
+    // Validation email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim()) {
+      newErrors.email = "L'email est requis";
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = "Format d'email invalide";
+    }
+
+    // Validation téléphone
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Le téléphone est requis";
+    } else if (
+      !/^(\+33|0)[1-9](\d{8})$/.test(formData.phone.replace(/\s/g, ""))
+    ) {
+      newErrors.phone = "Format de téléphone invalide";
+    }
+
+    // Validation mot de passe
+    if (!formData.password) {
+      newErrors.password = "Le mot de passe est requis";
+    } else if (formData.password.length < 8) {
+      newErrors.password =
+        "Le mot de passe doit contenir au moins 8 caractères";
+    } else if (!/(?=.*[A-Z])/.test(formData.password)) {
+      newErrors.password =
+        "Le mot de passe doit contenir au moins une majuscule";
+    } else if (!/(?=.*[0-9])/.test(formData.password)) {
+      newErrors.password = "Le mot de passe doit contenir au moins un chiffre";
+    }
+
+    // Validation confirmation mot de passe
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = "La confirmation du mot de passe est requise";
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Les mots de passe ne correspondent pas";
+    }
+
+    // Validation campus
+    if (!formData.campus.trim()) {
+      newErrors.campus = "Le campus est requis";
+    }
+
+    // Validation promotion
+    if (!formData.promotion.trim()) {
+      newErrors.promotion = "La promotion est requise";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("http://localhost:3004/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          campus: formData.campus,
+          promotion: formData.promotion,
+        }),
+      });
+
+      if (response.ok) {
+        // Redirection vers la page de connexion avec message de succès
+        router.push("/login?message=account_created");
+      } else {
+        const errorData = await response.json();
+        if (errorData.message === "Email already exists") {
+          setErrors({ email: "Cet email est déjà utilisé" });
+        } else {
+          setErrors({ email: "Erreur lors de la création du compte" });
+        }
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      setErrors({ email: "Erreur de connexion au serveur" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    router.push("/login");
+  };
+
+  return (
+    <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
+      <ProjectHeader backHref="/login" backIcon={<ArrowLeft />} />
+
+      <div className="max-w-2xl mx-auto">
+        {/* Formulaire */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-6 text-white">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg">
+                <User size={24} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Créer un compte</h2>
+                <p className="text-blue-100 text-sm">
+                  Bienvenue à Epitech Marseille
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Informations de base */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Prénom"
+                icon={User}
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleInputChange}
+                placeholder="Votre prénom"
+                error={errors.firstName}
+                required
+              />
+
+              <Input
+                label="Nom"
+                icon={User}
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleInputChange}
+                placeholder="Votre nom"
+                error={errors.lastName}
+                required
+              />
+            </div>
+
+            {/* Contact */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Email"
+                icon={Mail}
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="votre.email@exemple.com"
+                error={errors.email}
+                required
+              />
+
+              <Input
+                label="Téléphone"
+                icon={Phone}
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                placeholder="+33 6 12 34 56 78"
+                error={errors.phone}
+                required
+              />
+            </div>
+
+            {/* Informations académiques */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Campus"
+                icon={Building}
+                name="campus"
+                value={formData.campus}
+                onChange={handleInputChange}
+                placeholder="Votre campus"
+                error={errors.campus}
+                required
+              />
+
+              <Input
+                label="Promotion"
+                icon={GraduationCap}
+                name="promotion"
+                value={formData.promotion}
+                onChange={handleInputChange}
+                placeholder="2024"
+                error={errors.promotion}
+                required
+              />
+            </div>
+
+            {/* Séparateur */}
+            <div className="border-t border-gray-200 pt-6 gap-4 flex flex-col">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Lock size={20} className="text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Sécurité du compte
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Créez un mot de passe sécurisé pour votre compte
+                  </p>
+                </div>
+              </div>
+
+              {/* Mot de passe */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <PasswordInput
+                  label="Mot de passe"
+                  icon={Lock}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="Votre mot de passe"
+                  error={errors.password}
+                  required
+                />
+
+                <PasswordInput
+                  label="Confirmer le mot de passe"
+                  icon={Lock}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  placeholder="Confirmez votre mot de passe"
+                  error={errors.confirmPassword}
+                  required
+                />
+              </div>
+
+              {/* Validation du mot de passe */}
+              {formData.password && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="text-sm font-medium text-blue-900 mb-2">
+                    Critères de sécurité :
+                  </h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li
+                      className={`flex items-center gap-2 ${
+                        formData.password.length >= 8
+                          ? "text-green-600"
+                          : "text-blue-600"
+                      }`}
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          formData.password.length >= 8
+                            ? "bg-green-500"
+                            : "bg-blue-400"
+                        }`}
+                      ></div>
+                      Au moins 8 caractères
+                    </li>
+                    <li
+                      className={`flex items-center gap-2 ${
+                        /(?=.*[A-Z])/.test(formData.password)
+                          ? "text-green-600"
+                          : "text-blue-600"
+                      }`}
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          /(?=.*[A-Z])/.test(formData.password)
+                            ? "bg-green-500"
+                            : "bg-blue-400"
+                        }`}
+                      ></div>
+                      Au moins une majuscule
+                    </li>
+                    <li
+                      className={`flex items-center gap-2 ${
+                        /(?=.*[0-9])/.test(formData.password)
+                          ? "text-green-600"
+                          : "text-blue-600"
+                      }`}
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          /(?=.*[0-9])/.test(formData.password)
+                            ? "bg-green-500"
+                            : "bg-blue-400"
+                        }`}
+                      ></div>
+                      Au moins un chiffre
+                    </li>
+                    <li
+                      className={`flex items-center gap-2 ${
+                        formData.password === formData.confirmPassword &&
+                        formData.confirmPassword
+                          ? "text-green-600"
+                          : "text-blue-600"
+                      }`}
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          formData.password === formData.confirmPassword &&
+                          formData.confirmPassword
+                            ? "bg-green-500"
+                            : "bg-blue-400"
+                        }`}
+                      ></div>
+                      Les mots de passe correspondent
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-6 border-t border-gray-200">
+              <Button
+                type="button"
+                onClick={handleCancel}
+                variant="outline"
+                className="flex-1 border-gray-300 hover:bg-gray-100 hover:border-gray-400 hover:shadow-md transition-all duration-300 ease-in-out cursor-pointer"
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSaving}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Création...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Créer le compte
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RegisterPage;
