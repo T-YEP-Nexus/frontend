@@ -3,16 +3,30 @@ import React from "react";
 interface SkillCardProps {
   name: string;
   level: number;
-  color: string;
+  index?: number;
   className?: string;
 }
 
 const SkillCard: React.FC<SkillCardProps> = ({
   name,
   level,
-  color,
+  index = 0,
   className = "",
 }) => {
+  // Palette de couleurs pour les compétences
+  const colorPalette = [
+    "bg-blue-500",
+    "bg-green-500",
+    "bg-yellow-500",
+    "bg-purple-500",
+    "bg-blue-600",
+    "bg-orange-500",
+    "bg-red-500",
+    "bg-indigo-500",
+  ];
+
+  const color = colorPalette[index % colorPalette.length];
+
   return (
     <div className={`space-y-2 ${className}`}>
       <div className="flex justify-between items-center">
