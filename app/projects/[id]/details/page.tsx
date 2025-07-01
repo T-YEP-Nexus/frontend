@@ -10,19 +10,14 @@ import {
   CheckCircle,
   Circle,
   AlertCircle,
-  Eye,
-  Download,
 } from "lucide-react";
-import { Russo_One } from "next/font/google";
 import Link from "next/link";
 import { getProjectById } from "@/lib/projectsData";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMedal } from "@fortawesome/free-solid-svg-icons";
-
-const font = Russo_One({
-  subsets: ["latin"],
-  weight: ["400"],
-});
+import ResourceSection from "@/components/Projects/Details/Ressources/ResourceSection";
+import MainCard from "@/components/Projects/Details/MainCard/MainCard";
+import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 
 export default function ProjectDetails({
   params,
@@ -116,22 +111,12 @@ export default function ProjectDetails({
       {/* Header */}
       <div className="px-4 sm:px-8 lg:px-16 py-6">
         <div className="flex items-center gap-4 mb-8">
-          <Link
-            href="/projects"
-            className="p-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-300"
-          >
-            <ArrowLeft size={20} />
-          </Link>
-          <div>
-            <h1
-              className={`text-2xl sm:text-3xl lg:text-4xl font-bold text-white ${font.className}`}
-            >
-              {project.name}
-            </h1>
-            <p className="text-white/80 text-base sm:text-lg mt-2">
-              Détails du projet
-            </p>
-          </div>
+          <ProjectHeader
+            title={project.name}
+            description="Détails du projet"
+            backHref="/projects"
+            backIcon={<ArrowLeft size={20} />}
+          />
         </div>
 
         {/* Barre de progression principale */}
@@ -159,178 +144,54 @@ export default function ProjectDetails({
           {/* Colonne principale */}
           <div className="lg:col-span-2 space-y-8">
             {/* Description détaillée */}
-            <div className="bg-white rounded-2xl p-8 shadow-xl">
-              <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-3">
-                <FileText className="w-8 h-8 text-blue-400" />
-                <span>Description du projet</span>
-              </h2>
+            <MainCard
+              title="Description du projet"
+              icon={<FileText className="w-8 h-8 text-blue-400" />}
+            >
               <p className="text-gray-600 leading-relaxed">
                 {project.longDescription}
               </p>
-            </div>
+            </MainCard>
 
-            {/* Documentation - déplacé et agrandi */}
-            <div className="bg-white rounded-2xl p-8 shadow-xl">
-              <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-3">
-                <FileText className="w-6 h-6 text-blue-400" />
-                <span>Ressources</span>
-              </h2>
-
+            {/* Ressources - déplacé et agrandi */}
+            <MainCard
+              title="Ressources"
+              icon={<FileText className="w-6 h-6 text-blue-400" />}
+            >
               <div className="space-y-4">
-                {/* Section Kick Off */}
-                <div className="p-5 bg-white rounded-xl border border-dashed border-gray-200 shadow-sm mb-4">
-                  <h3 className="flex items-center gap-2 text-blue-700 font-semibold text-lg mb-4 py-1">
-                    <span className="inline-block">
-                      <FileText className="w-5 h-5 text-blue-400" />
-                    </span>
-                    Kick Off
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {project.resources?.kickOff.map((resource, index) => (
-                      <div
-                        key={index}
-                        className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors flex flex-col items-start gap-2 shadow-sm"
-                      >
-                        <p className="font-medium text-gray-800 text-sm mb-1">
-                          {resource.name}
-                        </p>
-                        <div className="flex gap-2 w-full">
-                          {["Voir", "view"].includes(resource.action) && (
-                            <a
-                              href={resource.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 px-3 py-1.5 border border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 rounded-md text-xs font-medium transition-all duration-200 text-center"
-                            >
-                              Voir
-                            </a>
-                          )}
-                          {["Télécharger", "download"].includes(
-                            resource.action
-                          ) && (
-                            <a
-                              href={resource.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 px-3 py-1.5 border border-green-300 text-green-600 hover:bg-green-50 hover:border-green-400 rounded-md text-xs font-medium transition-all duration-200 text-center"
-                            >
-                              Télécharger
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Section Bootstrap */}
-                <div className="p-5 bg-white rounded-xl border border-dashed border-gray-200 shadow-sm mb-4">
-                  <h3 className="flex items-center gap-2 text-blue-700 font-semibold text-lg mb-4 py-1">
-                    <span className="inline-block">
-                      <FileText className="w-5 h-5 text-blue-400" />
-                    </span>
-                    Bootstrap
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {project.resources?.bootstrap.map((resource, index) => (
-                      <div
-                        key={index}
-                        className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors flex flex-col items-start gap-2 shadow-sm"
-                      >
-                        <p className="font-medium text-gray-800 text-sm mb-1">
-                          {resource.name}
-                        </p>
-                        <div className="flex gap-2 w-full">
-                          {["Voir", "view"].includes(resource.action) && (
-                            <a
-                              href={resource.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 px-3 py-1.5 border border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 rounded-md text-xs font-medium transition-all duration-200 text-center"
-                            >
-                              Voir
-                            </a>
-                          )}
-                          {["Télécharger", "download"].includes(
-                            resource.action
-                          ) && (
-                            <a
-                              href={resource.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 px-3 py-1.5 border border-green-300 text-green-600 hover:bg-green-50 hover:border-green-400 rounded-md text-xs font-medium transition-all duration-200 text-center"
-                            >
-                              Télécharger
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Section Projet */}
-                <div className="p-5 bg-white rounded-xl border border-dashed border-gray-200 shadow-sm">
-                  <h3 className="flex items-center gap-2 text-blue-700 font-semibold text-lg mb-4 py-1">
-                    <span className="inline-block">
-                      <FileText className="w-5 h-5 text-blue-400" />
-                    </span>
-                    Projet
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {project.resources?.projet.map((resource, index) => (
-                      <div
-                        key={index}
-                        className="p-4 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors flex flex-col items-start gap-2 shadow-sm"
-                      >
-                        <p className="font-medium text-gray-800 text-sm mb-1">
-                          {resource.name}
-                        </p>
-                        <div className="flex gap-2 w-full">
-                          {["Voir", "view"].includes(resource.action) && (
-                            <a
-                              href={resource.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 px-3 py-1.5 border border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 rounded-md text-xs font-medium transition-all duration-200 text-center"
-                            >
-                              Voir
-                            </a>
-                          )}
-                          {["Télécharger", "download"].includes(
-                            resource.action
-                          ) && (
-                            <a
-                              href={resource.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 px-3 py-1.5 border border-green-300 text-green-600 hover:bg-green-50 hover:border-green-400 rounded-md text-xs font-medium transition-all duration-200 text-center"
-                            >
-                              Télécharger
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <ResourceSection
+                  title="Kick Off"
+                  icon={<FileText className="w-5 h-5 text-blue-400" />}
+                  resources={project.resources?.kickOff || []}
+                />
+                <ResourceSection
+                  title="Bootstrap"
+                  icon={<FileText className="w-5 h-5 text-blue-400" />}
+                  resources={project.resources?.bootstrap || []}
+                />
+                <ResourceSection
+                  title="Projet"
+                  icon={<FileText className="w-5 h-5 text-blue-400" />}
+                  resources={project.resources?.projet || []}
+                />
               </div>
-            </div>
+            </MainCard>
 
-            {/* Trophées */}
-            <div className="bg-white rounded-2xl p-8 shadow-xl">
-              <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-3">
+            {/* Médailles */}
+            <MainCard
+              title="Médailles du projet"
+              icon={
                 <FontAwesomeIcon
                   icon={faMedal}
                   className="w-8 h-8 text-blue-400"
                 />
-                <span>Médailles du projet</span>
-                <span className="text-base font-normal text-gray-500">
-                  {project.trophies.filter((t) => t.obtained).length}/
-                  {project.trophies.length}
-                </span>
-              </h2>
-              <div className="grid grid-cols-6 gap-6">
+              }
+            >
+              <span className="text-base font-normal text-gray-500">
+                {project.trophies.filter((t) => t.obtained).length}/
+                {project.trophies.length}
+              </span>
+              <div className="grid grid-cols-6 gap-6 mt-4">
                 {project.trophies.map((trophy, idx) => (
                   <div
                     key={trophy.name}
@@ -345,7 +206,6 @@ export default function ProjectDetails({
                           : "text-gray-300 opacity-40"
                       }
                     />
-                    {/* Tooltip */}
                     <span className="absolute z-10 bottom-12 left-1/2 -translate-x-1/2 px-3 py-2 rounded bg-gray-900 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg">
                       {trophy.description}
                     </span>
@@ -355,52 +215,44 @@ export default function ProjectDetails({
                   </div>
                 ))}
               </div>
-            </div>
+            </MainCard>
 
-            {/* Hot Topics & Compétences (ex-Risques) */}
-            <div className="bg-white rounded-2xl p-8 shadow-xl">
-              <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-3">
-                <AlertCircle className="w-8 h-8 text-blue-400" />
-                <span>Hot Topics & Compétences mobilisées</span>
-              </h2>
+            {/* Hot Topics & Compétences */}
+            <MainCard
+              title="Hot Topics & Compétences mobilisées"
+              icon={<AlertCircle className="w-8 h-8 text-blue-400" />}
+            >
               <div className="space-y-4">
-                {/* Hot Topics */}
                 {project.hotTopics && project.hotTopics.length > 0 && (
                   <div className="mb-4">
                     <h3 className="font-semibold text-blue-700 mb-2">
                       Hot Topics
                     </h3>
-                    {project.hotTopics.map(
-                      (
-                        topic: { title: string; description: string },
-                        idx: number
-                      ) => (
-                        <div
-                          key={idx}
-                          className="p-4 border-l-4 border-yellow-400 bg-yellow-50 rounded-lg mb-2"
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <AlertCircle className="w-5 h-5 text-yellow-500" />
-                            <span className="font-semibold text-yellow-700">
-                              {topic.title}
-                            </span>
-                          </div>
-                          <p className="text-gray-700 text-sm">
-                            {topic.description}
-                          </p>
+                    {project.hotTopics.map((topic, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 border-l-4 border-yellow-400 bg-yellow-50 rounded-lg mb-2"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <AlertCircle className="w-5 h-5 text-yellow-500" />
+                          <span className="font-semibold text-yellow-700">
+                            {topic.title}
+                          </span>
                         </div>
-                      )
-                    )}
+                        <p className="text-gray-700 text-sm">
+                          {topic.description}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 )}
-                {/* Compétences */}
                 {project.skills && project.skills.length > 0 && (
                   <div>
                     <h3 className="font-semibold text-blue-700 mb-2">
                       Compétences impliquées
                     </h3>
                     <ul className="flex flex-wrap gap-2">
-                      {project.skills.map((skill: string, idx: number) => (
+                      {project.skills.map((skill, idx) => (
                         <li
                           key={idx}
                           className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
@@ -412,17 +264,16 @@ export default function ProjectDetails({
                   </div>
                 )}
               </div>
-            </div>
+            </MainCard>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-8">
             {/* Bloc Tâches & Jalons éditable */}
-            <div className="bg-white rounded-2xl p-6 shadow-xl">
-              <h3 className="text-xl font-bold text-blue-800 mb-4 flex items-center gap-3">
-                <CheckCircle className="w-6 h-6 text-blue-400" />
-                <span>Tâches</span>
-              </h3>
+            <MainCard
+              title="Tâches"
+              icon={<CheckCircle className="w-6 h-6 text-blue-400" />}
+            >
               <div className="space-y-4">
                 {/* Zone de saisie */}
                 <div>
@@ -439,7 +290,6 @@ export default function ProjectDetails({
                     }}
                   />
                 </div>
-
                 {/* Liste des tâches */}
                 <div
                   ref={tasksContainerRef}
@@ -470,14 +320,11 @@ export default function ProjectDetails({
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* Informations générales */}
-            <div className="bg-white rounded-2xl p-6 shadow-xl">
-              <h3 className="text-xl font-bold text-blue-800 mb-4 flex items-center gap-3">
-                <Users className="w-6 h-6 text-blue-400" />
-                <span>Informations générales</span>
-              </h3>
+            </MainCard>
+            <MainCard
+              title="Informations générales"
+              icon={<Users className="w-6 h-6 text-blue-400" />}
+            >
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <Calendar className="w-5 h-5 text-gray-400" />
@@ -507,14 +354,11 @@ export default function ProjectDetails({
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Deadline */}
-            <div className="bg-white rounded-2xl p-6 shadow-xl">
-              <h3 className="text-xl font-bold text-blue-800 mb-4 flex items-center gap-3">
-                <Clock className="w-6 h-6 text-blue-400" />
-                <span>Deadline</span>
-              </h3>
+            </MainCard>
+            <MainCard
+              title="Deadline"
+              icon={<Clock className="w-6 h-6 text-blue-400" />}
+            >
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-gray-500">Kick off</p>
@@ -541,14 +385,11 @@ export default function ProjectDetails({
                   </p>
                 </div>
               </div>
-            </div>
-
-            {/* Équipe */}
-            <div className="bg-white rounded-2xl p-6 shadow-xl">
-              <h3 className="text-xl font-bold text-blue-800 mb-4 flex items-center gap-3">
-                <Users className="w-6 h-6 text-blue-400" />
-                <span>Équipe</span>
-              </h3>
+            </MainCard>
+            <MainCard
+              title="Équipe"
+              icon={<Users className="w-6 h-6 text-blue-400" />}
+            >
               <div className="space-y-3">
                 {project.team.map((member, index) => (
                   <div key={index} className="flex items-center gap-3">
@@ -564,7 +405,7 @@ export default function ProjectDetails({
                   </div>
                 ))}
               </div>
-            </div>
+            </MainCard>
           </div>
         </div>
       </div>

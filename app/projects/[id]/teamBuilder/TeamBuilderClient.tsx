@@ -3,7 +3,7 @@
 import { User, Users, Plus, ArrowLeft, X, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { Russo_One } from "next/font/google";
-import Link from "next/link";
+import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 
 const font = Russo_One({
   subsets: ["latin"],
@@ -127,26 +127,12 @@ export default function TeamBuilderClient({ project }: { project: Project }) {
       )}
 
       {/* Header */}
-      <div className="flex justify-between items-center mb-8 sm:mb-12">
-        <div className="flex items-center gap-4">
-          <Link
-            href={`/projects/${project.id}/details`}
-            className="p-2 sm:p-3 cursor-pointer lg:hover:bg-white/10 text-white rounded-xl transition-all duration-300"
-          >
-            <ArrowLeft size={20} className="sm:w-6 sm:h-6" />
-          </Link>
-          <div>
-            <h1
-              className={`text-2xl sm:text-3xl lg:text-4xl font-bold text-white ${font.className} mb-2`}
-            >
-              Team Builder
-            </h1>
-            <p className="text-white/80 text-base sm:text-lg">
-              {project.name} - Rejoignez une équipe
-            </p>
-          </div>
-        </div>
-      </div>
+      <ProjectHeader
+        title="Team Builder"
+        description={`${project.name} - Rejoignez une équipe`}
+        backHref={`/projects/${project.id}/details`}
+        backIcon={<ArrowLeft size={20} className="sm:w-6 sm:h-6" />}
+      />
 
       {/* Règles */}
       <div className="bg-white rounded-xl lg:rounded-2xl shadow-lg p-6 mb-8 sm:mb-10 lg:mb-16 border border-gray-200">
