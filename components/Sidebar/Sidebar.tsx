@@ -24,7 +24,7 @@ const links = [
   {
     label: "Informations",
     icon: <MessageSquare size={24} />,
-    href: "/informations",
+    href: "/information",
   },
   { label: "Emargement", icon: <Edit size={24} />, href: "/emargement" },
   { label: "Absences", icon: <BookOpen size={24} />, href: "/absences" },
