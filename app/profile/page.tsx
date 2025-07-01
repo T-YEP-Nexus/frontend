@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import { useRouter } from 'next/navigation';
 import {
   Edit,
   Mail,
@@ -127,6 +128,36 @@ const ProfilePage = () => {
 
   const handleImageChange = (newImageUrl: string) => {
     setProfileImage(newImageUrl);
+  };
+
+  const router = useRouter();
+
+
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch('http://localhost:3001/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Supprimer les données du localStorage
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        // Rediriger vers la page de login
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+    }
   };
 
   return (
@@ -355,9 +386,9 @@ const ProfilePage = () => {
                 Exporter mes données
               </Button>
               <Button
+                onClick={handleLogout}
                 className="w-full !border-red-600 !text-red-600 hover:!bg-red-50 hover:!text-red-700 cursor-pointer"
-                variant="outline"
-              >
+                variant="outline">
                 <LogOut className="w-4 h-4 mr-2" />
                 Se déconnecter
               </Button>
