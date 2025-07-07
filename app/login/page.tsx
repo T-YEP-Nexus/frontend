@@ -32,11 +32,11 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Stocker le token et les infos utilisateur
-        localStorage.setItem('token', data.data.token);
+        // Stocker le token dans les cookies pour le middleware
+        document.cookie = `token=${data.data.token}; path=/; max-age=86400; secure; samesite=strict`;
         localStorage.setItem('user', JSON.stringify(data.data.user));
-        
-        // Rediriger vers le dashboard 
+
+        // Rediriger vers le dashboard
         router.push('/dashboard');
       } else {
         setError(data.message || 'Erreur de connexion');
@@ -49,7 +49,7 @@ export default function LoginPage() {
     }
   };
 
-  
+
 
   return (
     <main className="h-screen flex items-center justify-center relative overflow-hidden">
@@ -63,7 +63,7 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
-            
+
             <input
               type="email"
               placeholder="E-mail"
@@ -73,7 +73,7 @@ export default function LoginPage() {
               required
               disabled={isLoading}
             />
-            
+
             <input
               type="password"
               placeholder="Mot de passe"
@@ -83,8 +83,8 @@ export default function LoginPage() {
               required
               disabled={isLoading}
             />
-            
-            <button 
+
+            <button
               type="submit"
               className="button mt-6 cursor-pointer transition-all duration-300 hover:scale-102 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
@@ -92,7 +92,7 @@ export default function LoginPage() {
               {isLoading ? 'Connexion...' : 'Connexion'}
             </button>
           </form>
-          
+
           <Link
             href="/forgot-password"
             className="text-sm text-blue-600 mt-4 block hover:underline hover:text-blue-800"
