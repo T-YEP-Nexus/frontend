@@ -30,10 +30,11 @@ import {
   getUserIdFromToken,
   isTokenExpired,
 } from "@/lib/auth";
+import { useRouter } from 'next/navigation';
+import router from "next/router";
 
 const ProfilePage = () => {
-  const router = useRouter();
-
+  
   // État pour le modal d'image
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
@@ -108,6 +109,7 @@ const ProfilePage = () => {
   const chartData = userData.chartData || defaultChartData;
 
   const handleLogout = async () => {
+    const router = useRouter();
     try {
       const token = localStorage.getItem('token');
       
