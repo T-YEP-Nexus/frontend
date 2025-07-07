@@ -146,7 +146,7 @@ const isServiceAvailable = async (url: string): Promise<boolean> => {
 };
 
 // Fonction pour récupérer les données utilisateur avec fallback
-const getUserProfileData = async (userId: string) => {
+export const getUserProfileData = async (userId: string) => {
   const url = `http://localhost:3004/profile/user/${userId}`;
   
   try {
@@ -188,7 +188,7 @@ const getUserProfileData = async (userId: string) => {
 };
 
 // Fonction pour récupérer les données étudiant avec fallback
-export const getStudentData = async (userId: string) => {
+const getStudentData = async (userId: string) => {
   const url = `http://localhost:3004/student/profile/${userId}`;
   
   try {
