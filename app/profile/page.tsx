@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect} from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   Edit,
@@ -25,6 +26,10 @@ import RadarChart from "@/components/Profile/RadarChart";
 import ImageUploadModal from "@/components/Profile/ImageUploadModal";
 import { Button } from "@/components/ui/button";
 import { useUserData } from "@/hooks/useUserData";
+import {
+  getUserIdFromToken,
+  isTokenExpired,
+} from "@/lib/auth";
 import { useRouter } from 'next/navigation';
 import router from "next/router";
 
@@ -34,7 +39,16 @@ const ProfilePage = () => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   // Hook pour les données utilisateur
-  const { userData, loading, error, updateProfileImageUrl } = useUserData();
+  const { userData, loading, error, updateProfileImageUrl } = useUserData(getUserIdFromToken());
+
+  useEffect(() => {
+    console.log("=== DEBUG ProfilePage ===");
+    console.log("userData:", userData);
+    console.log("loading:", loading);
+    console.log("error:", error);
+    console.log("getUserIdFromToken():", getUserIdFromToken());
+    console.log("========================");
+  }, [userData, loading, error]);
 
   // Gestion du changement d'image
   const handleImageChange = async (newImageUrl: string) => {
@@ -75,6 +89,24 @@ const ProfilePage = () => {
     );
   }
 
+  // Données par défaut si les stats ne sont pas disponibles
+  const defaultStats = {
+    totalHours: 0,
+    projectsCompleted: 0,
+    ectsCredits: 0,
+    attendanceRate: 0,
+    skills: [],
+    recentProjects: [],
+    badges: []
+  };
+
+  const defaultChartData = {
+    skillsRadar: []
+  };
+
+  // Utiliser les données par défaut si nécessaire
+  const stats = userData.stats || defaultStats;
+  const chartData = userData.chartData || defaultChartData;
 
   const handleLogout = async () => {
     const router = useRouter();
@@ -104,6 +136,8 @@ const ProfilePage = () => {
     }
   };
 
+  
+
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
       <Header
@@ -119,7 +153,7 @@ const ProfilePage = () => {
             <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
               <div className="relative">
                 <Image
-                  src={userData.profileImage}
+                  src={userData.profileImage && userData.profileImage.trim() !== "" ? userData.profileImage : "/default-avatar.png"}
                   alt="Photo de profil"
                   width={120}
                   height={120}
@@ -168,51 +202,51 @@ const ProfilePage = () => {
               <div className="flex flex-col items-center">
                 <ProgressRing
                   progress={Math.round(
-                    (userData.stats.totalHours / 1500) * 100
+                    (stats.totalHours / 1500) * 100
                   )}
                   size={70}
                   color="#3B82F6"
                   label="Heures totales"
                 />
                 <p className="text-base sm:text-lg font-bold text-blue-900 mt-2">
-                  {userData.stats.totalHours}h
+                  {stats.totalHours}h
                 </p>
               </div>
               <div className="flex flex-col items-center">
                 <ProgressRing
                   progress={Math.round(
-                    (userData.stats.projectsCompleted / 30) * 100
+                    (stats.projectsCompleted / 30) * 100
                   )}
                   size={70}
                   color="#10B981"
                   label="Projets terminés"
                 />
                 <p className="text-base sm:text-lg font-bold text-green-900 mt-2">
-                  {userData.stats.projectsCompleted}
+                  {stats.projectsCompleted}
                 </p>
               </div>
               <div className="flex flex-col items-center">
                 <ProgressRing
                   progress={Math.round(
-                    (userData.stats.ectsCredits / 180) * 100
+                    (stats.ectsCredits / 180) * 100
                   )}
                   size={70}
                   color="#8B5CF6"
                   label="Crédits ECTS"
                 />
                 <p className="text-base sm:text-lg font-bold text-purple-900 mt-2">
-                  {userData.stats.ectsCredits}/180
+                  {stats.ectsCredits}/180
                 </p>
               </div>
               <div className="flex flex-col items-center">
                 <ProgressRing
-                  progress={Math.round(userData.stats.attendanceRate)}
+                  progress={Math.round(stats.attendanceRate)}
                   size={70}
                   color="#F59E0B"
                   label="Taux de présence"
                 />
                 <p className="text-base sm:text-lg font-bold text-orange-900 mt-2">
-                  {userData.stats.attendanceRate}%
+                  {stats.attendanceRate}%
                 </p>
               </div>
             </div>
@@ -222,17 +256,23 @@ const ProfilePage = () => {
           <ProfileSection title="Compétences techniques" icon={Target}>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
               <div className="space-y-4">
-                {userData.stats.skills.map((skill, index) => (
-                  <SkillCard
-                    key={skill.name}
-                    name={skill.name}
-                    level={skill.level}
-                    index={index}
-                  />
-                ))}
+                {stats.skills.length > 0 ? (
+                  stats.skills.map((skill, index) => (
+                    <SkillCard
+                      key={skill.name}
+                      name={skill.name}
+                      level={skill.level}
+                      index={index}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Aucune compétence enregistrée</p>
+                  </div>
+                )}
               </div>
               <div className="flex justify-center items-center">
-                <RadarChart data={userData.chartData.skillsRadar} size={250} />
+                <RadarChart data={chartData.skillsRadar} size={250} />
               </div>
             </div>
           </ProfileSection>
@@ -243,50 +283,62 @@ const ProfilePage = () => {
           {/* Projets récents */}
           <ProfileSection title="Projets récents" icon={BookOpen}>
             <div className="space-y-3">
-              {userData.stats.recentProjects.map((project, index) => (
-                <ProjectCard
-                  key={project.name}
-                  name={project.name}
-                  grade={project.grade}
-                  status={project.status}
-                />
-              ))}
+              {stats.recentProjects.length > 0 ? (
+                stats.recentProjects.map((project, index) => (
+                  <ProjectCard
+                    key={project.name}
+                    name={project.name}
+                    grade={project.grade}
+                    status={project.status}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Aucun projet récent</p>
+                </div>
+              )}
             </div>
           </ProfileSection>
 
           {/* Médailles */}
           <ProfileSection
             title={`Badges (${
-              userData.stats.badges.filter((m) => m.obtained).length
-            }/${userData.stats.badges.length})`}
+              stats.badges.filter((m) => m.obtained).length
+            }/${stats.badges.length})`}
             icon={Badge}
           >
             <div className="grid grid-cols-2 gap-4">
-              {userData.stats.badges.map((badge, index) => {
-                // Mapping des icônes FontAwesome
-                const getIcon = (iconName: string) => {
-                  switch (iconName) {
-                    case "faMedal":
-                      return faMedal;
-                    case "faCrown":
-                      return faCrown;
-                    case "faFire":
-                      return faFire;
-                    default:
-                      return faMedal;
-                  }
-                };
+              {stats.badges.length > 0 ? (
+                stats.badges.map((badge, index) => {
+                  // Mapping des icônes FontAwesome
+                  const getIcon = (iconName: string) => {
+                    switch (iconName) {
+                      case "faMedal":
+                        return faMedal;
+                      case "faCrown":
+                        return faCrown;
+                      case "faFire":
+                        return faFire;
+                      default:
+                        return faMedal;
+                    }
+                  };
 
-                return (
-                  <MedalCard
-                    key={badge.name}
-                    name={badge.name}
-                    icon={getIcon(badge.icon)}
-                    index={index}
-                    obtained={badge.obtained}
-                  />
-                );
-              })}
+                  return (
+                    <MedalCard
+                      key={badge.name}
+                      name={badge.name}
+                      icon={getIcon(badge.icon)}
+                      index={index}
+                      obtained={badge.obtained}
+                    />
+                  );
+                })
+              ) : (
+                <div className="col-span-2 text-center py-8">
+                  <p className="text-gray-500">Aucun badge disponible</p>
+                </div>
+              )}
             </div>
           </ProfileSection>
 
