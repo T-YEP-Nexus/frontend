@@ -143,7 +143,7 @@ const Sidebar = () => {
               <span>
                 <Users size={24} />
               </span>
-              <span className="hidden md:inline">Gestion Utilisateurs</span>
+              <span className="hidden md:inline">Création utilisateur</span>
             </Link>
           )}
         </nav>
