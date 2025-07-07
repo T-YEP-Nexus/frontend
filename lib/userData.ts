@@ -144,7 +144,7 @@ const getUserProfileData = async (userId: string) => {
 };
 
 // Fonction pour récupérer les données étudiant
-const getStudentData = async (userId: string) => {
+export const getStudentData = async (userId: string) => {
   const res = await fetch(`http://localhost:3004/student/profile/${userId}`, {
     method: "GET",
     headers: {
