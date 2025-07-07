@@ -129,7 +129,7 @@ export const defaultUserData: UserProfile = {
 
 
 // Fonction pour récupérer les données utilisateur
-const getUserProfileData = async (userId: string) => {
+export const getUserProfileData = async (userId: string) => {
   const res = await fetch(`http://localhost:3004/profile/user/${userId}`, {
     method: "GET",
     headers: {
