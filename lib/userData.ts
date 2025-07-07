@@ -1,3 +1,4 @@
+import { profile } from "console";
 import { getUserEmailFromToken } from "./auth";
 
 export interface UserSkill {
@@ -48,8 +49,11 @@ export interface UserProfile {
   lastName: string;
   email: string;
   phone: string;
+  address: string;
   campus: string;
+  studentNumber: string;
   promotion: string;
+  major: string;
   role: string;
   profileImage: string;
   stats: UserStats;
@@ -58,14 +62,16 @@ export interface UserProfile {
 
 // Données utilisateur par défaut
 export const defaultUserData: UserProfile = {
-  
   id: "1",
   firstName: "Valentin",
   lastName: "Dupont",
   email: "valentin.dupont@epitech.eu",
   phone: "+33 6 12 34 56 78",
+  address: "15 rue Carotte 13006 Marseille",
   campus: "Campus Epitech Marseille",
+  studentNumber: "MSC-001",
   promotion: "Promotion 2027",
+  major: "Cybersécurity",
   role: "Étudiant Epitech",
   profileImage: "/images/Avatar.png",
   stats: {
@@ -121,9 +127,9 @@ export const defaultUserData: UserProfile = {
   }
 };
 
-// Fonction pour obtenir les données utilisateur (simulation d'API)
-export const getUserData = async (userId: string): Promise<UserProfile> => {
-  const emailToken = getUserEmailFromToken();
+
+// Fonction pour récupérer les données utilisateur
+const getUserProfileData = async (userId: string) => {
   const res = await fetch(`http://localhost:3004/profile/user/${userId}`, {
     method: "GET",
     headers: {
@@ -134,22 +140,58 @@ export const getUserData = async (userId: string): Promise<UserProfile> => {
   if (!res.ok) throw new Error("Erreur lors de la récupération des données utilisateur");
 
   const user = await res.json();
-
-  return {
-    id: user.data.id,
-    firstName: user.data.first_name,
-    lastName: user.data.last_name,
-    email: emailToken,
-    phone: user.data.phone,
-    campus: user.data.campus,
-    promotion: user.data.promotion,
-    role: user.data.role,
-    profileImage: user.data.profileImage,
-    stats: user.data.stats,
-    chartData: user.data.chartData,
-  } as UserProfile;
+  return user.data;
 };
 
+// Fonction pour récupérer les données étudiant
+const getStudentData = async (userId: string) => {
+  const res = await fetch(`http://localhost:3004/student/profile/${userId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) throw new Error("Erreur lors de la récupération des données étudiant");
+
+  const student = await res.json();
+  console.log("Réponse studentData:", student);
+  if (!student.success) throw new Error(student.message);
+  return student.data;
+};
+
+
+export const getUserData = async (userId: string): Promise<UserProfile> => {
+  const emailToken = getUserEmailFromToken();
+
+  try {
+    // Étape 1 : Récupérer le profil utilisateur
+    const profileData = await getUserProfileData(userId);
+
+    // Étape 2 : Récupérer les données étudiant à partir de l'ID de profil
+    const studentData = await getStudentData(profileData.id);
+
+    return {
+      id: profileData.id,
+      firstName: profileData.first_name,
+      lastName: profileData.last_name,
+      email: emailToken,
+      phone: profileData.phone,
+      address: profileData.address,
+      campus: profileData.campus,
+      role: profileData.roles_user,
+      profileImage: profileData.profileImage,
+      stats: profileData.stats,
+      chartData: profileData.chartData,
+      studentNumber: studentData.student_number,
+      promotion: studentData.promotion,
+      major: studentData.major,
+    } as UserProfile;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des données:", error);
+    throw error;
+  }
+};
 
 // Fonction pour mettre à jour les données utilisateur
 export const updateUserData = async (userId: string, updates: Partial<UserProfile>): Promise<UserProfile> => {
