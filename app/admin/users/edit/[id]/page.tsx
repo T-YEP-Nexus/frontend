@@ -135,7 +135,7 @@ const EditUserPage = () => {
 
         // Récupérer les données étudiant si applicable
         const studentsResponse = await fetch(
-          `http://localhost:3004/students/user/${userId}`
+          `http://localhost:3004/student/profile/${userId}`
         );
         const studentsData = studentsResponse.ok
           ? await studentsResponse.json()
@@ -143,7 +143,7 @@ const EditUserPage = () => {
 
         // Récupérer les données conseiller si applicable
         const advisorsResponse = await fetch(
-          `http://localhost:3004/advisors/user/${userId}`
+          `http://localhost:3004/advisor/profile/${userId}`
         );
         const advisorsData = advisorsResponse.ok
           ? await advisorsResponse.json()
@@ -422,7 +422,6 @@ const EditUserPage = () => {
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
       <ProjectHeader
-        backHref="/admin/users/dashboard"
         backIcon={<ArrowLeft />}
       />
 

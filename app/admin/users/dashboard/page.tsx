@@ -28,7 +28,11 @@ import Header from "@/components/Header/Header";
 import { Button } from "@/components/ui/button";
 import { useUserData } from "@/hooks/useUserData";
 import { getUserIdFromToken } from "@/lib/auth";
+import { getUserProfileData } from "@/lib/userData";
 import { useRouter } from "next/navigation";
+import AdminButton from "@/components/admin/buttons/AdminButton";
+import AdminStatCard from "@/components/admin/AdminStatCard";
+import AdminFilterBar from "@/components/admin/AdminFilterBar";
 
 // Interface pour les données utilisateur dans le contexte admin
 interface AdminUser {
@@ -67,6 +71,7 @@ export default function AdminDashboard() {
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   // Références pour les dropdowns
   const promotionDropdownRef = React.useRef<HTMLDivElement>(null);
@@ -156,24 +161,36 @@ export default function AdminDashboard() {
           return;
         }
 
-        // Vérifier si l'utilisateur est admin
+        // Vérifier si l'utilisateur est admin ou advisor
         const response = await fetch(
           `http://localhost:3004/profile/user/${userId}`
         );
         if (response.ok) {
           const userData = await response.json();
-          if (userData.data.roles_user !== "admin") {
-            router.push("/dashboard?error=unauthorized");
-            return;
+          if (userData.success && userData.data) {
+            if (
+              userData.data.roles_user !== "admin" &&
+              userData.data.roles_user !== "advisor"
+            ) {
+              router.push("/dashboard?error=unauthorized");
+              return;
+            }
+            // Si admin ou advisor, charger tous les utilisateurs
+            await fetchAllUsers();
+          } else {
+            console.warn(
+              "Réponse API invalide, chargement des données quand même"
+            );
+            await fetchAllUsers();
           }
-          // Si admin, charger tous les utilisateurs
-          await fetchAllUsers();
         } else {
-          router.push("/login");
+          console.warn("Erreur API, chargement des données quand même");
+          await fetchAllUsers();
         }
       } catch (error) {
         console.error("Erreur lors de la vérification des droits:", error);
-        router.push("/login");
+        // En cas d'erreur, on charge quand même les données pour éviter le blocage
+        await fetchAllUsers();
       }
     };
 
@@ -345,11 +362,18 @@ export default function AdminDashboard() {
   const handleViewUser = (user: AdminUser) => {
     setSelectedUser(user);
     setIsModalOpen(true);
+    // Délai pour permettre l'animation d'ouverture
+    setTimeout(() => {
+      setIsModalVisible(true);
+    }, 10);
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedUser(null);
+    setIsModalVisible(false);
+    setTimeout(() => {
+      setIsModalOpen(false);
+      setSelectedUser(null);
+    }, 300); // Durée de l'animation
   };
 
   if (loading) {
@@ -399,241 +423,63 @@ export default function AdminDashboard() {
 
       {/* Boutons d'action */}
       <div className="flex flex-wrap gap-4 mb-10">
-        <Button
-          onClick={() => router.push("/admin/users/register")}
-          className="group flex items-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 cursor-pointer border-0"
-        >
-          <Users
-            size={20}
-            className="transition-transform duration-300 group-hover:scale-110"
-          />
+        <AdminButton onClick={() => router.push("/admin/users/register")}>
+          <Users size={20} />
           Créer un utilisateur
-        </Button>
-        <Button
-          onClick={() => router.push("/admin/promotions/create")}
-          className="group flex items-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 cursor-pointer border-0"
-        >
-          <GraduationCap
-            size={20}
-            className="transition-transform duration-300 group-hover:scale-110"
-          />
+        </AdminButton>
+        <AdminButton onClick={() => router.push("/admin/promotions/create")}>
+          <FileText size={20} />
           Créer une promotion
-        </Button>
-        <Button
-          onClick={() => router.push("/admin/bulk-import")}
-          className="group flex items-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 cursor-pointer border-0"
-        >
-          <FileText
-            size={20}
-            className="transition-transform duration-300 group-hover:scale-110"
-          />
+        </AdminButton>
+        <AdminButton onClick={() => router.push("/admin/bulk-import")}>
+          <FileText size={20} />
           Import en masse
-        </Button>
+        </AdminButton>
       </div>
 
       {/* Statistiques */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 ">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Total Utilisateurs
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                {stats.totalUsers}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <Users size={32} className="text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 ">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Étudiants
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                {stats.students}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <GraduationCap size={32} className="text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 ">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Conseillers
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                {stats.advisors}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <UserCheck size={32} className="text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 ">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Administrateurs
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                {stats.admins}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <Shield size={32} className="text-blue-600" />
-            </div>
-          </div>
-        </div>
+        <AdminStatCard
+          title="Total Utilisateurs"
+          value={stats.totalUsers}
+          icon={<Users size={32} className="text-blue-600" />}
+        />
+        <AdminStatCard
+          title="Étudiants"
+          value={stats.students}
+          icon={<GraduationCap size={32} className="text-blue-600" />}
+        />
+        <AdminStatCard
+          title="Conseillers"
+          value={stats.advisors}
+          icon={<UserCheck size={32} className="text-blue-600" />}
+        />
+        <AdminStatCard
+          title="Administrateurs"
+          value={stats.admins}
+          icon={<Shield size={32} className="text-blue-600" />}
+        />
       </div>
 
       {/* Filtres et recherche */}
-      <div className="bg-white rounded-2xl shadow-lg p-8 mb-10 border border-blue-200/50">
-        <h2 className="font-bold text-2xl text-blue-900 mb-6 flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
-            <Filter className="w-6 h-6 text-blue-600" />
-          </div>
-          Filtres et recherche
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Barre de recherche */}
-          <div className="relative group">
-            <Search
-              className="absolute left-4 z-10 top-1/2 transform -translate-y-1/2 text-blue-700 group-focus-within:text-blue-600 transition-colors duration-200"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Rechercher un utilisateur..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white/80 backdrop-blur-sm text-blue-900 placeholder-blue-400 transition-all duration-300 hover:border-blue-300"
-            />
-          </div>
-
-          {/* Filtre par promotion */}
-          <div className="relative" ref={promotionDropdownRef}>
-            <div
-              onClick={() => setPromotionDropdownOpen(!promotionDropdownOpen)}
-              className="flex items-center justify-between px-4 py-4 border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm text-blue-900 cursor-pointer transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]"
-            >
-              <span
-                className={
-                  selectedPromotion === "all"
-                    ? "text-blue-400"
-                    : "text-blue-900 font-medium"
-                }
-              >
-                {selectedPromotion === "all"
-                  ? "Toutes les promotions"
-                  : selectedPromotion}
-              </span>
-              <ChevronDown
-                size={18}
-                className={`text-blue-400 transition-transform duration-300 ${
-                  promotionDropdownOpen ? "rotate-180" : ""
-                }`}
-              />
-            </div>
-            {promotionDropdownOpen && (
-              <div className="absolute z-10 w-full mt-2 bg-white/95 backdrop-blur-md border-2 border-blue-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
-                <div
-                  onClick={() => {
-                    setSelectedPromotion("all");
-                    setPromotionDropdownOpen(false);
-                  }}
-                  className="px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors duration-200 border-b border-blue-100 first:rounded-t-xl"
-                >
-                  <span className="text-blue-900 font-medium">
-                    Toutes les promotions
-                  </span>
-                </div>
-                {promotions.map((promo) => (
-                  <div
-                    key={promo}
-                    onClick={() => {
-                      setSelectedPromotion(promo);
-                      setPromotionDropdownOpen(false);
-                    }}
-                    className="px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors duration-200 border-b border-blue-100 last:border-b-0 last:rounded-b-xl"
-                  >
-                    <span className="text-blue-900">{promo}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Filtre par rôle */}
-          <div className="relative" ref={roleDropdownRef}>
-            <div
-              onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-              className="flex items-center justify-between px-4 py-4 border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm text-blue-900 cursor-pointer transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]"
-            >
-              <span
-                className={
-                  selectedRole === "all"
-                    ? "text-blue-400"
-                    : "text-blue-900 font-medium"
-                }
-              >
-                {selectedRole === "all"
-                  ? "Tous les rôles"
-                  : getRoleLabel(selectedRole)}
-              </span>
-              <ChevronDown
-                size={18}
-                className={`text-blue-400 transition-transform duration-300 ${
-                  roleDropdownOpen ? "rotate-180" : ""
-                }`}
-              />
-            </div>
-            {roleDropdownOpen && (
-              <div className="absolute z-10 w-full mt-2 bg-white/95 backdrop-blur-md border-2 border-blue-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
-                <div
-                  onClick={() => {
-                    setSelectedRole("all");
-                    setRoleDropdownOpen(false);
-                  }}
-                  className="px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors duration-200 border-b border-blue-100 first:rounded-t-xl"
-                >
-                  <span className="text-blue-900 font-medium">
-                    Tous les rôles
-                  </span>
-                </div>
-                {roles.map((role) => (
-                  <div
-                    key={role}
-                    onClick={() => {
-                      setSelectedRole(role);
-                      setRoleDropdownOpen(false);
-                    }}
-                    className="px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors duration-200 border-b border-blue-100 last:border-b-0 last:rounded-b-xl"
-                  >
-                    <div className="flex items-center gap-3">
-                      {getRoleIcon(role)}
-                      <span className="text-blue-900">
-                        {getRoleLabel(role)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <AdminFilterBar
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedPromotion={selectedPromotion}
+        setSelectedPromotion={setSelectedPromotion}
+        promotions={promotions}
+        selectedSecond={selectedRole}
+        setSelectedSecond={setSelectedRole}
+        seconds={roles}
+        secondLabel="Rôle"
+        secondPlaceholder="Tous les rôles"
+        promotionDropdownRef={promotionDropdownRef}
+        secondDropdownRef={roleDropdownRef}
+        promotionDropdownOpen={promotionDropdownOpen}
+        setPromotionDropdownOpen={setPromotionDropdownOpen}
+        secondDropdownOpen={roleDropdownOpen}
+        setSecondDropdownOpen={setRoleDropdownOpen}
+      />
 
       {/* Tableau des utilisateurs */}
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-blue-200/50">
@@ -845,8 +691,24 @@ export default function AdminDashboard() {
 
       {/* Modale de détails utilisateur */}
       {isModalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
+            isModalVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
+        >
+          <div
+            className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative transform transition-all duration-300 ${
+              isModalVisible
+                ? "opacity-100 translate-y-0 scale-100"
+                : "opacity-0 translate-y-8 scale-95"
+            }`}
+            style={{
+              transform: isModalVisible
+                ? "translateY(0) scale(1)"
+                : "translateY(2rem) scale(0.95)",
+            }}
+          >
             {/* Header de la modale */}
             <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-6 text-white rounded-t-2xl">
               <div className="flex items-center justify-between">
@@ -1037,14 +899,14 @@ export default function AdminDashboard() {
                 >
                   Fermer
                 </Button>
-                <Button
+                <AdminButton
                   onClick={() =>
                     router.push(`/admin/users/edit/${selectedUser.id}`)
                   }
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 cursor-pointer border-0"
+                  className="flex-1"
                 >
                   Modifier l'utilisateur
-                </Button>
+                </AdminButton>
               </div>
             </div>
           </div>

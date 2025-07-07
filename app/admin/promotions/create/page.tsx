@@ -141,7 +141,7 @@ export default function CreatePromotionPage() {
 
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
-      <ProjectHeader backHref="/admin" backIcon={<ArrowLeft />} />
+      <ProjectHeader backIcon={<ArrowLeft />} />
 
       <div className="max-w-4xl mx-auto">
         {/* Formulaire */}
