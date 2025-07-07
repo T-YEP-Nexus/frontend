@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 import AdminButton from "@/components/admin/buttons/AdminButton";
+import AdminLoading from "@/components/admin/AdminLoading";
 
 interface Project {
   id: string;
@@ -191,14 +192,7 @@ export default function EditProjectPage() {
 
   // Affichage du loading utilisateur
   if (userLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Vérification des droits d'accès...</p>
-        </div>
-      </div>
-    );
+    return <AdminLoading message="Vérification des droits d'accès..." />;
   }
 
   // Vérification des droits
@@ -208,16 +202,7 @@ export default function EditProjectPage() {
 
   // Affichage du loading projet
   if (loading) {
-    return (
-      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-6 sm:py-8 lg:py-12">
-        <div className="flex items-center justify-center h-64">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-blue-800 text-lg">Chargement du projet...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <AdminLoading message="Chargement du projet..." />;
   }
 
   // Affichage de l'erreur
@@ -251,8 +236,6 @@ export default function EditProjectPage() {
         description="Modifier les informations du projet"
         backIcon={<ArrowLeft className="w-4 h-4" />}
       />
-
-
 
       {/* Messages d'erreur/succès */}
       {error && (

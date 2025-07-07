@@ -24,6 +24,7 @@ import { useUserData } from "@/hooks/useUserData";
 import { getUserIdFromToken } from "@/lib/auth";
 import AdminButton from "@/components/admin/buttons/AdminButton";
 import AdminFilterBar from "@/components/admin/AdminFilterBar";
+import AdminLoading from "@/components/admin/AdminLoading";
 
 // Pour filtrer par promo et étudiant
 interface Project {
@@ -54,8 +55,8 @@ export default function AdminProjectsPage() {
 
   const [promotionDropdownOpen, setPromotionDropdownOpen] = useState(false);
   const [studentDropdownOpen, setStudentDropdownOpen] = useState(false);
-  const promotionDropdownRef = useRef<HTMLDivElement>(null);
-  const studentDropdownRef = useRef<HTMLDivElement>(null);
+  const promotionDropdownRef = useRef<HTMLDivElement | null>(null);
+  const studentDropdownRef = useRef<HTMLDivElement | null>(null);
   const buttonsRef = useRef<HTMLDivElement>(null);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -197,28 +198,14 @@ export default function AdminProjectsPage() {
 
   // On attend que le userData soit chargé
   if (userLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <p className="ml-4 text-blue-800 text-lg">Chargement utilisateur...</p>
-      </div>
-    );
+    return <AdminLoading message="Chargement des projets..." />;
   }
 
   // --- Les hooks sont tous déclarés ci-dessus ---
   // On peut maintenant faire les return conditionnels
 
   if (loading) {
-    return (
-      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-blue-800 text-lg">Chargement des projets...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <AdminLoading message="Chargement des projets..." />;
   }
   if (error) {
     return (

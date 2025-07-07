@@ -25,6 +25,7 @@ import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 import { useUserData } from "@/hooks/useUserData";
 import { getUserIdFromToken } from "@/lib/auth";
 import { getUserProfileData } from "@/lib/userData";
+import AdminLoading from "@/components/admin/AdminLoading";
 
 interface EditFormData {
   firstName: string;
@@ -209,14 +210,7 @@ const EditUserPage = () => {
 
   // Afficher un loader pendant le chargement
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Chargement des données utilisateur...</p>
-        </div>
-      </div>
-    );
+    return <AdminLoading message="Chargement des données utilisateur..." />;
   }
 
   // Ne pas afficher la page si l'utilisateur n'a pas les droits
@@ -421,9 +415,7 @@ const EditUserPage = () => {
 
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
-      <ProjectHeader
-        backIcon={<ArrowLeft />}
-      />
+      <ProjectHeader backIcon={<ArrowLeft />} />
 
       <div className="max-w-2xl mx-auto">
         {/* Formulaire */}

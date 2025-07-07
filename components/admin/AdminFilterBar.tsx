@@ -12,8 +12,8 @@ interface AdminFilterBarProps {
   seconds: string[];
   secondLabel: string;
   secondPlaceholder: string;
-  promotionDropdownRef: React.RefObject<HTMLDivElement>;
-  secondDropdownRef: React.RefObject<HTMLDivElement>;
+  promotionDropdownRef: React.RefObject<HTMLDivElement | null>;
+  secondDropdownRef: React.RefObject<HTMLDivElement | null>;
   promotionDropdownOpen: boolean;
   setPromotionDropdownOpen: (v: boolean) => void;
   secondDropdownOpen: boolean;

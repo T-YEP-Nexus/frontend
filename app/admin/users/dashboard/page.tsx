@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import {
   Search,
   Filter,
@@ -33,6 +33,7 @@ import { useRouter } from "next/navigation";
 import AdminButton from "@/components/admin/buttons/AdminButton";
 import AdminStatCard from "@/components/admin/AdminStatCard";
 import AdminFilterBar from "@/components/admin/AdminFilterBar";
+import AdminLoading from "@/components/admin/AdminLoading";
 
 // Interface pour les données utilisateur dans le contexte admin
 interface AdminUser {
@@ -74,8 +75,8 @@ export default function AdminDashboard() {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   // Références pour les dropdowns
-  const promotionDropdownRef = React.useRef<HTMLDivElement>(null);
-  const roleDropdownRef = React.useRef<HTMLDivElement>(null);
+  const promotionDropdownRef = useRef<HTMLDivElement | null>(null);
+  const roleDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Utiliser le hook existant pour l'utilisateur connecté
   const { userData: currentUser } = useUserData(getUserIdFromToken());
@@ -377,18 +378,7 @@ export default function AdminDashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-blue-800 text-lg">
-              Chargement des utilisateurs...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <AdminLoading message="Chargement des utilisateurs..." />;
   }
 
   if (error) {
