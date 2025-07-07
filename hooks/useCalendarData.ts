@@ -32,7 +32,7 @@ export function useCalendarData() {
   const fetchAllEvents = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:3009/events");
+      const response = await fetch("http://localhost:3002/events");
       
       if (!response.ok) {
         throw new Error("Erreur lors du chargement des événements");
@@ -61,7 +61,7 @@ export function useCalendarData() {
         throw new Error("Utilisateur non authentifié");
       }
 
-      const response = await fetch(`http://localhost:3009/event-students/student/${userId}`);
+      const response = await fetch(`http://localhost:3002/event-students/student/${userId}`);
       
       if (!response.ok) {
         throw new Error("Erreur lors du chargement des événements de l'étudiant");
@@ -73,7 +73,7 @@ export function useCalendarData() {
         // Récupérer les détails des événements pour chaque assignation
         const eventDetails = await Promise.all(
           result.data.map(async (assignment: EventStudent) => {
-            const eventResponse = await fetch(`http://localhost:3009/events/${assignment.id_event}`);
+            const eventResponse = await fetch(`http://localhost:3002/events/${assignment.id_event}`);
             if (eventResponse.ok) {
               const eventResult = await eventResponse.json();
               return {
@@ -99,7 +99,7 @@ export function useCalendarData() {
   const fetchEventById = async (eventId: number) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3009/events/${eventId}`);
+      const response = await fetch(`http://localhost:3002/events/${eventId}`);
       
       if (!response.ok) {
         throw new Error("Erreur lors du chargement de l'événement");
@@ -122,7 +122,7 @@ export function useCalendarData() {
   const fetchEventsByType = async (eventType: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3009/events/type/${eventType}`);
+      const response = await fetch(`http://localhost:3002/events/type/${eventType}`);
       
       if (!response.ok) {
         throw new Error("Erreur lors du chargement des événements par type");
@@ -150,7 +150,7 @@ export function useCalendarData() {
         throw new Error("Utilisateur non authentifié");
       }
 
-      const response = await fetch("http://localhost:3009/event-students", {
+      const response = await fetch("http://localhost:3002/event-students", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -187,7 +187,7 @@ export function useCalendarData() {
       }
 
       // D'abord, récupérer l'ID de l'inscription
-      const assignmentsResponse = await fetch(`http://localhost:3009/event-students/student/${userId}`);
+      const assignmentsResponse = await fetch(`http://localhost:3002/event-students/student/${userId}`);
       if (!assignmentsResponse.ok) {
         throw new Error("Erreur lors de la récupération des inscriptions");
       }
@@ -200,7 +200,7 @@ export function useCalendarData() {
       }
 
       // Supprimer l'inscription
-      const response = await fetch(`http://localhost:3009/event-students/${assignment.id}`, {
+      const response = await fetch(`http://localhost:3002/event-students/${assignment.id}`, {
         method: "DELETE",
       });
 
@@ -222,7 +222,7 @@ export function useCalendarData() {
       const userId = getUserIdFromToken();
       if (!userId) return false;
 
-      const response = await fetch(`http://localhost:3009/event-students/student/${userId}`);
+      const response = await fetch(`http://localhost:3002/event-students/student/${userId}`);
       if (!response.ok) return false;
 
       const result = await response.json();

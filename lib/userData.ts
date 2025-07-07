@@ -313,3 +313,92 @@ export const updateProfileImage = async (userId: string, imageUrl: string): Prom
     console.log(`Image de profil mise à jour localement pour l'utilisateur ${userId}: ${imageUrl}`);
   }
 };
+
+interface NewUserInput {
+  email: string
+  password: string
+  first_name: string
+  last_name: string
+  phone?: string
+  address?: string
+  campus?:string
+  is_active?: boolean
+  roles_user?: string
+  student_number?: string
+  promotion?: string
+  major?: string
+}
+
+interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data?: T
+}
+
+export async function createCompleteUser(input: NewUserInput) {
+  try {
+    // 1. Création du user
+    const resUser = await fetch('http://localhost:3001/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: input.email,
+        password: input.password
+      })
+    });
+    if (!resUser.ok) {
+      const err = await resUser.json();
+      throw new Error(err.message || 'Échec création user');
+    }
+    const { data: userData } = (await resUser.json()) as ApiResponse<{ id: string }>;
+
+    // 2. Création du user-profile
+    const resProfile = await fetch('http://localhost:3004/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_user: userData!.id,
+        first_name: input.first_name,
+        last_name: input.last_name,
+        phone: input.phone,
+        address: input.address,
+        campus: input.campus,
+        is_active: input.is_active,
+        roles_user: input.roles_user
+      })
+    });
+    if (!resProfile.ok) {
+      const err = await resProfile.json();
+      throw new Error(err.message || 'Échec création profile');
+    }
+    const { data: profileData } = (await resProfile.json()) as ApiResponse<{ id: number }>;
+
+    // 3. Création du student
+    const resStudent = await fetch('http://localhost:3004/student', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_user_profile: profileData!.id,
+        student_number: input.student_number,
+        promotion: input.promotion,
+        major: input.major
+      })
+    });
+    if (!resStudent.ok) {
+      const err = await resStudent.json();
+      throw new Error(err.message || 'Échec création student');
+    }
+    const { data: studentData } = (await resStudent.json()) as ApiResponse<unknown>;
+
+    // Retourne tous les objets créés
+    return {
+      user: userData,
+      profile: profileData,
+      student: studentData
+    };
+  } catch (error) {
+    console.error('createCompleteUser error:', error);
+    throw error;
+  }
+}
+
