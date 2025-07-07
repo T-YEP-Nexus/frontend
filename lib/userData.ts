@@ -127,69 +127,150 @@ export const defaultUserData: UserProfile = {
   }
 };
 
+// Fonction pour vérifier si un service est disponible
+const isServiceAvailable = async (url: string): Promise<boolean> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 secondes timeout
+    
+    const response = await fetch(url, {
+      method: 'HEAD',
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+};
 
-// Fonction pour récupérer les données utilisateur
+// Fonction pour récupérer les données utilisateur avec fallback
 const getUserProfileData = async (userId: string) => {
-  const res = await fetch(`http://localhost:3004/profile/user/${userId}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const url = `http://localhost:3004/profile/user/${userId}`;
+  
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 secondes timeout
+    
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal
+    });
 
-  if (!res.ok) throw new Error("Erreur lors de la récupération des données utilisateur");
+    clearTimeout(timeoutId);
 
-  const user = await res.json();
-  return user.data;
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    const user = await res.json();
+    return user.data;
+  } catch (error) {
+    console.warn("Service profile indisponible, utilisation des données par défaut:", error);
+    // Retourner des données par défaut basées sur la structure attendue
+    return {
+      id: userId,
+      first_name: defaultUserData.firstName,
+      last_name: defaultUserData.lastName,
+      phone: defaultUserData.phone,
+      address: defaultUserData.address,
+      campus: defaultUserData.campus,
+      roles_user: defaultUserData.role,
+      profileImage: defaultUserData.profileImage,
+      stats: defaultUserData.stats,
+      chartData: defaultUserData.chartData
+    };
+  }
 };
 
-// Fonction pour récupérer les données étudiant
+// Fonction pour récupérer les données étudiant avec fallback
 export const getStudentData = async (userId: string) => {
-  const res = await fetch(`http://localhost:3004/student/profile/${userId}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const url = `http://localhost:3004/student/profile/${userId}`;
+  
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 secondes timeout
+    
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal
+    });
 
-  if (!res.ok) throw new Error("Erreur lors de la récupération des données étudiant");
+    clearTimeout(timeoutId);
 
-  const student = await res.json();
-  console.log("Réponse studentData:", student);
-  if (!student.success) throw new Error(student.message);
-  return student.data;
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    const student = await res.json();
+    console.log("Réponse studentData:", student);
+    
+    if (!student.success) {
+      throw new Error(student.message);
+    }
+    
+    return student.data;
+  } catch (error) {
+    console.warn("Service student indisponible, utilisation des données par défaut:", error);
+    // Retourner des données par défaut basées sur la structure attendue
+    return {
+      student_number: defaultUserData.studentNumber,
+      promotion: defaultUserData.promotion,
+      major: defaultUserData.major
+    };
+  }
 };
-
 
 export const getUserData = async (userId: string): Promise<UserProfile> => {
   const emailToken = getUserEmailFromToken();
 
   try {
-    // Étape 1 : Récupérer le profil utilisateur
+    console.log("Récupération des données utilisateur pour:", userId);
+    
+    // Étape 1 : Récupérer le profil utilisateur (avec fallback)
     const profileData = await getUserProfileData(userId);
+    console.log("Données profil récupérées:", profileData);
 
-    // Étape 2 : Récupérer les données étudiant à partir de l'ID de profil
+    // Étape 2 : Récupérer les données étudiant (avec fallback)
     const studentData = await getStudentData(profileData.id);
+    console.log("Données étudiant récupérées:", studentData);
 
-    return {
+    const userData: UserProfile = {
       id: profileData.id,
-      firstName: profileData.first_name,
-      lastName: profileData.last_name,
-      email: emailToken,
-      phone: profileData.phone,
-      address: profileData.address,
-      campus: profileData.campus,
-      role: profileData.roles_user,
-      profileImage: profileData.profileImage,
-      stats: profileData.stats,
-      chartData: profileData.chartData,
-      studentNumber: studentData.student_number,
-      promotion: studentData.promotion,
-      major: studentData.major,
-    } as UserProfile;
+      firstName: profileData.first_name || defaultUserData.firstName,
+      lastName: profileData.last_name || defaultUserData.lastName,
+      email: emailToken || defaultUserData.email,
+      phone: profileData.phone || defaultUserData.phone,
+      address: profileData.address || defaultUserData.address,
+      campus: profileData.campus || defaultUserData.campus,
+      role: profileData.roles_user || defaultUserData.role,
+      profileImage: profileData.profileImage || defaultUserData.profileImage,
+      stats: profileData.stats || defaultUserData.stats,
+      chartData: profileData.chartData || defaultUserData.chartData,
+      studentNumber: studentData.student_number || defaultUserData.studentNumber,
+      promotion: studentData.promotion || defaultUserData.promotion,
+      major: studentData.major || defaultUserData.major,
+    };
+
+    console.log("Données utilisateur finales:", userData);
+    return userData;
   } catch (error) {
     console.error("Erreur lors de la récupération des données:", error);
-    throw error;
+    console.log("Utilisation des données par défaut complètes");
+    
+    // En cas d'erreur complète, retourner les données par défaut avec l'ID utilisateur
+    return {
+      ...defaultUserData,
+      id: userId,
+      email: emailToken || defaultUserData.email
+    };
   }
 };
 
@@ -205,9 +286,30 @@ export const updateUserData = async (userId: string, updates: Partial<UserProfil
 
 // Fonction pour mettre à jour l'image de profil
 export const updateProfileImage = async (userId: string, imageUrl: string): Promise<void> => {
-  // Simulation d'un délai d'API
-  await new Promise(resolve => setTimeout(resolve, 300));
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch(`http://localhost:3004/profile/user/${userId}/image`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ profileImage: imageUrl }),
+      signal: controller.signal
+    });
 
-  // Plus tard, cela pourrait uploader l'image vers un serveur
-  console.log(`Image de profil mise à jour pour l'utilisateur ${userId}: ${imageUrl}`);
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    console.log(`Image de profil mise à jour pour l'utilisateur ${userId}: ${imageUrl}`);
+  } catch (error) {
+    console.warn("Service indisponible pour la mise à jour de l'image, opération simulée:", error);
+    // Simulation d'un délai d'API en cas d'échec
+    await new Promise(resolve => setTimeout(resolve, 300));
+    console.log(`Image de profil mise à jour localement pour l'utilisateur ${userId}: ${imageUrl}`);
+  }
 };

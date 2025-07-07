@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect} from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Edit,
@@ -14,6 +13,9 @@ import {
   LogOut,
   Loader2,
   Badge,
+  AlertCircle,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { faMedal, faCrown, faFire } from "@fortawesome/free-solid-svg-icons";
 import Header from "@/components/Header/Header";
@@ -26,20 +28,19 @@ import RadarChart from "@/components/Profile/RadarChart";
 import ImageUploadModal from "@/components/Profile/ImageUploadModal";
 import { Button } from "@/components/ui/button";
 import { useUserData } from "@/hooks/useUserData";
-import {
-  getUserIdFromToken,
-  isTokenExpired,
-} from "@/lib/auth";
-import { useRouter } from 'next/navigation';
+import { getUserIdFromToken, isTokenExpired } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 import router from "next/router";
 
 const ProfilePage = () => {
-  
   // État pour le modal d'image
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
 
   // Hook pour les données utilisateur
-  const { userData, loading, error, updateProfileImageUrl } = useUserData(getUserIdFromToken());
+  const { userData, loading, error, updateProfileImageUrl } = useUserData(
+    getUserIdFromToken()
+  );
 
   useEffect(() => {
     console.log("=== DEBUG ProfilePage ===");
@@ -48,6 +49,15 @@ const ProfilePage = () => {
     console.log("error:", error);
     console.log("getUserIdFromToken():", getUserIdFromToken());
     console.log("========================");
+
+    // Détecter si nous sommes en mode offline (services indisponibles)
+    if (error) {
+      // Handle both string and Error object cases
+      const errorMessage = typeof error === 'string' ? error : error || '';
+      if (errorMessage.includes("Failed to fetch")) {
+        setIsOfflineMode(true);
+      }
+    }
   }, [userData, loading, error]);
 
   // Gestion du changement d'image
@@ -73,14 +83,36 @@ const ProfilePage = () => {
     );
   }
 
-  // Affichage de l'erreur
-  if (error || !userData) {
+  // Affichage d'erreur critique uniquement si pas de userData du tout
+  if (error && !userData) {
+    const errorMessage = typeof error === 'string' ? error : error || 'Erreur inconnue';
+    
     return (
       <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <p className="text-red-600 mb-4">
-              Erreur lors du chargement du profil
+              Erreur critique lors du chargement du profil
+            </p>
+            <p className="text-gray-600 text-sm mb-4">
+              {errorMessage}
+            </p>
+            <Button onClick={() => window.location.reload()}>Réessayer</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Si pas de userData mais pas d'erreur critique, quelque chose ne va pas
+  if (!userData) {
+    return (
+      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">
+              Aucune donnée utilisateur disponible
             </p>
             <Button onClick={() => window.location.reload()}>Réessayer</Button>
           </div>
@@ -97,11 +129,11 @@ const ProfilePage = () => {
     attendanceRate: 0,
     skills: [],
     recentProjects: [],
-    badges: []
+    badges: [],
   };
 
   const defaultChartData = {
-    skillsRadar: []
+    skillsRadar: [],
   };
 
   // Utiliser les données par défaut si nécessaire
@@ -109,34 +141,50 @@ const ProfilePage = () => {
   const chartData = userData.chartData || defaultChartData;
 
   const handleLogout = async () => {
-    const router = useRouter();
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch('http://localhost:3001/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      // Récupérer le token depuis les cookies
+      const cookies = document.cookie.split(";");
+      const tokenCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("token=")
+      );
+      const token = tokenCookie ? tokenCookie.split("=")[1] : null;
+
+      if (token) {
+        const response = await fetch("http://localhost:3001/logout", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Supprimer toutes les données du localStorage et cookies
+          localStorage.clear(); // Nettoie tout le localStorage
+          document.cookie =
+            "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict";
+
+          // Rediriger vers la page de login
+          window.location.href = "/login";
         }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Supprimer les données du localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        
-        // Rediriger vers la page de login
-        router.push('/login');
+      } else {
+        // Si pas de token, supprimer quand même les données et rediriger
+        localStorage.clear(); // Nettoie tout le localStorage
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict";
+        window.location.href = "/login";
       }
     } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
+      console.error("Erreur lors de la déconnexion:", error);
+      // En cas d'erreur, supprimer quand même les données et rediriger
+      localStorage.clear(); // Nettoie tout le localStorage
+      document.cookie =
+        "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict";
+      window.location.href = "/login";
     }
   };
-
-  
 
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
@@ -144,6 +192,19 @@ const ProfilePage = () => {
         title="Mon Profil"
         description="Statistiques et accomplissements"
       />
+
+      {/* Indicateur de mode offline */}
+      {isOfflineMode && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-3">
+          <WifiOff className="w-5 h-5 text-yellow-600" />
+          <div>
+            <p className="text-yellow-800 font-medium">Mode hors ligne</p>
+            <p className="text-yellow-700 text-sm">
+              Services indisponibles, données par défaut affichées
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-x-8 gap-y-6 items-start">
         {/* Colonne principale */}
@@ -153,7 +214,11 @@ const ProfilePage = () => {
             <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
               <div className="relative">
                 <Image
-                  src={userData.profileImage && userData.profileImage.trim() !== "" ? userData.profileImage : "/default-avatar.png"}
+                  src={
+                    userData.profileImage && userData.profileImage.trim() !== ""
+                      ? userData.profileImage
+                      : "/default-avatar.png"
+                  }
                   alt="Photo de profil"
                   width={120}
                   height={120}
@@ -201,9 +266,7 @@ const ProfilePage = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
               <div className="flex flex-col items-center">
                 <ProgressRing
-                  progress={Math.round(
-                    (stats.totalHours / 1500) * 100
-                  )}
+                  progress={Math.round((stats.totalHours / 1500) * 100)}
                   size={70}
                   color="#3B82F6"
                   label="Heures totales"
@@ -214,9 +277,7 @@ const ProfilePage = () => {
               </div>
               <div className="flex flex-col items-center">
                 <ProgressRing
-                  progress={Math.round(
-                    (stats.projectsCompleted / 30) * 100
-                  )}
+                  progress={Math.round((stats.projectsCompleted / 30) * 100)}
                   size={70}
                   color="#10B981"
                   label="Projets terminés"
@@ -227,9 +288,7 @@ const ProfilePage = () => {
               </div>
               <div className="flex flex-col items-center">
                 <ProgressRing
-                  progress={Math.round(
-                    (stats.ectsCredits / 180) * 100
-                  )}
+                  progress={Math.round((stats.ectsCredits / 180) * 100)}
                   size={70}
                   color="#8B5CF6"
                   label="Crédits ECTS"
@@ -267,7 +326,9 @@ const ProfilePage = () => {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">Aucune compétence enregistrée</p>
+                    <p className="text-gray-500">
+                      Aucune compétence enregistrée
+                    </p>
                   </div>
                 )}
               </div>
@@ -302,9 +363,9 @@ const ProfilePage = () => {
 
           {/* Médailles */}
           <ProfileSection
-            title={`Badges (${
-              stats.badges.filter((m) => m.obtained).length
-            }/${stats.badges.length})`}
+            title={`Badges (${stats.badges.filter((m) => m.obtained).length}/${
+              stats.badges.length
+            })`}
             icon={Badge}
           >
             <div className="grid grid-cols-2 gap-4">
@@ -361,7 +422,8 @@ const ProfilePage = () => {
               <Button
                 onClick={handleLogout}
                 className="w-full !border-red-600 !text-red-600 hover:!bg-red-50 hover:!text-red-700 cursor-pointer"
-                variant="outline">
+                variant="outline"
+              >
                 <LogOut className="w-4 h-4 mr-2" />
                 Se déconnecter
               </Button>

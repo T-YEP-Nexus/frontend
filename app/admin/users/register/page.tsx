@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -21,6 +21,9 @@ import { Button } from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import PasswordInput from "@/components/ui/password-input";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
+import { useUserData } from "@/hooks/useUserData";
+import { getUserIdFromToken } from "@/lib/auth";
+import { getUserProfileData } from "@/lib/userData";
 
 interface RegisterFormData {
   firstName: string;
@@ -42,12 +45,11 @@ type UserRole = "student" | "advisor" | "admin";
 const RegisterPage = () => {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
-  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
-  const [shouldRedirect, setShouldRedirect] = useState<string | null>(null);
 
-  // État du formulaire
+  // État du formulaire - DOIT être avant les useEffect
   const [formData, setFormData] = useState<RegisterFormData>({
     firstName: "",
     lastName: "",
@@ -63,60 +65,92 @@ const RegisterPage = () => {
     availability: "",
   });
 
-  // Récupération du rôle de l'utilisateur connecté
-  useEffect(() => {
+  const { userData, loading, error, updateProfileImageUrl } = useUserData(
+    getUserIdFromToken()
+  );
+
+  // Récupérer le rôle de l'utilisateur connecté
+  React.useEffect(() => {
     const fetchUserRole = async () => {
       try {
-        // Simulation pour le développement - rôle admin
-        console.log("Mode développement: rôle admin simulé");
-        setCurrentUserRole("admin");
-        setIsLoading(false);
+        const userId = getUserIdFromToken();
+        if (userId) {
+          const profileData = await getUserProfileData(userId);
+          setUserRole(profileData.roles_user);
+        }
       } catch (error) {
-        console.error("Erreur:", error);
+        console.error("Erreur lors de la récupération du rôle:", error);
+        // Rediriger vers la page de connexion si erreur
+        router.push("/login");
+      } finally {
         setIsLoading(false);
       }
     };
 
     fetchUserRole();
-  }, []);
+  }, [router]);
 
-  // Gestion des redirections
-  useEffect(() => {
-    if (shouldRedirect) {
-      router.push(shouldRedirect);
+  // Vérifier que l'utilisateur a les droits d'accès (admin ou advisor)
+  React.useEffect(() => {
+    if (!isLoading && userRole && !["admin", "advisor"].includes(userRole)) {
+      // Rediriger si l'utilisateur n'est ni admin ni advisor
+      router.push("/dashboard?error=unauthorized");
     }
-  }, [shouldRedirect, router]);
+  }, [userRole, isLoading, router]);
 
-  // Vérification des permissions après chargement
-  useEffect(() => {
-    if (
-      !isLoading &&
-      currentUserRole &&
-      currentUserRole !== "admin" &&
-      currentUserRole !== "advisor"
-    ) {
-      setShouldRedirect("/dashboard");
-    }
-  }, [isLoading, currentUserRole]);
+  // Afficher un loader pendant le chargement
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Vérification des droits d'accès...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // Options de rôles disponibles selon le rôle de l'utilisateur connecté
+  // Ne pas afficher la page si l'utilisateur n'a pas les droits
+  if (!userRole || !["admin", "advisor"].includes(userRole)) {
+    return null;
+  }
+
+  // Options de rôles disponibles selon l'utilisateur connecté
   const getAvailableRoles = (): {
     value: UserRole;
     label: string;
     icon: React.ReactNode;
   }[] => {
-    if (currentUserRole === "admin") {
-      return [
-        { value: "student", label: "Étudiant", icon: <BookOpen size={20} /> },
-        { value: "advisor", label: "Conseiller", icon: <Users size={20} /> },
-        { value: "admin", label: "Administrateur", icon: <Shield size={20} /> },
-      ];
-    } else if (currentUserRole === "advisor") {
-      return [
-        { value: "student", label: "Étudiant", icon: <BookOpen size={20} /> },
-      ];
+    const allRoles = [
+      {
+        value: "student" as UserRole,
+        label: "Étudiant",
+        icon: <BookOpen size={20} />,
+      },
+      {
+        value: "advisor" as UserRole,
+        label: "Conseiller",
+        icon: <Users size={20} />,
+      },
+      {
+        value: "admin" as UserRole,
+        label: "Administrateur",
+        icon: <Shield size={20} />,
+      },
+    ];
+
+    // Si l'utilisateur est admin, il peut créer tous les rôles
+    if (userRole === "admin") {
+      return allRoles;
     }
-    return [];
+
+    // Si l'utilisateur est advisor, il ne peut créer que des étudiants
+    if (userRole === "advisor") {
+      return allRoles.filter((role) => role.value === "student");
+    }
+
+    // Par défaut, retourner seulement les étudiants
+    return allRoles.filter((role) => role.value === "student");
   };
 
   const handleInputChange = (
@@ -271,25 +305,6 @@ const RegisterPage = () => {
     router.push("/admin");
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-          <span className="text-gray-600">Chargement...</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Vérifier si l'utilisateur a les permissions
-  if (
-    !currentUserRole ||
-    (currentUserRole !== "admin" && currentUserRole !== "advisor")
-  ) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
       <ProjectHeader backHref="/admin" backIcon={<ArrowLeft />} />
@@ -328,7 +343,13 @@ const RegisterPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div
+                className={`grid gap-4 ${
+                  getAvailableRoles().length === 1
+                    ? "grid-cols-1 md:grid-cols-1"
+                    : "grid-cols-1 md:grid-cols-3"
+                }`}
+              >
                 {getAvailableRoles().map((roleOption) => (
                   <button
                     key={roleOption.value}
