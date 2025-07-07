@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
   Edit,
@@ -26,6 +25,8 @@ import RadarChart from "@/components/Profile/RadarChart";
 import ImageUploadModal from "@/components/Profile/ImageUploadModal";
 import { Button } from "@/components/ui/button";
 import { useUserData } from "@/hooks/useUserData";
+import { useRouter } from 'next/navigation';
+import router from "next/router";
 
 const ProfilePage = () => {
   
@@ -76,6 +77,7 @@ const ProfilePage = () => {
 
 
   const handleLogout = async () => {
+    const router = useRouter();
     try {
       const token = localStorage.getItem('token');
       
