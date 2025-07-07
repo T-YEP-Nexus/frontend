@@ -13,6 +13,9 @@ import {
   LogOut,
   Loader2,
   Badge,
+  AlertCircle,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { faMedal, faCrown, faFire } from "@fortawesome/free-solid-svg-icons";
 import Header from "@/components/Header/Header";
@@ -32,6 +35,7 @@ import router from "next/router";
 const ProfilePage = () => {
   // État pour le modal d'image
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
 
   // Hook pour les données utilisateur
   const { userData, loading, error, updateProfileImageUrl } = useUserData(
@@ -45,6 +49,15 @@ const ProfilePage = () => {
     console.log("error:", error);
     console.log("getUserIdFromToken():", getUserIdFromToken());
     console.log("========================");
+
+    // Détecter si nous sommes en mode offline (services indisponibles)
+    if (error) {
+      // Handle both string and Error object cases
+      const errorMessage = typeof error === 'string' ? error : error || '';
+      if (errorMessage.includes("Failed to fetch")) {
+        setIsOfflineMode(true);
+      }
+    }
   }, [userData, loading, error]);
 
   // Gestion du changement d'image
@@ -70,14 +83,36 @@ const ProfilePage = () => {
     );
   }
 
-  // Affichage de l'erreur
-  if (error || !userData) {
+  // Affichage d'erreur critique uniquement si pas de userData du tout
+  if (error && !userData) {
+    const errorMessage = typeof error === 'string' ? error : error || 'Erreur inconnue';
+    
     return (
       <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <p className="text-red-600 mb-4">
-              Erreur lors du chargement du profil
+              Erreur critique lors du chargement du profil
+            </p>
+            <p className="text-gray-600 text-sm mb-4">
+              {errorMessage}
+            </p>
+            <Button onClick={() => window.location.reload()}>Réessayer</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Si pas de userData mais pas d'erreur critique, quelque chose ne va pas
+  if (!userData) {
+    return (
+      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">
+              Aucune donnée utilisateur disponible
             </p>
             <Button onClick={() => window.location.reload()}>Réessayer</Button>
           </div>
@@ -157,6 +192,19 @@ const ProfilePage = () => {
         title="Mon Profil"
         description="Statistiques et accomplissements"
       />
+
+      {/* Indicateur de mode offline */}
+      {isOfflineMode && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-3">
+          <WifiOff className="w-5 h-5 text-yellow-600" />
+          <div>
+            <p className="text-yellow-800 font-medium">Mode hors ligne</p>
+            <p className="text-yellow-700 text-sm">
+              Services indisponibles, données par défaut affichées
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-x-8 gap-y-6 items-start">
         {/* Colonne principale */}
