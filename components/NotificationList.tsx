@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { X } from "lucide-react";
 
 // Composant AnimatedList inspiré de https://21st.dev/dillionverma/animated-list/default
 const AnimatedList: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -42,22 +43,34 @@ export type Notification = {
 interface NotificationListProps {
   notifications: Notification[];
   onNotificationClick?: (id: string) => void;
+  onRemoveNotification?: (id: string) => void;
 }
 
-const NotificationList: React.FC<NotificationListProps> = ({ notifications, onNotificationClick }) => {
+const NotificationList: React.FC<NotificationListProps> = ({ notifications, onNotificationClick, onRemoveNotification }) => {
   return (
     <div className="min-w-[300px] max-w-[400px]">
       <AnimatedList>
         {notifications.map((notif) => (
           <div
             key={notif.id}
-            className={`transition-all duration-200 shadow-md rounded-xl px-5 py-4 border flex flex-col ${
+            className={`transition-all duration-200 shadow-md rounded-xl px-5 py-4 border flex flex-col relative ${
               notif.read
                 ? "bg-white border-gray-200"
                 : "bg-blue-50 border-blue-400"
             } ${onNotificationClick ? "cursor-pointer hover:shadow-lg" : ""}`}
             onClick={() => onNotificationClick && onNotificationClick(notif.id)}
           >
+            {onRemoveNotification && (
+              <div className="flex justify-end">
+                <button
+                  className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition"
+                  onClick={e => { e.stopPropagation(); onRemoveNotification(notif.id); }}
+                  aria-label="Supprimer la notification"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
             <div className="flex items-center justify-between mb-1">
               <span className={`text-base font-semibold ${notif.read ? "text-gray-800" : "text-blue-700"}`}>{notif.title}</span>
               <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">{notif.date}</span>

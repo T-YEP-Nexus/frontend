@@ -15,7 +15,7 @@ interface HeaderProps {
   description?: string;
 }
 
-const notificationsData: Notification[] = [
+const initialNotifications: Notification[] = [
   {
     id: "1",
     title: "Nouveau message",
@@ -40,6 +40,7 @@ const notificationsData: Notification[] = [
 ];
 
 export default function Header({ title = "", description = "" }: HeaderProps) {
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [open, setOpen] = useState(false);
   const bellRef = useRef<HTMLButtonElement>(null);
   const notifBoxRef = useRef<HTMLDivElement>(null);
@@ -66,7 +67,21 @@ export default function Header({ title = "", description = "" }: HeaderProps) {
     };
   }, [open]);
 
-  const unreadCount = notificationsData.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // Marquer comme lue
+  const handleNotificationClick = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((notif) =>
+        notif.id === id ? { ...notif, read: true } : notif
+      )
+    );
+  };
+
+  // Supprimer une notification
+  const handleRemoveNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+  };
 
   return (
     <div className="flex justify-between items-center mb-8 sm:mb-12 relative">
@@ -104,7 +119,11 @@ export default function Header({ title = "", description = "" }: HeaderProps) {
                 className="absolute right-0 mt-2 z-50 shadow-lg rounded-lg overflow-hidden"
                 style={{ minWidth: 320 }}
               >
-                <NotificationList notifications={notificationsData} />
+                <NotificationList
+                  notifications={notifications}
+                  onNotificationClick={handleNotificationClick}
+                  onRemoveNotification={handleRemoveNotification}
+                />
               </div>
             </>
           )}
