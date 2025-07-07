@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect} from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Edit,
@@ -26,20 +25,18 @@ import RadarChart from "@/components/Profile/RadarChart";
 import ImageUploadModal from "@/components/Profile/ImageUploadModal";
 import { Button } from "@/components/ui/button";
 import { useUserData } from "@/hooks/useUserData";
-import {
-  getUserIdFromToken,
-  isTokenExpired,
-} from "@/lib/auth";
-import { useRouter } from 'next/navigation';
+import { getUserIdFromToken, isTokenExpired } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 import router from "next/router";
 
 const ProfilePage = () => {
-  
   // État pour le modal d'image
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   // Hook pour les données utilisateur
-  const { userData, loading, error, updateProfileImageUrl } = useUserData(getUserIdFromToken());
+  const { userData, loading, error, updateProfileImageUrl } = useUserData(
+    getUserIdFromToken()
+  );
 
   useEffect(() => {
     console.log("=== DEBUG ProfilePage ===");
@@ -97,11 +94,11 @@ const ProfilePage = () => {
     attendanceRate: 0,
     skills: [],
     recentProjects: [],
-    badges: []
+    badges: [],
   };
 
   const defaultChartData = {
-    skillsRadar: []
+    skillsRadar: [],
   };
 
   // Utiliser les données par défaut si nécessaire
@@ -109,34 +106,50 @@ const ProfilePage = () => {
   const chartData = userData.chartData || defaultChartData;
 
   const handleLogout = async () => {
-    const router = useRouter();
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch('http://localhost:3001/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      // Récupérer le token depuis les cookies
+      const cookies = document.cookie.split(";");
+      const tokenCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("token=")
+      );
+      const token = tokenCookie ? tokenCookie.split("=")[1] : null;
+
+      if (token) {
+        const response = await fetch("http://localhost:3001/logout", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Supprimer toutes les données du localStorage et cookies
+          localStorage.clear(); // Nettoie tout le localStorage
+          document.cookie =
+            "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict";
+
+          // Rediriger vers la page de login
+          window.location.href = "/login";
         }
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Supprimer les données du localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        
-        // Rediriger vers la page de login
-        router.push('/login');
+      } else {
+        // Si pas de token, supprimer quand même les données et rediriger
+        localStorage.clear(); // Nettoie tout le localStorage
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict";
+        window.location.href = "/login";
       }
     } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
+      console.error("Erreur lors de la déconnexion:", error);
+      // En cas d'erreur, supprimer quand même les données et rediriger
+      localStorage.clear(); // Nettoie tout le localStorage
+      document.cookie =
+        "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict";
+      window.location.href = "/login";
     }
   };
-
-  
 
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
@@ -153,7 +166,11 @@ const ProfilePage = () => {
             <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
               <div className="relative">
                 <Image
-                  src={userData.profileImage && userData.profileImage.trim() !== "" ? userData.profileImage : "/default-avatar.png"}
+                  src={
+                    userData.profileImage && userData.profileImage.trim() !== ""
+                      ? userData.profileImage
+                      : "/default-avatar.png"
+                  }
                   alt="Photo de profil"
                   width={120}
                   height={120}
@@ -201,9 +218,7 @@ const ProfilePage = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
               <div className="flex flex-col items-center">
                 <ProgressRing
-                  progress={Math.round(
-                    (stats.totalHours / 1500) * 100
-                  )}
+                  progress={Math.round((stats.totalHours / 1500) * 100)}
                   size={70}
                   color="#3B82F6"
                   label="Heures totales"
@@ -214,9 +229,7 @@ const ProfilePage = () => {
               </div>
               <div className="flex flex-col items-center">
                 <ProgressRing
-                  progress={Math.round(
-                    (stats.projectsCompleted / 30) * 100
-                  )}
+                  progress={Math.round((stats.projectsCompleted / 30) * 100)}
                   size={70}
                   color="#10B981"
                   label="Projets terminés"
@@ -227,9 +240,7 @@ const ProfilePage = () => {
               </div>
               <div className="flex flex-col items-center">
                 <ProgressRing
-                  progress={Math.round(
-                    (stats.ectsCredits / 180) * 100
-                  )}
+                  progress={Math.round((stats.ectsCredits / 180) * 100)}
                   size={70}
                   color="#8B5CF6"
                   label="Crédits ECTS"
@@ -267,7 +278,9 @@ const ProfilePage = () => {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">Aucune compétence enregistrée</p>
+                    <p className="text-gray-500">
+                      Aucune compétence enregistrée
+                    </p>
                   </div>
                 )}
               </div>
@@ -302,9 +315,9 @@ const ProfilePage = () => {
 
           {/* Médailles */}
           <ProfileSection
-            title={`Badges (${
-              stats.badges.filter((m) => m.obtained).length
-            }/${stats.badges.length})`}
+            title={`Badges (${stats.badges.filter((m) => m.obtained).length}/${
+              stats.badges.length
+            })`}
             icon={Badge}
           >
             <div className="grid grid-cols-2 gap-4">
@@ -361,7 +374,8 @@ const ProfilePage = () => {
               <Button
                 onClick={handleLogout}
                 className="w-full !border-red-600 !text-red-600 hover:!bg-red-50 hover:!text-red-700 cursor-pointer"
-                variant="outline">
+                variant="outline"
+              >
                 <LogOut className="w-4 h-4 mr-2" />
                 Se déconnecter
               </Button>

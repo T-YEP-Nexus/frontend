@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Russo_One } from "next/font/google";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import NexusAnimated from "@/components/Nexus/NexusAnimated";
 
@@ -11,6 +11,19 @@ const russoOne = Russo_One({
 });
 
 export default function LandingHero() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Vérifier si l'utilisateur est connecté en regardant les cookies
+    const checkAuth = () => {
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='));
+      setIsAuthenticated(!!tokenCookie);
+    };
+
+    checkAuth();
+  }, []);
+
   return (
     <div className="flex flex-col md:flex-row items-center text-white pt-20 md:mx-auto md:max-w-6xl gap-10 max-2xl:px-10">
       <div className="flex items-center justify-center md:hidden">
@@ -24,9 +37,9 @@ export default function LandingHero() {
           Un seul outil pour tes projets, tes cours, tes rendus et bien plus
           encore.
         </p>
-        <Link href="/login">
+        <Link href={isAuthenticated ? "/dashboard" : "/login"}>
           <Button className="bg-[#1971FF] px-4 py-2 text-base md:px-8 md:py-8 md:text-xl text-white group cursor-pointer lg:hover:bg-[#1971FF]/70 transition-all duration-300 shadow-md shadow-black/20 font-bold lg:hover:scale-102">
-            Accéder à mon espace
+            {isAuthenticated ? "Accéder au dashboard" : "Accéder à mon espace"}
             <ArrowRight
               className="-me-1 ms-2 transition-transform lg:group-hover:translate-x-0.5"
               size={16}
