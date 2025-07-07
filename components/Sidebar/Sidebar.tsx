@@ -23,11 +23,9 @@ const links = [
   { label: "Calendrier", icon: <Calendar size={24} />, href: "/calendar" },
   { label: "Projets", icon: <Briefcase size={24} />, href: "/projects" },
   { label: "Documents", icon: <Folder size={24} />, href: "/documents" },
-  {
-    label: "Informations",
-    icon: <MessageSquare size={24} />,
-    href: "/informations",
-  },
+
+  { label: "Informations", icon: <MessageSquare size={24} />, href: "/informations" },
+
   { label: "Emargement", icon: <Edit size={24} />, href: "/emargement" },
   { label: "Absences", icon: <BookOpen size={24} />, href: "/absences" },
 ];
