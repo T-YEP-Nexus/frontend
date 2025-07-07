@@ -60,21 +60,19 @@ const NotificationList: React.FC<NotificationListProps> = ({ notifications, onNo
             } ${onNotificationClick ? "cursor-pointer hover:shadow-lg" : ""}`}
             onClick={() => onNotificationClick && onNotificationClick(notif.id)}
           >
-            {onRemoveNotification && (
-              <div className="flex justify-end">
+            <div className="flex items-center justify-between">
+              <span className={`text-base font-semibold ${notif.read ? "text-gray-800" : "text-blue-700"}`}>{notif.title}</span>
+              {onRemoveNotification && (
                 <button
-                  className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition"
+                  className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition ml-2"
                   onClick={e => { e.stopPropagation(); onRemoveNotification(notif.id); }}
                   aria-label="Supprimer la notification"
                 >
                   <X size={16} />
                 </button>
-              </div>
-            )}
-            <div className="flex items-center justify-between mb-1">
-              <span className={`text-base font-semibold ${notif.read ? "text-gray-800" : "text-blue-700"}`}>{notif.title}</span>
-              <span className="text-xs text-gray-400 ml-2 whitespace-nowrap">{notif.date}</span>
+              )}
             </div>
+            <div className="text-xs text-gray-400 mb-1 mt-0.5">{notif.date}</div>
             <div className="text-sm text-gray-600">{notif.message}</div>
           </div>
         ))}
