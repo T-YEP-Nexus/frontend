@@ -23,9 +23,7 @@ const links = [
   { label: "Calendrier", icon: <Calendar size={24} />, href: "/calendar" },
   { label: "Projets", icon: <Briefcase size={24} />, href: "/projects" },
   { label: "Documents", icon: <Folder size={24} />, href: "/documents" },
-
   { label: "Informations", icon: <MessageSquare size={24} />, href: "/informations" },
-
   { label: "Emargement", icon: <Edit size={24} />, href: "/emargement" },
   { label: "Absences", icon: <BookOpen size={24} />, href: "/absences" },
 ];
@@ -39,10 +37,25 @@ const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [firstName, setFirstName] = useState("...");
-  const [lastName, setLastName] = useState("...");
-  const [userRole, setUserRole] = useState("");
+  const [firstName, setFirstName] = useState("Utilisateur");
+  const [lastName, setLastName] = useState("Invité");
+  const [userRole, setUserRole] = useState("student");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fonction utilitaire pour extraire le message d'erreur
+  const getErrorMessage = (error: any): string => {
+    if (typeof error === 'string') {
+      return error;
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (error && typeof error === 'object' && error.message) {
+      return error.message;
+    }
+    return 'Erreur inconnue';
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -67,19 +80,37 @@ const Sidebar = () => {
           }
         );
 
-        if (!res.ok)
+        if (!res.ok) {
           throw new Error(
             "Erreur lors de la récupération des données utilisateur"
           );
+        }
 
         const user = await res.json();
         console.log(user);
+        
+        // Mise à jour des données avec valeurs par défaut si non disponibles
         setFirstName(user.data.first_name || "Utilisateur");
-        setLastName(user.data.last_name || "");
-        setUserRole(user.data.roles_user || "");
-      } catch (error) {
-        console.error("Erreur : ", error);
-        router.push("/login");
+        setLastName(user.data.last_name || "Invité");
+        setUserRole(user.data.roles_user || "student");
+        setError(null);
+      } catch (err) {
+        console.error("Erreur : ", err);
+        const errorMessage = getErrorMessage(err);
+        setError(errorMessage);
+        
+        // En cas d'erreur, garder les valeurs par défaut
+        setFirstName("Utilisateur");
+        setLastName("Invité");
+        setUserRole("student");
+        
+        // Ne pas rediriger automatiquement vers login en cas d'erreur réseau
+        // pour permettre l'utilisation en mode dégradé
+        if (errorMessage.includes("Failed to fetch") || errorMessage.includes("fetch")) {
+          console.log("Mode dégradé: utilisation des données par défaut");
+        } else {
+          router.push("/login");
+        }
       } finally {
         setLoading(false);
       }
@@ -167,11 +198,16 @@ const Sidebar = () => {
         />
         <div className="hidden md:flex flex-col">
           <span className="text-white font-bold leading-tight">
-            {loading ? "..." : firstName}
+            {firstName}
           </span>
           <span className="text-white/80 text-xs leading-tight">
-            {loading ? "..." : lastName}
+            {lastName}
           </span>
+          {error && (
+            <span className="text-red-200 text-[10px] leading-tight">
+              Mode hors ligne
+            </span>
+          )}
         </div>
       </Link>
     </div>
