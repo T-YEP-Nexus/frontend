@@ -132,12 +132,12 @@ const isServiceAvailable = async (url: string): Promise<boolean> => {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 secondes timeout
-    
+
     const response = await fetch(url, {
       method: 'HEAD',
       signal: controller.signal
     });
-    
+
     clearTimeout(timeoutId);
     return response.ok;
   } catch (error) {
@@ -146,13 +146,13 @@ const isServiceAvailable = async (url: string): Promise<boolean> => {
 };
 
 // Fonction pour récupérer les données utilisateur avec fallback
-const getUserProfileData = async (userId: string) => {
+export const getUserProfileData = async (userId: string) => {
   const url = `http://localhost:3004/profile/user/${userId}`;
-  
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 secondes timeout
-    
+
     const res = await fetch(url, {
       method: "GET",
       headers: {
@@ -190,11 +190,11 @@ const getUserProfileData = async (userId: string) => {
 // Fonction pour récupérer les données étudiant avec fallback
 const getStudentData = async (userId: string) => {
   const url = `http://localhost:3004/student/profile/${userId}`;
-  
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 secondes timeout
-    
+
     const res = await fetch(url, {
       method: "GET",
       headers: {
@@ -211,11 +211,11 @@ const getStudentData = async (userId: string) => {
 
     const student = await res.json();
     console.log("Réponse studentData:", student);
-    
+
     if (!student.success) {
       throw new Error(student.message);
     }
-    
+
     return student.data;
   } catch (error) {
     console.warn("Service student indisponible, utilisation des données par défaut:", error);
@@ -233,7 +233,7 @@ export const getUserData = async (userId: string): Promise<UserProfile> => {
 
   try {
     console.log("Récupération des données utilisateur pour:", userId);
-    
+
     // Étape 1 : Récupérer le profil utilisateur (avec fallback)
     const profileData = await getUserProfileData(userId);
     console.log("Données profil récupérées:", profileData);
@@ -264,7 +264,7 @@ export const getUserData = async (userId: string): Promise<UserProfile> => {
   } catch (error) {
     console.error("Erreur lors de la récupération des données:", error);
     console.log("Utilisation des données par défaut complètes");
-    
+
     // En cas d'erreur complète, retourner les données par défaut avec l'ID utilisateur
     return {
       ...defaultUserData,
@@ -289,7 +289,7 @@ export const updateProfileImage = async (userId: string, imageUrl: string): Prom
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
-    
+
     const response = await fetch(`http://localhost:3004/profile/user/${userId}/image`, {
       method: 'PUT',
       headers: {
