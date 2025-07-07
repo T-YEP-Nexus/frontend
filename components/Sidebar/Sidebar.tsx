@@ -13,6 +13,7 @@ import {
   Edit,
   BookOpen,
   Users,
+  Shield,
 } from "lucide-react";
 
 import { Russo_One } from "next/font/google";
@@ -23,7 +24,11 @@ const links = [
   { label: "Calendrier", icon: <Calendar size={24} />, href: "/calendar" },
   { label: "Projets", icon: <Briefcase size={24} />, href: "/projects" },
   { label: "Documents", icon: <Folder size={24} />, href: "/documents" },
-  { label: "Informations", icon: <MessageSquare size={24} />, href: "/informations" },
+  {
+    label: "Informations",
+    icon: <MessageSquare size={24} />,
+    href: "/informations",
+  },
   { label: "Emargement", icon: <Edit size={24} />, href: "/emargement" },
   { label: "Absences", icon: <BookOpen size={24} />, href: "/absences" },
 ];
@@ -45,16 +50,16 @@ const Sidebar = () => {
 
   // Fonction utilitaire pour extraire le message d'erreur
   const getErrorMessage = (error: any): string => {
-    if (typeof error === 'string') {
+    if (typeof error === "string") {
       return error;
     }
     if (error instanceof Error) {
       return error.message;
     }
-    if (error && typeof error === 'object' && error.message) {
+    if (error && typeof error === "object" && error.message) {
       return error.message;
     }
-    return 'Erreur inconnue';
+    return "Erreur inconnue";
   };
 
   useEffect(() => {
@@ -88,7 +93,7 @@ const Sidebar = () => {
 
         const user = await res.json();
         console.log(user);
-        
+
         // Mise à jour des données avec valeurs par défaut si non disponibles
         setFirstName(user.data.first_name || "Utilisateur");
         setLastName(user.data.last_name || "Invité");
@@ -98,15 +103,18 @@ const Sidebar = () => {
         console.error("Erreur : ", err);
         const errorMessage = getErrorMessage(err);
         setError(errorMessage);
-        
+
         // En cas d'erreur, garder les valeurs par défaut
         setFirstName("Utilisateur");
         setLastName("Invité");
         setUserRole("student");
-        
+
         // Ne pas rediriger automatiquement vers login en cas d'erreur réseau
         // pour permettre l'utilisation en mode dégradé
-        if (errorMessage.includes("Failed to fetch") || errorMessage.includes("fetch")) {
+        if (
+          errorMessage.includes("Failed to fetch") ||
+          errorMessage.includes("fetch")
+        ) {
           console.log("Mode dégradé: utilisation des données par défaut");
         } else {
           router.push("/login");
@@ -144,7 +152,7 @@ const Sidebar = () => {
             <Link
               key={link.label}
               href={link.href}
-              className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-4 py-2 rounded-lg text-white transition-all
+              className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
                 ${
                   pathname === link.href
                     ? "bg-[#0e357a]/70 font-bold"
@@ -157,22 +165,22 @@ const Sidebar = () => {
             </Link>
           ))}
 
-          {/* Bouton Gestion Utilisateurs (admin seulement) */}
+          {/* Boutons Admin */}
           {userRole === "admin" && (
             <Link
-              href="/admin/users/register"
-              className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-4 py-2 rounded-lg text-white transition-all
+              href="/admin/users/dashboard"
+              className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
                 ${
-                  pathname === "/admin/users/register"
+                  pathname === "/admin/users/dashboard"
                     ? "bg-[#0e357a]/70 font-bold"
                     : "hover:bg-[#0e357a]/40"
                 }
               `}
             >
               <span>
-                <Users size={24} />
+                <Shield size={24} />
               </span>
-              <span className="hidden md:inline">Création utilisateur</span>
+              <span className="hidden md:inline">Dashboard Utilisateurs</span>
             </Link>
           )}
         </nav>
