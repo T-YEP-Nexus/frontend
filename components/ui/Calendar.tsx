@@ -8,7 +8,7 @@ import ModalEventForm from "./ModalEventForm";
 import ModalDeleteEvent from "./ModalDeleteEvent";
 import ModalEventRegistration from "./ModalEventRegistration";
 import { useCalendarData } from "@/hooks/useCalendarData";
-import { getStudentData } from "@/lib/userData";
+import { getStudentData, getUserData } from "@/lib/userData";
 import { getUserIdFromToken } from "@/lib/auth";
 
 const Calendar: React.FC = () => {
@@ -44,9 +44,14 @@ const Calendar: React.FC = () => {
 
         // Récupérer les données utilisateur via getStudentData
         const userData = await getStudentData(userId);
-        const role = userData.roles_user || 'student';
+        // getStudentData retourne des données étudiant, pas le rôle
+        // On utilise getUserData pour avoir le rôle complet
+        const fullUserData = await getUserData(userId);
+        const role = fullUserData.role || 'student';
         
-        setUserRole(role);
+        // Convertir le rôle en format attendu
+        const userRole = role.toLowerCase() === 'admin' ? 'admin' : 'student';
+        setUserRole(userRole);
         
         // Définir les permissions selon le rôle
         if (role === 'admin') {
