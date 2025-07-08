@@ -265,7 +265,6 @@ export const getUserData = async (userId: string): Promise<UserProfile> => {
     console.error("Erreur lors de la récupération des données:", error);
     console.log("Utilisation des données par défaut complètes");
 
-    // En cas d'erreur complète, retourner les données par défaut avec l'ID utilisateur
     return {
       ...defaultUserData,
       id: userId,
@@ -308,28 +307,32 @@ export const updateProfileImage = async (userId: string, imageUrl: string): Prom
     console.log(`Image de profil mise à jour pour l'utilisateur ${userId}: ${imageUrl}`);
   } catch (error) {
     console.warn("Service indisponible pour la mise à jour de l'image, opération simulée:", error);
-    // Simulation d'un délai d'API en cas d'échec
     await new Promise(resolve => setTimeout(resolve, 300));
     console.log(`Image de profil mise à jour localement pour l'utilisateur ${userId}: ${imageUrl}`);
   }
 };
 
-interface NewUserInput {
+export interface NewUserInput {
   email: string
   password: string
   first_name: string
   last_name: string
   phone?: string
   address?: string
-  campus?:string
+  campus?: string
   is_active?: boolean
   roles_user?: string
+  // Attributs spécifiques student
   student_number?: string
   promotion?: string
   major?: string
+  // Attributs spécifiques advisor
+  room?: string
+  availability?: string
+  specialty?: string
 }
 
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   success: boolean
   message: string
   data?: T
@@ -365,6 +368,7 @@ export async function createCompleteUser(input: NewUserInput) {
         campus: input.campus,
         is_active: input.is_active,
         roles_user: input.roles_user
+        
       })
     });
     if (!resProfile.ok) {
@@ -373,29 +377,69 @@ export async function createCompleteUser(input: NewUserInput) {
     }
     const { data: profileData } = (await resProfile.json()) as ApiResponse<{ id: number }>;
 
-    // 3. Création du student
-    const resStudent = await fetch('http://localhost:3004/student', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id_user_profile: profileData!.id,
-        student_number: input.student_number,
-        promotion: input.promotion,
-        major: input.major
-      })
-    });
-    if (!resStudent.ok) {
-      const err = await resStudent.json();
-      throw new Error(err.message || 'Échec création student');
+    // 3. Création selon le rôle
+    let roleSpecificData = null;
+    
+    if (input.roles_user === 'student') {
+      const resStudent = await fetch('http://localhost:3004/student', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_user_profile: profileData!.id,
+          student_number: input.student_number,
+          promotion: input.promotion,
+          major: input.major
+        })
+      });
+      if (!resStudent.ok) {
+        const err = await resStudent.json();
+        throw new Error(err.message || 'Échec création student');
+      }
+      const { data: studentData } = (await resStudent.json()) as ApiResponse<unknown>;
+      roleSpecificData = studentData;
+    } 
+    else if (input.roles_user === 'advisor') {
+      const resAdvisor = await fetch('http://localhost:3004/advisor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_user_profile: profileData!.id,
+          room: input.room,
+          availability: input.availability,
+          specialty: input.specialty
+        })
+      });
+      if (!resAdvisor.ok) {
+        const err = await resAdvisor.json();
+        throw new Error(err.message || 'Échec création advisor');
+      }
+      const { data: advisorData } = (await resAdvisor.json()) as ApiResponse<unknown>;
+      roleSpecificData = advisorData;
     }
-    const { data: studentData } = (await resStudent.json()) as ApiResponse<unknown>;
+    else if (input.roles_user === 'admin') {
+      const resAdmin = await fetch('http://localhost:3004/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_user_profile: profileData!.id
+        })
+      });
+      if (!resAdmin.ok) {
+        const err = await resAdmin.json();
+        throw new Error(err.message || 'Échec création admin');
+      }
+      const { data: adminData } = (await resAdmin.json()) as ApiResponse<unknown>;
+      roleSpecificData = adminData;
+    }
 
-    // Retourne tous les objets créés
-    return {
+    const result = {
       user: userData,
       profile: profileData,
-      student: studentData
+      role: roleSpecificData
     };
+    console.log('createCompleteUser result:', result);
+    return result;
+
   } catch (error) {
     console.error('createCompleteUser error:', error);
     throw error;
