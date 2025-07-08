@@ -14,6 +14,7 @@ import {
   BookOpen,
   Users,
   Shield,
+  BarChart3,
 } from "lucide-react";
 
 import { Russo_One } from "next/font/google";
@@ -194,7 +195,6 @@ const Sidebar = () => {
             </Link>
           ))}
 
-          {/* Boutons Admin */}
           {(userRole === "admin" || userRole === "advisor") && (
             <>
               <Link
@@ -202,12 +202,22 @@ const Sidebar = () => {
                 className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
                   ${
                     pathname === "/admin/users/dashboard"
+
+          {userRole === "admin" && (
+            <>
+              <Link
+                href="/admin"
+                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                  ${
+                    pathname === "/admin"
+
                       ? "bg-[#0e357a]/70 font-bold"
                       : "hover:bg-[#0e357a]/40"
                   }
                 `}
               >
                 <span>
+
                   <Shield size={24} />
                 </span>
                 <span className="hidden md:inline">Dashboard Utilisateurs</span>
@@ -217,15 +227,32 @@ const Sidebar = () => {
                 className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
                   ${
                     pathname === "/admin/projects"
+
+                  <BarChart3 size={24} />
+                </span>
+                <span className="hidden md:inline">Dashboard Admin</span>
+              </Link>
+              <Link
+                href="/admin/users/dashboard"
+                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                  ${
+                    pathname === "/admin/users/dashboard"
+
                       ? "bg-[#0e357a]/70 font-bold"
                       : "hover:bg-[#0e357a]/40"
                   }
                 `}
               >
                 <span>
+
                   <Briefcase size={24} />
                 </span>
                 <span className="hidden md:inline">Gestion Projets</span>
+
+                  <Shield size={24} />
+                </span>
+                <span className="hidden md:inline">Dashboard Utilisateurs</span>
+
               </Link>
             </>
           )}

@@ -90,14 +90,19 @@ const Calendar: React.FC = () => {
     loadUserRole();
   }, []);
 
-  const isAdmin = userRole === 'admin';
-  const isStudent = userRole === 'student';
+  // DEBUG : log du rôle et des permissions
+  console.log("userRole", userRole, "permissions", permissions);
+  // Forçage temporaire pour test admin
+  // Sélecteur de rôle pour test front
+  const [roleSelector, setRoleSelector] = useState<'admin' | 'student'>('admin');
+  const isAdmin = roleSelector === 'admin';
+  const isStudent = roleSelector === 'student';
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState<{start: string, end: string} | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [eventToDelete, setEventToDelete] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string } | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string; slots?: { start: string; end: string; user: string | null }[] } | null>(null);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string; event_type?: string; description?: string } | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string; event_type?: string; description?: string; slots?: { start: string; end: string; user: string | null }[] } | null>(null);
   const [isUserRegistered, setIsUserRegistered] = useState(false);
   const calendarRef = useRef<FullCalendar>(null);
 
@@ -141,8 +146,9 @@ const Calendar: React.FC = () => {
 
   // Ouvre la modale pour créer un événement
   const openModal = (start: Date, end: Date) => {
-    // Format pour input type="datetime-local"
-    const toInput = (d: Date) => d.toISOString().slice(0, 16);
+    // Format pour input type="datetime-local" en heure locale
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const toInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     setModalData({ start: toInput(start), end: toInput(end) });
     setModalOpen(true);
   };
@@ -161,16 +167,29 @@ const Calendar: React.FC = () => {
     openModal(start, end);
   };
 
-  // Ajout effectif de l'événement depuis la modale
-  const handleModalSubmit = ({ title, start, end }: { title: string; start: string; end: string }) => {
+  // Génération de créneaux lors de la création d'un événement (créneaux de 30 min par défaut)
+  const handleModalSubmit = ({ title, start, end, slotDuration }: { title: string; start: string; end: string; slotDuration: number }) => {
+    // Générer les créneaux selon la durée choisie
+    const slots: { start: string; end: string; user: string | null }[] = [];
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    let current = new Date(startDate);
+    while (current < endDate) {
+      const slotStart = new Date(current);
+      const slotEnd = new Date(current.getTime() + slotDuration * 60000);
+      if (slotEnd > endDate) break;
+      slots.push({ start: slotStart.toISOString(), end: slotEnd.toISOString(), user: null });
+      current = slotEnd;
+    }
     setEvents((prev) => [
       ...prev,
       {
-        id: String(Date.now()), // Utiliser timestamp comme ID temporaire
+        id: String(Date.now()),
         title,
         start,
         end,
         color: "#60a5fa",
+        slots, // ajout des créneaux
       },
     ]);
     setModalOpen(false);
@@ -179,32 +198,40 @@ const Calendar: React.FC = () => {
 
   // Clic sur un événement : gérer selon le rôle
   const handleEventClick = async (clickInfo: EventClickArg) => {
-    const eventId = Number(clickInfo.event.id);
-    const event = backendEvents.find(e => e.id === eventId);
-    
-    if (!event) return;
-
+    console.log("handleEventClick called", clickInfo);
+    const eventId = clickInfo.event.id;
     if (isAdmin) {
-      // Pour les admins : ouvrir la modale de suppression
+      // On cherche l'événement complet pour récupérer les slots
+      const event = events.find(e => String(e.id) === String(eventId));
       setEventToDelete({
         id: clickInfo.event.id,
         title: clickInfo.event.title,
         start: clickInfo.event.start ?? undefined,
         end: clickInfo.event.end ?? undefined,
+        slots: event && event.slots ? event.slots : [],
       });
       setDeleteModalOpen(true);
-    } else if (isStudent) {
-      // Pour les étudiants : ouvrir la modale d'inscription/désinscription
-      const isRegistered = await checkUserRegistration(eventId);
+      return;
+    }
+    // Pour les étudiants, on cherche dans backendEvents
+    // En mode test front, on cherche dans events (événements front + back)
+    const event = events.find(e => String(e.id) === String(eventId));
+    console.log("eventId", eventId, "event found", event);
+    if (!event) {
+      console.error("Aucun événement trouvé pour cet id", eventId);
+      return;
+    }
+    if (isStudent) {
+      const isRegistered = await checkUserRegistration(Number(eventId));
       setIsUserRegistered(isRegistered);
-      
       setSelectedEvent({
         id: clickInfo.event.id,
         title: clickInfo.event.title,
         start: clickInfo.event.start ?? undefined,
         end: clickInfo.event.end ?? undefined,
         event_type: event.event_type,
-        description: event.description
+        description: event.description,
+        slots: event.slots || [],
       });
       setShowRegistrationModal(true);
     }
@@ -262,6 +289,19 @@ const Calendar: React.FC = () => {
 
   return (
     <div className="bg-white rounded-lg shadow p-2 relative">
+      {/* Sélecteur de rôle pour test front */}
+      <div className="mb-4 flex items-center gap-4">
+        <label className="text-sm font-medium text-gray-700">Rôle de test :</label>
+        <select
+          className="border border-blue-300 rounded-xl px-3 py-1 text-base focus:outline-none focus:border-blue-500 bg-blue-50"
+          value={roleSelector}
+          onChange={e => setRoleSelector(e.target.value as 'admin' | 'student')}
+        >
+          <option value="admin">Administrateur</option>
+          <option value="student">Étudiant</option>
+        </select>
+        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}`}>{isAdmin ? 'Administrateur' : 'Étudiant'}</span>
+      </div>
       {/* Indicateur de rôle utilisateur */}
       <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200/50">
         <div className="flex items-center justify-between">
@@ -312,12 +352,45 @@ const Calendar: React.FC = () => {
         defaultStart={modalData?.start}
         defaultEnd={modalData?.end}
       />
-      <ModalDeleteEvent
-        open={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        onDelete={handleDeleteEvent}
-        event={eventToDelete}
-      />
+      {/* Modal admin : détail, créneaux/inscrits et suppression */}
+      {isAdmin && eventToDelete && (
+        <div className={`fixed inset-0 z-50 flex items-center justify-center ${deleteModalOpen ? '' : 'hidden'}`} style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md sm:w-[700px] max-w-[98vw] shadow-lg relative overflow-x-hidden flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-2xl font-bold">Détail de l'événement</h2>
+              <button className="text-gray-400 hover:text-gray-700 text-2xl leading-none rounded-xl p-1 transition-all duration-200 hover:bg-gray-200" onClick={() => setDeleteModalOpen(false)}>&times;</button>
+            </div>
+            <p className="mb-1">Titre : <span className="font-semibold">{eventToDelete.title}</span></p>
+            <p className="mb-4 text-base text-gray-500">{eventToDelete.start && eventToDelete.end ? `${new Date(eventToDelete.start).toLocaleString()} - ${new Date(eventToDelete.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : null}</p>
+            {/* Liste des créneaux/inscrits si slots présents */}
+            {Array.isArray(eventToDelete.slots) && eventToDelete.slots.length > 0 && (
+              <div className="flex-1 overflow-y-auto flex flex-col gap-2 mb-4 pr-1">
+                {eventToDelete.slots.map((slot: any, idx: number) => (
+                  <div key={idx} className="flex items-center gap-2 bg-blue-50 rounded-xl px-5 py-2">
+                    <span className="flex-1 text-sm">
+                      {new Date(slot.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(slot.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {slot.user ? (
+                      <span className="text-xs text-blue-700 font-semibold">{slot.user}</span>
+                    ) : (
+                      <span className="text-xs text-gray-400">Libre</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              className="mt-2 px-5 py-2 bg-red-400 text-white rounded-xl font-semibold shadow-sm hover:bg-red-500 hover:shadow-lg transition-all duration-200 self-end text-lg"
+              onClick={() => {
+                if (window.confirm('Voulez-vous vraiment supprimer cet événement ?')) handleDeleteEvent();
+              }}
+            >
+              Supprimer l'événement
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Retirer la modal de suppression séparée */}
       <ModalEventRegistration
         open={showRegistrationModal}
         onClose={() => setShowRegistrationModal(false)}
