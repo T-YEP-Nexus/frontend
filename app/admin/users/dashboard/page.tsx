@@ -347,6 +347,16 @@ export default function AdminDashboard() {
     sortOrder,
   ]);
 
+  // Utilisateurs à afficher (pagination)
+  const usersToDisplay = useMemo(() => {
+    return filteredAndSortedUsers.slice(0, displayedUsers);
+  }, [filteredAndSortedUsers, displayedUsers]);
+
+  // Fonction pour afficher plus d'utilisateurs
+  const handleShowMore = () => {
+    setDisplayedUsers((prev) => prev + 20);
+  };
+
   // Statistiques
   const stats = useMemo(() => {
     const totalUsers = allUsers.length;
@@ -664,7 +674,7 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-blue-200/50">
-              {filteredAndSortedUsers.map((user) => (
+              {usersToDisplay.map((user) => (
                 <tr
                   key={user.id}
                   className="hover:bg-blue-100/80 transition-all duration-300 cursor-pointer group"
@@ -800,6 +810,26 @@ export default function AdminDashboard() {
           </table>
         </div>
 
+        {/* Bouton Afficher plus */}
+        {filteredAndSortedUsers.length > displayedUsers && (
+          <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-blue-100 border-t border-blue-200">
+            <div className="flex justify-center">
+              <Button
+                onClick={handleShowMore}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer border-0 flex items-center gap-2"
+              >
+                <Users size={20} />
+                Afficher plus (
+                {Math.min(
+                  20,
+                  filteredAndSortedUsers.length - displayedUsers
+                )}{" "}
+                de plus)
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Message si aucun utilisateur trouvé */}
         {filteredAndSortedUsers.length === 0 && (
           <div className="flex-1 flex items-center justify-center">
@@ -827,8 +857,8 @@ export default function AdminDashboard() {
         <div className="inline-flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full">
           <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
           <span className="text-blue-800 font-semibold text-sm">
-            {filteredAndSortedUsers.length} utilisateur(s) trouvé(s) sur{" "}
-            {allUsers.length} total
+            {usersToDisplay.length} utilisateur(s) affiché(s) sur{" "}
+            {filteredAndSortedUsers.length} trouvé(s) ({allUsers.length} total)
           </span>
         </div>
       </div>
