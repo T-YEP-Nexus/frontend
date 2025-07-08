@@ -614,7 +614,7 @@ export default function AdminDashboard() {
             <thead className="bg-gradient-to-r from-blue-50 to-blue-100">
               <tr>
                 <th
-                  className="px-8 py-6 text-left text-sm font-semibold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-200 transition-all duration-300"
+                  className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-200 transition-all duration-300"
                   onClick={() => handleSort("name")}
                 >
                   <div className="flex items-center gap-2">
@@ -627,7 +627,7 @@ export default function AdminDashboard() {
                   </div>
                 </th>
                 <th
-                  className="px-8 py-6 text-left text-sm font-semibold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-200 transition-all duration-300"
+                  className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-200 transition-all duration-300"
                   onClick={() => handleSort("role")}
                 >
                   <div className="flex items-center gap-2">
@@ -640,7 +640,7 @@ export default function AdminDashboard() {
                   </div>
                 </th>
                 <th
-                  className="px-8 py-6 text-left text-sm font-semibold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-200 transition-all duration-300"
+                  className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-200 transition-all duration-300"
                   onClick={() => handleSort("promotion")}
                 >
                   <div className="flex items-center gap-2">
@@ -652,13 +652,13 @@ export default function AdminDashboard() {
                     )}
                   </div>
                 </th>
-                <th className="px-8 py-6 text-left text-sm font-semibold text-blue-900 uppercase tracking-wider">
+                <th className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
                   Contact
                 </th>
-                <th className="px-8 py-6 text-left text-sm font-semibold text-blue-900 uppercase tracking-wider">
+                <th className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
                   Campus
                 </th>
-                <th className="px-8 py-6 text-left text-sm font-semibold text-blue-900 uppercase tracking-wider">
+                <th className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -669,17 +669,17 @@ export default function AdminDashboard() {
                   key={user.id}
                   className="hover:bg-blue-100/80 transition-all duration-300 cursor-pointer group"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-12 w-12">
+                      <div className="flex-shrink-0 h-10 w-10">
                         <img
-                          className="h-12 w-12 rounded-full border-2 border-blue-200 group-hover:border-blue-400 transition-all duration-300 shadow-lg group-hover:shadow-xl"
+                          className="h-10 w-10 rounded-full border-2 border-blue-200 group-hover:border-blue-400 transition-all duration-300 shadow-lg group-hover:shadow-xl"
                           src={user.profileImage || "/images/Avatar.png"}
                           alt={`${user.first_name} ${user.last_name}`}
                         />
                       </div>
-                      <div className="ml-3">
-                        <div className="text-sm font-semibold text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
+                      <div className="ml-2">
+                        <div className="text-xs font-semibold text-blue-900 group-hover:text-blue-700 transition-colors duration-300 truncate max-w-[120px]">
                           {user.first_name} {user.last_name}
                         </div>
                         {user.student?.student_number && (
@@ -690,66 +690,74 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg group-hover:scale-110 transition-transform duration-300">
                         {getRoleIcon(user.roles_user)}
                       </div>
-                      <span className="text-sm font-medium text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
+                      <span className="text-xs font-medium text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
                         {getRoleLabel(user.roles_user)}
                       </span>
                     </div>
                   </td>
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="text-sm font-medium text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <div className="text-xs font-medium text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
                       {user.student?.promotion || "-"}
                     </div>
                     {user.roles_user === "student" && user.student?.major && (
-                      <div className="text-sm text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
+                      <div className="text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
                         {user.student.major}
                       </div>
                     )}
                     {user.roles_user === "advisor" && user.advisor?.major && (
-                      <div className="text-sm text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
+                      <div className="text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
                         {user.advisor.major}
                       </div>
                     )}
                   </td>
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 text-sm text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
                         <Mail
-                          size={16}
+                          size={12}
                           className="text-blue-500 group-hover:text-blue-600 transition-colors duration-300"
                         />
-                        {user.email}
+                        <span className="truncate max-w-[120px]">
+                          {user.email}
+                        </span>
                       </div>
                       {user.phone && (
-                        <div className="flex items-center gap-3 text-sm text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
+                        <div className="flex items-center gap-2 text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
                           <Phone
-                            size={16}
+                            size={12}
                             className="text-blue-500 group-hover:text-blue-600 transition-colors duration-300"
                           />
-                          {user.phone}
+                          <span className="truncate max-w-[100px]">
+                            {user.phone}
+                          </span>
                         </div>
                       )}
                     </div>
                   </td>
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="flex items-center gap-3 text-sm text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2 text-xs text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
                       <MapPin
-                        size={16}
+                        size={12}
                         className="text-blue-500 group-hover:text-blue-600 transition-colors duration-300"
                       />
-                      {user.campus}
+                      <span className="truncate max-w-[100px]">
+                        {user.campus}
+                      </span>
                     </div>
                     {user.advisor?.room && (
-                      <div className="flex items-center gap-3 text-sm text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
+                      <div className="flex items-center gap-2 text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
                         <Building
-                          size={16}
+                          size={12}
                           className="text-blue-500 group-hover:text-blue-600 transition-colors duration-300"
                         />
-                        {user.advisor.room}
+                        <span className="truncate max-w-[80px]">
+                          {user.advisor.room}
+                        </span>
                       </div>
                     )}
                   </td>
