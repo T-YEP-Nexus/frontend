@@ -12,28 +12,32 @@ export default function Page() {
   const [searchTerm, setSearchTerm] = useState("");
   const [displayCount, setDisplayCount] = useState(8);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'active' | 'my-projects'>('active');
+  const [viewMode, setViewMode] = useState<"active" | "my-projects">("active");
   const projectsGridRef = useRef<HTMLDivElement>(null);
   const buttonsRef = useRef<HTMLDivElement>(null);
 
   // Utiliser le hook pour récupérer les projets
-  const { 
-    projects, 
-    loading, 
-    error, 
+  const {
+    projects,
+    loading,
+    error,
     fetchActiveProjects,
-    fetchProjectsByStudent
+    fetchProjectsByStudent,
   } = useProjectsData();
 
   // Transformer les données du backend vers le format attendu par Cards
   const transformProjectData = (project: any) => {
     // Calculer la progression basée sur les ressources ou autres critères
-    const progress = project.ressources ? Math.min(project.ressources.length * 10, 100) : 0;
-    
+    const progress = project.ressources
+      ? Math.min(project.ressources.length * 10, 100)
+      : 0;
+
     // Calculer les jours restants (exemple basé sur la date de création)
     const createdDate = new Date(project.created_at);
     const now = new Date();
-    const daysSinceCreation = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysSinceCreation = Math.floor(
+      (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
     const daysRemaining = Math.max(0, 30 - daysSinceCreation); // Exemple: 30 jours de projet
 
     return {
@@ -42,33 +46,59 @@ export default function Page() {
       progress: progress,
       description: project.description,
       details: {
-        startDate: new Date(project.created_at).toLocaleDateString('fr-FR'),
-        endDate: new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'),
-        team: "Équipe à définir" // À adapter selon vos besoins
+        startDate: new Date(project.created_at).toLocaleDateString("fr-FR"),
+        endDate: new Date(
+          createdDate.getTime() + 30 * 24 * 60 * 60 * 1000
+        ).toLocaleDateString("fr-FR"),
+        team: "Équipe à définir", // À adapter selon vos besoins
       },
       deadline: {
-        kickOff: new Date(project.created_at).toLocaleDateString('fr-FR'),
-        followUp: new Date(createdDate.getTime() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'),
-        keynote: new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'),
-        daysRemaining: daysRemaining
+        kickOff: new Date(project.created_at).toLocaleDateString("fr-FR"),
+        followUp: new Date(
+          createdDate.getTime() + 15 * 24 * 60 * 60 * 1000
+        ).toLocaleDateString("fr-FR"),
+        keynote: new Date(
+          createdDate.getTime() + 30 * 24 * 60 * 60 * 1000
+        ).toLocaleDateString("fr-FR"),
+        daysRemaining: daysRemaining,
       },
       documentation: {
         pdfUrl: project.ressources?.[0]?.url || "#",
-        pdfName: project.ressources?.[0]?.filename || "Documentation.pdf"
+        pdfName: project.ressources?.[0]?.filename || "Documentation.pdf",
       },
       tasks: [
         "Analyser les besoins",
         "Concevoir l'architecture",
         "Développer les fonctionnalités",
-        "Tester l'application"
+        "Tester l'application",
       ],
       trophies: [
-        { name: "Premier commit", obtained: progress > 0, description: "Premier commit réalisé" },
-        { name: "Architecture validée", obtained: progress > 20, description: "Architecture du projet validée" },
-        { name: "MVP terminé", obtained: progress > 50, description: "Version minimale viable terminée" },
-        { name: "Tests passants", obtained: progress > 80, description: "Tous les tests passent" },
-        { name: "Projet livré", obtained: progress === 100, description: "Projet entièrement livré" }
-      ]
+        {
+          name: "Premier commit",
+          obtained: progress > 0,
+          description: "Premier commit réalisé",
+        },
+        {
+          name: "Architecture validée",
+          obtained: progress > 20,
+          description: "Architecture du projet validée",
+        },
+        {
+          name: "MVP terminé",
+          obtained: progress > 50,
+          description: "Version minimale viable terminée",
+        },
+        {
+          name: "Tests passants",
+          obtained: progress > 80,
+          description: "Tous les tests passent",
+        },
+        {
+          name: "Projet livré",
+          obtained: progress === 100,
+          description: "Projet entièrement livré",
+        },
+      ],
     };
   };
 
@@ -82,13 +112,13 @@ export default function Page() {
   const displayedProjects = filteredProjects.slice(0, displayCount);
 
   // Changer de vue
-  const handleViewModeChange = async (mode: 'active' | 'my-projects') => {
+  const handleViewModeChange = async (mode: "active" | "my-projects") => {
     setViewMode(mode);
     setSearchTerm("");
     setDisplayCount(8);
     setExpandedCard(null);
-    
-    if (mode === 'active') {
+
+    if (mode === "active") {
       await fetchActiveProjects();
     } else {
       await fetchProjectsByStudent();
@@ -141,7 +171,9 @@ export default function Page() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-600 text-lg">Erreur lors du chargement des projets : {error}</p>
+        <p className="text-red-600 text-lg">
+          Erreur lors du chargement des projets : {error}
+        </p>
       </div>
     );
   }
@@ -157,16 +189,22 @@ export default function Page() {
       {/* Boutons de vue */}
       <div className="flex gap-4 mb-6">
         <Button
-          onClick={() => handleViewModeChange('active')}
-          variant={viewMode === 'active' ? 'default' : 'outline'}
-          className="flex-1 sm:flex-none"
+          onClick={() => handleViewModeChange("active")}
+          className={`flex-1 sm:flex-none px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+            viewMode === "active"
+              ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer border-0"
+              : "bg-white border-2 border-blue-300 text-blue-800 hover:bg-blue-600 hover:border-blue-600 hover:text-white hover:shadow-md hover:scale-105 cursor-pointer"
+          }`}
         >
           Projets Actifs
         </Button>
         <Button
-          onClick={() => handleViewModeChange('my-projects')}
-          variant={viewMode === 'my-projects' ? 'default' : 'outline'}
-          className="flex-1 sm:flex-none"
+          onClick={() => handleViewModeChange("my-projects")}
+          className={`flex-1 sm:flex-none px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+            viewMode === "my-projects"
+              ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer border-0"
+              : "bg-white border-2 border-blue-300 text-blue-800 hover:bg-blue-600 hover:border-blue-600 hover:text-white hover:shadow-md hover:scale-105 cursor-pointer"
+          }`}
         >
           Mes Projets
         </Button>

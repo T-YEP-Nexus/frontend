@@ -130,7 +130,6 @@ export default function TeamBuilderClient({ project }: { project: Project }) {
       <ProjectHeader
         title="Team Builder"
         description={`${project.name} - Rejoignez une équipe`}
-        backHref={`/projects/${project.id}/details`}
         backIcon={<ArrowLeft size={20} className="sm:w-6 sm:h-6" />}
       />
 

@@ -401,4 +401,3 @@ export async function createCompleteUser(input: NewUserInput) {
     throw error;
   }
 }
-
