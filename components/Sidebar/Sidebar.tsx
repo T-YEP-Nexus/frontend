@@ -62,70 +62,99 @@ const Sidebar = () => {
     return "Erreur inconnue";
   };
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        if (isTokenExpired()) {
-          router.push("/login");
-          return;
-        }
+  const fetchUserData = async () => {
+    try {
+      if (isTokenExpired()) {
+        router.push("/login");
+        return;
+      }
 
-        const userId = getUserIdFromToken();
-        if (!userId) {
-          throw new Error(`ID utilisateur introuvable dans le token.${userId}`);
-        }
+      const userId = getUserIdFromToken();
+      if (!userId) {
+        throw new Error(`ID utilisateur introuvable dans le token.${userId}`);
+      }
 
-        const res = await fetch(
-          `http://localhost:3004/profile/user/${userId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
+      const res = await fetch(`http://localhost:3004/profile/user/${userId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(
+          "Erreur lors de la récupération des données utilisateur"
         );
+      }
 
-        if (!res.ok) {
-          throw new Error(
-            "Erreur lors de la récupération des données utilisateur"
-          );
-        }
+      const user = await res.json();
+      console.log("Données utilisateur sidebar:", user);
 
-        const user = await res.json();
-        console.log(user);
+      // Mise à jour des données avec valeurs par défaut si non disponibles
+      setFirstName(user.data.first_name || "Utilisateur");
+      setLastName(user.data.last_name || "Invité");
+      setUserRole(user.data.roles_user || "student");
+      setError(null);
+    } catch (err) {
+      console.error("Erreur : ", err);
+      const errorMessage = getErrorMessage(err);
+      setError(errorMessage);
 
-        // Mise à jour des données avec valeurs par défaut si non disponibles
-        setFirstName(user.data.first_name || "Utilisateur");
-        setLastName(user.data.last_name || "Invité");
-        setUserRole(user.data.roles_user || "student");
-        setError(null);
-      } catch (err) {
-        console.error("Erreur : ", err);
-        const errorMessage = getErrorMessage(err);
-        setError(errorMessage);
+      // En cas d'erreur, garder les valeurs par défaut
+      setFirstName("Utilisateur");
+      setLastName("Invité");
+      setUserRole("student");
 
-        // En cas d'erreur, garder les valeurs par défaut
-        setFirstName("Utilisateur");
-        setLastName("Invité");
-        setUserRole("student");
+      // Ne pas rediriger automatiquement vers login en cas d'erreur réseau
+      // pour permettre l'utilisation en mode dégradé
+      if (
+        errorMessage.includes("Failed to fetch") ||
+        errorMessage.includes("fetch")
+      ) {
+        console.log("Mode dégradé: utilisation des données par défaut");
+      } else {
+        router.push("/login");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        // Ne pas rediriger automatiquement vers login en cas d'erreur réseau
-        // pour permettre l'utilisation en mode dégradé
-        if (
-          errorMessage.includes("Failed to fetch") ||
-          errorMessage.includes("fetch")
-        ) {
-          console.log("Mode dégradé: utilisation des données par défaut");
-        } else {
-          router.push("/login");
-        }
-      } finally {
-        setLoading(false);
+  // Chargement initial des données
+  useEffect(() => {
+    fetchUserData();
+  }, [router]);
+
+  // Recharger les données quand on revient sur la page (après modification)
+  useEffect(() => {
+    const handleFocus = () => {
+      // Recharger les données quand la page reprend le focus
+      fetchUserData();
+    };
+
+    const handleVisibilityChange = () => {
+      // Recharger les données quand la page redevient visible
+      if (!document.hidden) {
+        fetchUserData();
       }
     };
 
-    fetchUserData();
-  }, [router]);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
+  // Recharger les données quand on navigue vers certaines pages
+  useEffect(() => {
+    // Recharger les données quand on navigue vers des pages qui pourraient avoir modifié l'utilisateur
+    if (pathname === "/profile" || pathname === "/admin/users/dashboard") {
+      fetchUserData();
+    }
+  }, [pathname]);
 
   return (
     <div className="fixed top-0 left-0 h-screen w-20 md:w-64 z-30 flex flex-col justify-between bg-gradient-to-b from-[#1971FF] to-[#1971FF]/80 px-2 md:px-4 py-6 transition-all duration-300">

@@ -48,21 +48,25 @@ type UserRole = "student" | "advisor" | "admin";
 // Interface pour les données utilisateur dans le contexte admin
 interface AdminUser {
   id: string;
+  id_user: string; // UUID de l'utilisateur dans la table user
   first_name: string;
   last_name: string;
   email: string;
+  originalEmail: string; // Email original pour comparaison
   phone: string;
   address: string;
   campus: string;
   roles_user: string;
   profileImage?: string;
   student?: {
+    id: number;
     student_number: string;
     promotion: string;
     major: string;
   };
   advisor?: {
-    major: string;
+    id: number;
+    specialty: string;
     room: string;
     availability: string;
   };
@@ -121,12 +125,22 @@ const EditUserPage = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
+        console.log(
+          "Tentative de récupération du profil avec l'ID:",
+          userId,
+          "Type:",
+          typeof userId
+        );
         // Récupérer le profil utilisateur
         const profilesResponse = await fetch(
-          `http://localhost:3004/profile/user/${userId}`
+          `http://localhost:3004/profile/${userId}`
         );
         if (!profilesResponse.ok) {
-          throw new Error("Erreur lors de la récupération du profil");
+          const errorText = await profilesResponse.text();
+          console.error("Erreur API:", profilesResponse.status, errorText);
+          throw new Error(
+            `Erreur lors de la récupération du profil (${profilesResponse.status}): ${errorText}`
+          );
         }
         const profileData = await profilesResponse.json();
 
@@ -150,12 +164,26 @@ const EditUserPage = () => {
           ? await advisorsResponse.json()
           : { success: false, data: null };
 
+        // Récupérer l'email original depuis la table user
+        const userResponse = await fetch(
+          `http://localhost:3001/users/${profileData.data.id_user}`
+        );
+        const userData = userResponse.ok
+          ? await userResponse.json()
+          : { success: false, data: null };
+
         // Combiner les données
         const userWithDetails = {
           id: profileData.data.id,
+          id_user: profileData.data.id_user, // UUID de l'utilisateur
           first_name: profileData.data.first_name,
           last_name: profileData.data.last_name,
-          email: profileData.data.email,
+          email: userData.success
+            ? userData.data.email
+            : profileData.data.email, // Email original de la table user
+          originalEmail: userData.success
+            ? userData.data.email
+            : profileData.data.email, // Email original pour comparaison
           phone: profileData.data.phone,
           address: profileData.data.address,
           campus: profileData.data.campus,
@@ -164,7 +192,16 @@ const EditUserPage = () => {
           ...(studentsData.success &&
             studentsData.data && { student: studentsData.data }),
           ...(advisorsData.success &&
-            advisorsData.data && { advisor: advisorsData.data }),
+            advisorsData.data && {
+              advisor: {
+                ...advisorsData.data,
+                specialty: advisorsData.data.specialty || "",
+                availability:
+                  advisorsData.data.availibity ||
+                  advisorsData.data.availability ||
+                  "", // Gérer les deux noms de champ
+              },
+            }),
         };
 
         setUserData(userWithDetails);
@@ -182,10 +219,13 @@ const EditUserPage = () => {
           promotion: userWithDetails.student?.promotion || "",
           major:
             userWithDetails.student?.major ||
-            userWithDetails.advisor?.major ||
+            userWithDetails.advisor?.specialty ||
             "",
           room: userWithDetails.advisor?.room || "",
-          availability: userWithDetails.advisor?.availability || "",
+          availability:
+            userWithDetails.advisor?.availability ||
+            userWithDetails.advisor?.availibity ||
+            "",
           address: userWithDetails.address || "",
         });
       } catch (error) {
@@ -374,36 +414,230 @@ const EditUserPage = () => {
     setIsSaving(true);
 
     try {
-      // Simulation d'un délai d'envoi
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Simulation de succès
-      console.log("Données du formulaire de modification:", {
-        id: userId,
+      // 1. Mettre à jour le profil utilisateur
+      const profileUpdateData = {
         first_name: formData.firstName,
         last_name: formData.lastName,
-        email: formData.email,
         phone: formData.phone,
-        campus: formData.campus,
-        role: formData.role,
         address: formData.address,
-        ...(isPasswordChange && { password: formData.password }),
-        ...(formData.role === "student" && {
-          promotion: formData.promotion,
-          major: formData.major,
-        }),
-        ...(formData.role === "advisor" && {
-          major: formData.major,
-          room: formData.room,
-          availability: formData.availability,
-        }),
-      });
+        campus: formData.campus,
+        roles_user: formData.role,
+      };
+
+      const profileResponse = await fetch(
+        `http://localhost:3004/profile/${userData?.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(profileUpdateData),
+        }
+      );
+
+      if (!profileResponse.ok) {
+        const errorData = await profileResponse.json();
+        throw new Error(
+          errorData.message || "Erreur lors de la modification du profil"
+        );
+      }
+
+      // 2. Gérer le changement de rôle et les données spécifiques
+
+      // Si le rôle a changé, supprimer les anciennes données
+      if (formData.role !== userData?.roles_user) {
+        // Supprimer les données étudiant si on passe à un autre rôle
+        if (userData?.student && formData.role !== "student") {
+          const deleteStudentResponse = await fetch(
+            `http://localhost:3004/student/${userData.student.id}`,
+            { method: "DELETE" }
+          );
+          if (!deleteStudentResponse.ok) {
+            const errorData = await deleteStudentResponse.json();
+            throw new Error(
+              errorData.message ||
+                "Erreur lors de la suppression des données étudiant"
+            );
+          }
+        }
+
+        // Supprimer les données conseiller si on passe à un autre rôle
+        if (userData?.advisor && formData.role !== "advisor") {
+          const deleteAdvisorResponse = await fetch(
+            `http://localhost:3004/advisor/${userData.advisor.id}`,
+            { method: "DELETE" }
+          );
+          if (!deleteAdvisorResponse.ok) {
+            const errorData = await deleteAdvisorResponse.json();
+            throw new Error(
+              errorData.message ||
+                "Erreur lors de la suppression des données conseiller"
+            );
+          }
+        }
+      }
+
+      // 3. Mettre à jour ou créer les données selon le nouveau rôle
+      if (formData.role === "student") {
+        // Mettre à jour ou créer les données étudiant
+        if (userData?.student) {
+          // Mettre à jour l'étudiant existant
+          const studentUpdateData = {
+            promotion: formData.promotion,
+            major: formData.major,
+          };
+
+          const studentResponse = await fetch(
+            `http://localhost:3004/student/${userData.student.id}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(studentUpdateData),
+            }
+          );
+
+          if (!studentResponse.ok) {
+            const errorData = await studentResponse.json();
+            throw new Error(
+              errorData.message ||
+                "Erreur lors de la modification de l'étudiant"
+            );
+          }
+        } else {
+          // Créer un nouvel étudiant
+          const studentCreateData = {
+            id_user_profile: userData?.id,
+            promotion: formData.promotion,
+            major: formData.major,
+          };
+
+          const studentResponse = await fetch(`http://localhost:3004/student`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(studentCreateData),
+          });
+
+          if (!studentResponse.ok) {
+            const errorData = await studentResponse.json();
+            throw new Error(
+              errorData.message || "Erreur lors de la création de l'étudiant"
+            );
+          }
+        }
+      } else if (formData.role === "advisor") {
+        // Mettre à jour ou créer les données conseiller
+        if (userData?.advisor) {
+          // Mettre à jour le conseiller existant
+          const advisorUpdateData = {
+            specialty: formData.major,
+            room: formData.room,
+            availibity: formData.availability, // Note: API utilise "availibity" (faute d'orthographe)
+          };
+
+          const advisorResponse = await fetch(
+            `http://localhost:3004/advisor/${userData.advisor.id}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(advisorUpdateData),
+            }
+          );
+
+          if (!advisorResponse.ok) {
+            const errorData = await advisorResponse.json();
+            throw new Error(
+              errorData.message ||
+                "Erreur lors de la modification du conseiller"
+            );
+          }
+        } else {
+          // Créer un nouveau conseiller
+          const advisorCreateData = {
+            id_user_profile: userData?.id,
+            specialty: formData.major,
+            room: formData.room,
+            availibity: formData.availability, // Note: API utilise "availibity" (faute d'orthographe)
+          };
+
+          const advisorResponse = await fetch(`http://localhost:3004/advisor`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(advisorCreateData),
+          });
+
+          if (!advisorResponse.ok) {
+            const errorData = await advisorResponse.json();
+            throw new Error(
+              errorData.message || "Erreur lors de la création du conseiller"
+            );
+          }
+        }
+      }
+
+      // 4. Mettre à jour l'utilisateur (email et mot de passe si nécessaire)
+      if (
+        userData?.id_user &&
+        (formData.email !== userData?.originalEmail ||
+          (isPasswordChange && formData.password))
+      ) {
+        const userUpdateData: any = {};
+
+        // Ajouter l'email si il a changé
+        if (formData.email !== userData?.originalEmail) {
+          userUpdateData.email = formData.email;
+        }
+
+        // Ajouter le mot de passe si il a changé
+        if (isPasswordChange && formData.password) {
+          userUpdateData.password = formData.password;
+        }
+
+        // Faire l'appel API seulement si il y a des données à mettre à jour
+        if (Object.keys(userUpdateData).length > 0) {
+          const userId = userData?.id_user;
+          if (!userId) {
+            throw new Error("ID utilisateur non trouvé pour la modification");
+          }
+
+          const userResponse = await fetch(
+            `http://localhost:3001/users/${userId}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(userUpdateData),
+            }
+          );
+
+          if (!userResponse.ok) {
+            const errorData = await userResponse.json();
+            throw new Error(
+              errorData.message ||
+                "Erreur lors de la modification de l'utilisateur"
+            );
+          }
+        }
+      }
 
       // Redirection vers la page admin avec message de succès
       router.push("/admin/users/dashboard?message=user_updated");
     } catch (error) {
-      console.error("Erreur:", error);
-      setErrors({ email: "Erreur lors de la modification de l'utilisateur" });
+      console.error("Erreur lors de la modification:", error);
+      setErrors({
+        email:
+          error instanceof Error
+            ? error.message
+            : "Erreur lors de la modification de l'utilisateur",
+      });
     } finally {
       setIsSaving(false);
     }

@@ -30,6 +30,14 @@ interface Medal {
   description: string;
 }
 
+interface Resource {
+  name: string;
+  url: string;
+  description: string;
+  category: "kickoff" | "bootstrap" | "project";
+  file?: File;
+}
+
 interface CreateFormData {
   name: string;
   description: string;
@@ -43,6 +51,9 @@ interface CreateFormData {
   documentationName: string;
   documentationUrl: string;
   medals: Medal[];
+  resources: Resource[];
+  hotTopics: string;
+  skills: string;
   is_active: boolean;
 }
 
@@ -61,6 +72,28 @@ export default function CreateProjectPage() {
     documentationName: "",
     documentationUrl: "",
     medals: [{ name: "", description: "" }],
+    resources: [
+      {
+        name: "Documentation Kick Off",
+        url: "",
+        description: "Documentation pour la phase de lancement",
+        category: "kickoff",
+      },
+      {
+        name: "Documentation Bootstrap",
+        url: "",
+        description: "Documentation pour la phase de préparation",
+        category: "bootstrap",
+      },
+      {
+        name: "Documentation Projet",
+        url: "",
+        description: "Documentation pour la phase de développement",
+        category: "project",
+      },
+    ],
+    hotTopics: "",
+    skills: "",
     is_active: true,
   });
   const [saving, setSaving] = useState(false);
@@ -161,6 +194,46 @@ export default function CreateProjectPage() {
     }));
   };
 
+  // Gestion des ressources
+  const addResource = (category: "kickoff" | "bootstrap" | "project") => {
+    setFormData((prev) => ({
+      ...prev,
+      resources: [
+        ...prev.resources,
+        { name: "", url: "", description: "", category },
+      ],
+    }));
+  };
+
+  const removeResource = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      resources: prev.resources.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateResource = (
+    index: number,
+    field: "name" | "url" | "description",
+    value: string
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      resources: prev.resources.map((resource, i) =>
+        i === index ? { ...resource, [field]: value } : resource
+      ),
+    }));
+  };
+
+  const updateResourceFile = (index: number, file: File) => {
+    setFormData((prev) => ({
+      ...prev,
+      resources: prev.resources.map((resource, i) =>
+        i === index ? { ...resource, file } : resource
+      ),
+    }));
+  };
+
   // Validation du formulaire
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
@@ -230,6 +303,9 @@ export default function CreateProjectPage() {
         medals: formData.medals.filter(
           (medal) => medal.name.trim() && medal.description.trim()
         ),
+        resources: formData.resources,
+        hotTopics: formData.hotTopics,
+        skills: formData.skills,
         is_active: formData.is_active,
       };
 
@@ -399,6 +475,475 @@ export default function CreateProjectPage() {
             </div>
           </div>
 
+          {/* Section Ressources par catégorie */}
+          <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl p-6 border-2 border-emerald-200/50">
+            <h3 className="text-xl font-bold text-emerald-900 flex items-center gap-3 mb-6">
+              <div className="p-2 bg-gradient-to-br from-emerald-200 to-emerald-300 rounded-xl">
+                <FileText className="w-5 h-5 text-emerald-700" />
+              </div>
+              Ressources du projet
+            </h3>
+            <div className="space-y-8">
+              {/* Kick Off Resources */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-emerald-800 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                  Kick Off
+                </h4>
+                <div className="space-y-4">
+                  {formData.resources
+                    .filter((resource) => resource.category === "kickoff")
+                    .map((resource, index) => {
+                      const globalIndex = formData.resources.findIndex(
+                        (r) => r === resource
+                      );
+                      return (
+                        <div
+                          key={globalIndex}
+                          className="space-y-3 p-4 border-2 border-orange-200 rounded-xl bg-orange-50/50 group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-sm font-semibold text-orange-900">
+                              Ressource Kick Off {index + 1}
+                            </h5>
+                            <Button
+                              type="button"
+                              onClick={() => removeResource(globalIndex)}
+                              className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="group">
+                              <label className="block text-sm font-semibold text-orange-900 mb-2 group-hover:text-orange-700 transition-colors duration-300 cursor-pointer">
+                                Nom de la ressource *
+                              </label>
+                              <input
+                                type="text"
+                                value={resource.name}
+                                onChange={(e) =>
+                                  updateResource(
+                                    globalIndex,
+                                    "name",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 bg-white text-orange-900 placeholder-orange-400 transition-all duration-300 hover:border-orange-400 hover:shadow-md focus:shadow-lg cursor-text"
+                                placeholder="Ex: Documentation Kick Off"
+                                required
+                              />
+                            </div>
+
+                            <div className="group">
+                              <label className="block text-sm font-semibold text-orange-900 mb-2 group-hover:text-orange-700 transition-colors duration-300 cursor-pointer">
+                                URL de la ressource
+                              </label>
+                              <input
+                                type="url"
+                                value={resource.url}
+                                onChange={(e) =>
+                                  updateResource(
+                                    globalIndex,
+                                    "url",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 bg-white text-orange-900 placeholder-orange-400 transition-all duration-300 hover:border-orange-400 hover:shadow-md focus:shadow-lg cursor-text"
+                                placeholder="https://..."
+                              />
+                            </div>
+
+                            <div className="group">
+                              <label className="block text-sm font-semibold text-orange-900 mb-2 group-hover:text-orange-700 transition-colors duration-300 cursor-pointer">
+                                Fichier de la ressource
+                              </label>
+                              <input
+                                type="file"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    updateResourceFile(globalIndex, file);
+                                  }
+                                }}
+                                accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif"
+                                className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 bg-white text-orange-900 transition-all duration-300 hover:border-orange-400 hover:shadow-md focus:shadow-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-700 file:cursor-pointer"
+                              />
+                              {resource.file && (
+                                <p className="text-xs text-orange-600 mt-1">
+                                  Fichier sélectionné : {resource.file.name}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="group">
+                              <label className="block text-sm font-semibold text-orange-900 mb-2 group-hover:text-orange-700 transition-colors duration-300 cursor-pointer">
+                                Type de fichier accepté
+                              </label>
+                              <div className="px-4 py-3 border-2 border-orange-200 rounded-xl bg-orange-50/30 text-orange-700 text-xs">
+                                PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
+                              </div>
+                            </div>
+
+                            <div className="group md:col-span-2">
+                              <label className="block text-sm font-semibold text-orange-900 mb-2 group-hover:text-orange-700 transition-colors duration-300 cursor-pointer">
+                                Description de la ressource *
+                              </label>
+                              <textarea
+                                value={resource.description}
+                                onChange={(e) =>
+                                  updateResource(
+                                    globalIndex,
+                                    "description",
+                                    e.target.value
+                                  )
+                                }
+                                rows={2}
+                                className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 bg-white text-orange-900 placeholder-orange-400 transition-all duration-300 hover:border-orange-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
+                                placeholder="Description de la ressource..."
+                                required
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+                <div className="flex justify-center">
+                  <AdminButton
+                    type="button"
+                    onClick={() => addResource("kickoff")}
+                  >
+                    <Plus className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+                    Ajouter une ressource Kick Off
+                  </AdminButton>
+                </div>
+              </div>
+
+              {/* Bootstrap Resources */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-emerald-800 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  Bootstrap
+                </h4>
+                <div className="space-y-4">
+                  {formData.resources
+                    .filter((resource) => resource.category === "bootstrap")
+                    .map((resource, index) => {
+                      const globalIndex = formData.resources.findIndex(
+                        (r) => r === resource
+                      );
+                      return (
+                        <div
+                          key={globalIndex}
+                          className="space-y-3 p-4 border-2 border-blue-200 rounded-xl bg-blue-50/50 group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-sm font-semibold text-blue-900">
+                              Ressource Bootstrap {index + 1}
+                            </h5>
+                            <Button
+                              type="button"
+                              onClick={() => removeResource(globalIndex)}
+                              className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="group">
+                              <label className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer">
+                                Nom de la ressource *
+                              </label>
+                              <input
+                                type="text"
+                                value={resource.name}
+                                onChange={(e) =>
+                                  updateResource(
+                                    globalIndex,
+                                    "name",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 placeholder-blue-400 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-text"
+                                placeholder="Ex: Documentation Bootstrap"
+                                required
+                              />
+                            </div>
+
+                            <div className="group">
+                              <label className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer">
+                                URL de la ressource
+                              </label>
+                              <input
+                                type="url"
+                                value={resource.url}
+                                onChange={(e) =>
+                                  updateResource(
+                                    globalIndex,
+                                    "url",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 placeholder-blue-400 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-text"
+                                placeholder="https://..."
+                              />
+                            </div>
+
+                            <div className="group">
+                              <label className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer">
+                                Fichier de la ressource
+                              </label>
+                              <input
+                                type="file"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    updateResourceFile(globalIndex, file);
+                                  }
+                                }}
+                                accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif"
+                                className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer"
+                              />
+                              {resource.file && (
+                                <p className="text-xs text-blue-600 mt-1">
+                                  Fichier sélectionné : {resource.file.name}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="group">
+                              <label className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer">
+                                Type de fichier accepté
+                              </label>
+                              <div className="px-4 py-3 border-2 border-blue-200 rounded-xl bg-blue-50/30 text-blue-700 text-xs">
+                                PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
+                              </div>
+                            </div>
+
+                            <div className="group md:col-span-2">
+                              <label className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer">
+                                Description de la ressource *
+                              </label>
+                              <textarea
+                                value={resource.description}
+                                onChange={(e) =>
+                                  updateResource(
+                                    globalIndex,
+                                    "description",
+                                    e.target.value
+                                  )
+                                }
+                                rows={2}
+                                className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 placeholder-blue-400 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
+                                placeholder="Description de la ressource..."
+                                required
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+                <div className="flex justify-center">
+                  <AdminButton
+                    type="button"
+                    onClick={() => addResource("bootstrap")}
+                  >
+                    <Plus className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+                    Ajouter une ressource Bootstrap
+                  </AdminButton>
+                </div>
+              </div>
+
+              {/* Project Resources */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-emerald-800 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  Projet
+                </h4>
+                <div className="space-y-4">
+                  {formData.resources
+                    .filter((resource) => resource.category === "project")
+                    .map((resource, index) => {
+                      const globalIndex = formData.resources.findIndex(
+                        (r) => r === resource
+                      );
+                      return (
+                        <div
+                          key={globalIndex}
+                          className="space-y-3 p-4 border-2 border-green-200 rounded-xl bg-green-50/50 group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-sm font-semibold text-green-900">
+                              Ressource Projet {index + 1}
+                            </h5>
+                            <Button
+                              type="button"
+                              onClick={() => removeResource(globalIndex)}
+                              className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="group">
+                              <label className="block text-sm font-semibold text-green-900 mb-2 group-hover:text-green-700 transition-colors duration-300 cursor-pointer">
+                                Nom de la ressource *
+                              </label>
+                              <input
+                                type="text"
+                                value={resource.name}
+                                onChange={(e) =>
+                                  updateResource(
+                                    globalIndex,
+                                    "name",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 bg-white text-green-900 placeholder-green-400 transition-all duration-300 hover:border-green-400 hover:shadow-md focus:shadow-lg cursor-text"
+                                placeholder="Ex: Documentation Projet"
+                                required
+                              />
+                            </div>
+
+                            <div className="group">
+                              <label className="block text-sm font-semibold text-green-900 mb-2 group-hover:text-green-700 transition-colors duration-300 cursor-pointer">
+                                URL de la ressource
+                              </label>
+                              <input
+                                type="url"
+                                value={resource.url}
+                                onChange={(e) =>
+                                  updateResource(
+                                    globalIndex,
+                                    "url",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 bg-white text-green-900 placeholder-green-400 transition-all duration-300 hover:border-green-400 hover:shadow-md focus:shadow-lg cursor-text"
+                                placeholder="https://..."
+                              />
+                            </div>
+
+                            <div className="group">
+                              <label className="block text-sm font-semibold text-green-900 mb-2 group-hover:text-green-700 transition-colors duration-300 cursor-pointer">
+                                Fichier de la ressource
+                              </label>
+                              <input
+                                type="file"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    updateResourceFile(globalIndex, file);
+                                  }
+                                }}
+                                accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif"
+                                className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 bg-white text-green-900 transition-all duration-300 hover:border-green-400 hover:shadow-md focus:shadow-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700 file:cursor-pointer"
+                              />
+                              {resource.file && (
+                                <p className="text-xs text-green-600 mt-1">
+                                  Fichier sélectionné : {resource.file.name}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="group">
+                              <label className="block text-sm font-semibold text-green-900 mb-2 group-hover:text-green-700 transition-colors duration-300 cursor-pointer">
+                                Type de fichier accepté
+                              </label>
+                              <div className="px-4 py-3 border-2 border-green-200 rounded-xl bg-green-50/30 text-green-700 text-xs">
+                                PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
+                              </div>
+                            </div>
+
+                            <div className="group md:col-span-2">
+                              <label className="block text-sm font-semibold text-green-900 mb-2 group-hover:text-green-700 transition-colors duration-300 cursor-pointer">
+                                Description de la ressource *
+                              </label>
+                              <textarea
+                                value={resource.description}
+                                onChange={(e) =>
+                                  updateResource(
+                                    globalIndex,
+                                    "description",
+                                    e.target.value
+                                  )
+                                }
+                                rows={2}
+                                className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 bg-white text-green-900 placeholder-green-400 transition-all duration-300 hover:border-green-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
+                                placeholder="Description de la ressource..."
+                                required
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+                <div className="flex justify-center">
+                  <AdminButton
+                    type="button"
+                    onClick={() => addResource("project")}
+                  >
+                    <Plus className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+                    Ajouter une ressource Projet
+                  </AdminButton>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section Hot Topics et Compétences */}
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-6 border-2 border-amber-200/50">
+            <h3 className="text-xl font-bold text-amber-900 flex items-center gap-3 mb-6">
+              <div className="p-2 bg-gradient-to-br from-amber-200 to-amber-300 rounded-xl">
+                <CheckSquare className="w-5 h-5 text-amber-700" />
+              </div>
+              Hot Topics et Compétences
+            </h3>
+            <div className="space-y-6">
+              <div className="group">
+                <label
+                  htmlFor="hotTopics"
+                  className="block text-sm font-semibold text-amber-900 mb-2 group-hover:text-amber-700 transition-colors duration-300 cursor-pointer"
+                >
+                  Hot Topics
+                </label>
+                <textarea
+                  id="hotTopics"
+                  name="hotTopics"
+                  value={formData.hotTopics}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-100 focus:border-amber-500 bg-white text-amber-900 placeholder-amber-400 transition-all duration-300 hover:border-amber-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
+                  placeholder="Ex: Intelligence artificielle, Blockchain, Cloud Computing..."
+                />
+              </div>
+
+              <div className="group">
+                <label
+                  htmlFor="skills"
+                  className="block text-sm font-semibold text-amber-900 mb-2 group-hover:text-amber-700 transition-colors duration-300 cursor-pointer"
+                >
+                  Compétences mobilisées
+                </label>
+                <textarea
+                  id="skills"
+                  name="skills"
+                  value={formData.skills}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl focus:ring-4 focus:ring-amber-100 focus:border-amber-500 bg-white text-amber-900 placeholder-amber-400 transition-all duration-300 hover:border-amber-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
+                  placeholder="Ex: React, Node.js, Python, Machine Learning..."
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Section Équipe */}
           <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-2xl p-6 border-2 border-purple-200/50">
             <h3 className="text-xl font-bold text-purple-900 flex items-center gap-3 mb-6">
@@ -424,71 +969,6 @@ export default function CreateProjectPage() {
                   className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-4 focus:ring-purple-100 focus:border-purple-500 bg-white text-purple-900 placeholder-purple-400 transition-all duration-300 hover:border-purple-400 hover:shadow-md focus:shadow-lg cursor-text"
                   placeholder="Ex: 5 développeurs"
                   required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section Documentation */}
-          <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-6 border-2 border-orange-200/50">
-            <h3 className="text-xl font-bold text-orange-900 flex items-center gap-3 mb-6">
-              <div className="p-2 bg-gradient-to-br from-orange-200 to-orange-300 rounded-xl">
-                <FileText className="w-5 h-5 text-orange-700" />
-              </div>
-              Documentation
-            </h3>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="group">
-                  <label
-                    htmlFor="documentationName"
-                    className="block text-sm font-semibold text-orange-900 mb-2 group-hover:text-orange-700 transition-colors duration-300 cursor-pointer"
-                  >
-                    Nom du document
-                  </label>
-                  <input
-                    type="text"
-                    id="documentationName"
-                    name="documentationName"
-                    value={formData.documentationName}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 bg-white text-orange-900 placeholder-orange-400 transition-all duration-300 hover:border-orange-400 hover:shadow-md focus:shadow-lg cursor-text"
-                    placeholder="Ex: Spécifications du projet"
-                  />
-                </div>
-
-                <div className="group">
-                  <label
-                    htmlFor="documentationFile"
-                    className="block text-sm font-semibold text-orange-900 mb-2 group-hover:text-orange-700 transition-colors duration-300 cursor-pointer"
-                  >
-                    Fichier de documentation
-                  </label>
-                  <input
-                    type="file"
-                    id="documentationFile"
-                    name="documentationFile"
-                    accept=".pdf,.doc,.docx,.txt"
-                    className="w-full px-4 py-1.5 border-2 border-orange-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 bg-white text-orange-900 transition-all duration-300 hover:border-orange-400 hover:shadow-md focus:shadow-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-700 file:cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              <div className="group">
-                <label
-                  htmlFor="documentationUrl"
-                  className="block text-sm font-semibold text-orange-900 mb-2 group-hover:text-orange-700 transition-colors duration-300 cursor-pointer"
-                >
-                  URL du document (optionnel)
-                </label>
-                <input
-                  type="url"
-                  id="documentationUrl"
-                  name="documentationUrl"
-                  value={formData.documentationUrl}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 bg-white text-orange-900 placeholder-orange-400 transition-all duration-300 hover:border-orange-400 hover:shadow-md focus:shadow-lg cursor-text"
-                  placeholder="https://..."
                 />
               </div>
             </div>

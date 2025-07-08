@@ -23,6 +23,8 @@ import {
   User,
   Clock,
   Home,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import Header from "@/components/Header/Header";
 import { Button } from "@/components/ui/button";
@@ -38,6 +40,7 @@ import AdminLoading from "@/components/admin/AdminLoading";
 // Interface pour les données utilisateur dans le contexte admin
 interface AdminUser {
   id: string;
+  id_user: string; // UUID de l'utilisateur dans la table user
   first_name: string;
   last_name: string;
   email: string;
@@ -47,14 +50,16 @@ interface AdminUser {
   roles_user: string;
   profileImage?: string;
   student?: {
+    id: number;
     student_number: string;
     promotion: string;
     major: string;
   };
   advisor?: {
+    id: number;
     major: string;
     room: string;
-    availability: string;
+    availability: string; // Note: API utilise "availibity" mais on garde "availability" pour la cohérence
   };
 }
 
@@ -73,6 +78,10 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+  const [displayedUsers, setDisplayedUsers] = useState<number>(10);
 
   // Références pour les dropdowns
   const promotionDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -110,6 +119,12 @@ export default function AdminDashboard() {
         ? await advisorsResponse.json()
         : { success: false, data: [] };
 
+      // Récupérer tous les utilisateurs pour avoir les emails
+      const usersResponse = await fetch("http://localhost:3001/users");
+      const usersData = usersResponse.ok
+        ? await usersResponse.json()
+        : { success: false, data: [] };
+
       // Combiner les données
       const usersWithDetails = profilesData.data.map((profile: any) => {
         const student = studentsData.success
@@ -120,26 +135,33 @@ export default function AdminDashboard() {
           ? advisorsData.data.find((a: any) => a.id_user_profile === profile.id)
           : null;
 
-        // Correction : si le profil a un étudiant lié, on force le rôle à 'student'
-        let role = profile.roles_user;
-        if (student) {
-          role = "student";
-        } else if (advisor) {
-          role = "advisor";
-        }
+        // Récupérer l'email depuis la table user
+        const user = usersData.success
+          ? usersData.data.find((u: any) => u.id === profile.id_user)
+          : null;
+
+        // Utiliser le rôle réel stocké dans la base de données
+        const role = profile.roles_user;
 
         return {
           id: profile.id,
+          id_user: profile.id_user, // UUID de l'utilisateur
           first_name: profile.first_name,
           last_name: profile.last_name,
-          email: profile.email,
+          email: user ? user.email : profile.email, // Email depuis la table user
           phone: profile.phone,
           address: profile.address,
           campus: profile.campus,
           roles_user: role,
           profileImage: profile.profileImage,
           ...(student && { student }),
-          ...(advisor && { advisor }),
+          ...(advisor && {
+            advisor: {
+              ...advisor,
+              major: advisor.specialty || advisor.major || "", // Gérer les deux noms de champ
+              availability: advisor.availibity || advisor.availability || "", // Gérer les deux noms de champ
+            },
+          }),
         };
       });
 
@@ -166,6 +188,7 @@ export default function AdminDashboard() {
         const response = await fetch(
           `http://localhost:3004/profile/user/${userId}`
         );
+        console.log("userId!!!!!!!!!!bastian", userId);
         if (response.ok) {
           const userData = await response.json();
           if (userData.success && userData.data) {
@@ -197,6 +220,19 @@ export default function AdminDashboard() {
 
     checkAccessAndLoadData();
   }, [router]);
+
+  // Recharger les données quand on revient sur la page (après modification)
+  React.useEffect(() => {
+    const handleFocus = () => {
+      // Recharger les données quand la page reprend le focus
+      fetchAllUsers();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
 
   // Gestionnaire de clic à l'extérieur pour fermer les dropdowns
   React.useEffect(() => {
@@ -377,6 +413,95 @@ export default function AdminDashboard() {
     }, 300); // Durée de l'animation
   };
 
+  // Affiche la popup quand userToDelete change
+  React.useEffect(() => {
+    if (userToDelete) {
+      setIsModalVisible(true);
+    }
+  }, [userToDelete]);
+
+  // Fonction pour fermer la popup avec animation
+  const closeModal = () => {
+    setIsModalVisible(false);
+    setTimeout(() => {
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+    }, 300); // Durée de l'animation
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      // 1. Supprimer les données spécifiques au rôle
+      if (userToDelete.student) {
+        const studentResponse = await fetch(
+          `http://localhost:3004/student/${userToDelete.student.id}`,
+          { method: "DELETE" }
+        );
+        if (!studentResponse.ok) {
+          const errorData = await studentResponse.json();
+          throw new Error(
+            errorData.message || "Erreur lors de la suppression de l'étudiant"
+          );
+        }
+      }
+
+      if (userToDelete.advisor) {
+        const advisorResponse = await fetch(
+          `http://localhost:3004/advisor/${userToDelete.advisor.id}`,
+          { method: "DELETE" }
+        );
+        if (!advisorResponse.ok) {
+          const errorData = await advisorResponse.json();
+          throw new Error(
+            errorData.message || "Erreur lors de la suppression du conseiller"
+          );
+        }
+      }
+
+      // 2. Supprimer le profil utilisateur
+      const profileResponse = await fetch(
+        `http://localhost:3004/profile/${userToDelete.id}`,
+        { method: "DELETE" }
+      );
+      if (!profileResponse.ok) {
+        const errorData = await profileResponse.json();
+        throw new Error(
+          errorData.message || "Erreur lors de la suppression du profil"
+        );
+      }
+
+      // 3. Supprimer l'utilisateur
+      const userResponse = await fetch(
+        `http://localhost:3001/users/${userToDelete.id_user}`,
+        { method: "DELETE" }
+      );
+      if (!userResponse.ok) {
+        const errorData = await userResponse.json();
+        throw new Error(
+          errorData.message || "Erreur lors de la suppression de l'utilisateur"
+        );
+      }
+
+      // Recharger la liste des utilisateurs
+      await fetchAllUsers();
+
+      // Fermer la modale avec animation
+      closeModal();
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la suppression de l'utilisateur"
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (loading) {
     return <AdminLoading message="Chargement des utilisateurs..." />;
   }
@@ -452,24 +577,26 @@ export default function AdminDashboard() {
       </div>
 
       {/* Filtres et recherche */}
-      <AdminFilterBar
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        selectedPromotion={selectedPromotion}
-        setSelectedPromotion={setSelectedPromotion}
-        promotions={promotions}
-        selectedSecond={selectedRole}
-        setSelectedSecond={setSelectedRole}
-        seconds={roles}
-        secondLabel="Rôle"
-        secondPlaceholder="Tous les rôles"
-        promotionDropdownRef={promotionDropdownRef}
-        secondDropdownRef={roleDropdownRef}
-        promotionDropdownOpen={promotionDropdownOpen}
-        setPromotionDropdownOpen={setPromotionDropdownOpen}
-        secondDropdownOpen={roleDropdownOpen}
-        setSecondDropdownOpen={setRoleDropdownOpen}
-      />
+      <div className="mb-6">
+        <AdminFilterBar
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          selectedPromotion={selectedPromotion}
+          setSelectedPromotion={setSelectedPromotion}
+          promotions={promotions}
+          selectedSecond={selectedRole}
+          setSelectedSecond={setSelectedRole}
+          seconds={roles}
+          secondLabel="Rôle"
+          secondPlaceholder="Tous les rôles"
+          promotionDropdownRef={promotionDropdownRef}
+          secondDropdownRef={roleDropdownRef}
+          promotionDropdownOpen={promotionDropdownOpen}
+          setPromotionDropdownOpen={setPromotionDropdownOpen}
+          secondDropdownOpen={roleDropdownOpen}
+          setSecondDropdownOpen={setRoleDropdownOpen}
+        />
+      </div>
 
       {/* Tableau des utilisateurs */}
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-blue-200/50">
@@ -481,6 +608,7 @@ export default function AdminDashboard() {
             Liste des utilisateurs
           </h2>
         </div>
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gradient-to-r from-blue-50 to-blue-100">
@@ -516,7 +644,7 @@ export default function AdminDashboard() {
                   onClick={() => handleSort("promotion")}
                 >
                   <div className="flex items-center gap-2">
-                    Promotion
+                    Promo/Spé
                     {sortBy === "promotion" && (
                       <span className="text-blue-600 font-bold">
                         {sortOrder === "asc" ? "↑" : "↓"}
@@ -541,21 +669,21 @@ export default function AdminDashboard() {
                   key={user.id}
                   className="hover:bg-blue-100/80 transition-all duration-300 cursor-pointer group"
                 >
-                  <td className="px-8 py-6 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-14 w-14">
+                      <div className="flex-shrink-0 h-12 w-12">
                         <img
-                          className="h-14 w-14 rounded-full border-3 border-blue-200 group-hover:border-blue-400 transition-all duration-300 shadow-lg group-hover:shadow-xl"
+                          className="h-12 w-12 rounded-full border-2 border-blue-200 group-hover:border-blue-400 transition-all duration-300 shadow-lg group-hover:shadow-xl"
                           src={user.profileImage || "/images/Avatar.png"}
                           alt={`${user.first_name} ${user.last_name}`}
                         />
                       </div>
-                      <div className="ml-4">
-                        <div className="text-base font-semibold text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
+                      <div className="ml-3">
+                        <div className="text-sm font-semibold text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
                           {user.first_name} {user.last_name}
                         </div>
                         {user.student?.student_number && (
-                          <div className="text-sm text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
+                          <div className="text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
                             {user.student.student_number}
                           </div>
                         )}
@@ -576,9 +704,14 @@ export default function AdminDashboard() {
                     <div className="text-sm font-medium text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
                       {user.student?.promotion || "-"}
                     </div>
-                    {user.student?.major && (
+                    {user.roles_user === "student" && user.student?.major && (
                       <div className="text-sm text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
                         {user.student.major}
+                      </div>
+                    )}
+                    {user.roles_user === "advisor" && user.advisor?.major && (
+                      <div className="text-sm text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
+                        {user.advisor.major}
                       </div>
                     )}
                   </td>
@@ -620,13 +753,13 @@ export default function AdminDashboard() {
                       </div>
                     )}
                   </td>
-                  <td className="px-8 py-6 whitespace-nowrap text-sm font-medium">
-                    <div className="flex gap-3">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex gap-2">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleViewUser(user)}
-                        className="group/btn border-2 border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-4 py-2 rounded-xl hover:scale-105 cursor-pointer"
+                        className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
                       >
                         Voir
                       </Button>
@@ -636,9 +769,20 @@ export default function AdminDashboard() {
                         onClick={() =>
                           router.push(`/admin/users/edit/${user.id}`)
                         }
-                        className="group/btn border-2 border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-4 py-2 rounded-xl hover:scale-105 cursor-pointer"
+                        className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
                       >
                         Modifier
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setUserToDelete(user);
+                          setShowDeleteModal(true);
+                        }}
+                        className="group/btn border border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
+                      >
+                        <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
                   </td>
@@ -650,29 +794,31 @@ export default function AdminDashboard() {
 
         {/* Message si aucun utilisateur trouvé */}
         {filteredAndSortedUsers.length === 0 && (
-          <div className="text-center py-16">
-            <div className="p-6 bg-gradient-to-br from-blue-100 to-blue-200 rounded-3xl inline-block mb-6">
-              <Users size={64} className="text-blue-600" />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="p-6 bg-gradient-to-br from-blue-100 to-blue-200 rounded-3xl inline-block mb-6">
+                <Users size={48} className="text-blue-600" />
+              </div>
+              <p className="text-blue-800 text-lg font-semibold mb-2">
+                {searchTerm ||
+                selectedPromotion !== "all" ||
+                selectedRole !== "all"
+                  ? "Aucun utilisateur ne correspond aux critères de recherche"
+                  : "Aucun utilisateur trouvé"}
+              </p>
+              <p className="text-blue-600 text-sm">
+                Essayez de modifier vos filtres de recherche
+              </p>
             </div>
-            <p className="text-blue-800 text-xl font-semibold mb-2">
-              {searchTerm ||
-              selectedPromotion !== "all" ||
-              selectedRole !== "all"
-                ? "Aucun utilisateur ne correspond aux critères de recherche"
-                : "Aucun utilisateur trouvé"}
-            </p>
-            <p className="text-blue-600 text-sm">
-              Essayez de modifier vos filtres de recherche
-            </p>
           </div>
         )}
       </div>
 
       {/* Résumé des résultats */}
-      <div className="mt-8 text-center">
-        <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full">
+      <div className="mt-4 text-center">
+        <div className="inline-flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full">
           <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-          <span className="text-blue-800 font-semibold">
+          <span className="text-blue-800 font-semibold text-sm">
             {filteredAndSortedUsers.length} utilisateur(s) trouvé(s) sur{" "}
             {allUsers.length} total
           </span>
@@ -812,71 +958,73 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Informations spécifiques aux étudiants */}
-                  {selectedUser.student && (
-                    <>
-                      <div className="flex items-center gap-3">
-                        <Calendar size={16} className="text-blue-500" />
-                        <div>
-                          <p className="text-sm text-blue-600 font-medium">
-                            Promotion
-                          </p>
-                          <p className="text-blue-900">
-                            {selectedUser.student.promotion}
-                          </p>
+                  {selectedUser.roles_user === "student" &&
+                    selectedUser.student && (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <Calendar size={16} className="text-blue-500" />
+                          <div>
+                            <p className="text-sm text-blue-600 font-medium">
+                              Promotion
+                            </p>
+                            <p className="text-blue-900">
+                              {selectedUser.student.promotion}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <BookOpen size={16} className="text-blue-500" />
-                        <div>
-                          <p className="text-sm text-blue-600 font-medium">
-                            Spécialité
-                          </p>
-                          <p className="text-blue-900">
-                            {selectedUser.student.major}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <BookOpen size={16} className="text-blue-500" />
+                          <div>
+                            <p className="text-sm text-blue-600 font-medium">
+                              Spécialité
+                            </p>
+                            <p className="text-blue-900">
+                              {selectedUser.student.major}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
 
                   {/* Informations spécifiques aux conseillers */}
-                  {selectedUser.advisor && (
-                    <>
-                      <div className="flex items-center gap-3">
-                        <Building size={16} className="text-blue-500" />
-                        <div>
-                          <p className="text-sm text-blue-600 font-medium">
-                            Salle
-                          </p>
-                          <p className="text-blue-900">
-                            {selectedUser.advisor.room}
-                          </p>
+                  {selectedUser.roles_user === "advisor" &&
+                    selectedUser.advisor && (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <Building size={16} className="text-blue-500" />
+                          <div>
+                            <p className="text-sm text-blue-600 font-medium">
+                              Salle
+                            </p>
+                            <p className="text-blue-900">
+                              {selectedUser.advisor.room}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Clock size={16} className="text-blue-500" />
-                        <div>
-                          <p className="text-sm text-blue-600 font-medium">
-                            Disponibilité
-                          </p>
-                          <p className="text-blue-900">
-                            {selectedUser.advisor.availability}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <Clock size={16} className="text-blue-500" />
+                          <div>
+                            <p className="text-sm text-blue-600 font-medium">
+                              Disponibilité
+                            </p>
+                            <p className="text-blue-900">
+                              {selectedUser.advisor.availability}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <BookOpen size={16} className="text-blue-500" />
-                        <div>
-                          <p className="text-sm text-blue-600 font-medium">
-                            Spécialité
-                          </p>
-                          <p className="text-blue-900">
-                            {selectedUser.advisor.major}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <BookOpen size={16} className="text-blue-500" />
+                          <div>
+                            <p className="text-sm text-blue-600 font-medium">
+                              Spécialité
+                            </p>
+                            <p className="text-blue-900">
+                              {selectedUser.advisor.major}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
                 </div>
               </div>
 
@@ -898,6 +1046,74 @@ export default function AdminDashboard() {
                   Modifier l'utilisateur
                 </AdminButton>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modale de confirmation de suppression */}
+      {showDeleteModal && userToDelete && (
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
+            isModalVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+          style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
+        >
+          <div
+            className={`bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative transform transition-all duration-300 ${
+              isModalVisible
+                ? "opacity-100 translate-y-0 scale-100"
+                : "opacity-0 translate-y-8 scale-95"
+            }`}
+          >
+            <button
+              className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 transition"
+              onClick={closeModal}
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold text-blue-900 mb-4">
+              Confirmer la suppression
+            </h2>
+            <p className="mb-6 text-blue-800">
+              Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action
+              est irréversible.
+            </p>
+            <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-xl border border-red-200">
+              <p className="font-semibold text-red-900 mb-1">
+                {userToDelete.first_name} {userToDelete.last_name}
+              </p>
+              <p className="text-sm text-red-700">{userToDelete.email}</p>
+              <p className="text-xs text-red-600 mt-1">
+                Rôle : {getRoleLabel(userToDelete.roles_user)}
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <Button
+                onClick={closeModal}
+                variant="outline"
+                className="flex-1 hover:bg-gray-100 text-blue-900 font-semibold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 cursor-pointer flex items-center gap-2 border-2 border-blue-200"
+                disabled={isDeleting}
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleDeleteUser}
+                className="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 cursor-pointer border-0 flex items-center gap-2"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Supprimer
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </div>
