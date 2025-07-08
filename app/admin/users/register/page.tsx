@@ -20,11 +20,13 @@ import {
 import { Button } from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import PasswordInput from "@/components/ui/password-input";
+import PromotionDropdown from "@/components/ui/promotion-dropdown";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 import { useUserData } from "@/hooks/useUserData";
+import usePromotionsData from "@/hooks/usePromotionsData";
 import { getUserIdFromToken } from "@/lib/auth";
 import { getUserProfileData } from "@/lib/userData";
-import { createCompleteUser, NewUserInput, ApiResponse } from '@/lib/userData'
+import { createCompleteUser, NewUserInput, ApiResponse } from "@/lib/userData";
 import AdminLoading from "@/components/admin/AdminLoading";
 
 interface RegisterFormData {
@@ -68,14 +70,24 @@ const RegisterPage = () => {
     promotion: "",
     major: "",
     room: "",
-    availability: ""
+    availability: "",
   });
-  
+
   const [err, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 
+  // Hook pour récupérer les promotions
+  const {
+    promotions,
+    loading: promotionsLoading,
+    error: promotionsError,
+  } = usePromotionsData();
+
   // Fonction pour générer le numéro étudiant
-  const generateStudentNumber = (lastName: string, promotion: string): string => {
+  const generateStudentNumber = (
+    lastName: string,
+    promotion: string
+  ): string => {
     const firstThreeLetters = lastName.toUpperCase().substring(0, 3);
     const promotionUpper = promotion.toUpperCase();
     return `${firstThreeLetters}-${promotionUpper}`;
@@ -84,7 +96,6 @@ const RegisterPage = () => {
   const handleSubmitUser = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    
     if (!validateForm()) {
       return;
     }
@@ -99,31 +110,33 @@ const RegisterPage = () => {
         password: formData.password,
         first_name: formData.first_name,
         last_name: formData.last_name,
-        phone: formData.phone ,
-        address: formData.address ,
-        campus: formData.campus ,
+        phone: formData.phone,
+        address: formData.address,
+        campus: formData.campus,
         is_active: true,
         roles_user: formData.role,
-        promotion:formData.promotion,
-        specialty:formData.specialty,
-        room:formData.room,
-        major:formData.major,
-        availability:formData.availability
+        promotion: formData.promotion,
+        specialty: formData.specialty,
+        room: formData.room,
+        major: formData.major,
+        availability: formData.availability,
       };
 
       // Ajouter les champs spécifiques selon le rôle
       if (formData.role === "student") {
-        apiData.student_number = generateStudentNumber(formData.last_name, formData.promotion || "");
-      
-      } 
+        apiData.student_number = generateStudentNumber(
+          formData.last_name,
+          formData.promotion || ""
+        );
+      }
       await createCompleteUser(apiData);
       setSuccess(true);
-      
+
       // Redirection avec message de succès
       router.push("/admin?message=user_created");
     } catch (error: any) {
       console.error("Erreur lors de la création:", error);
-      setError(error.message || 'Erreur lors de la création du compte');
+      setError(error.message || "Erreur lors de la création du compte");
     } finally {
       setIsSaving(false);
     }
@@ -219,6 +232,21 @@ const RegisterPage = () => {
       setErrors((prev) => ({
         ...prev,
         [name]: undefined,
+      }));
+    }
+  };
+
+  const handlePromotionChange = (promotion: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      promotion,
+    }));
+
+    // Effacer l'erreur du champ promotion
+    if (errors.promotion) {
+      setErrors((prev) => ({
+        ...prev,
+        promotion: undefined,
       }));
     }
   };
@@ -454,14 +482,13 @@ const RegisterPage = () => {
             {/* Champs spécifiques aux étudiants */}
             {formData.role === "student" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Promotion"
-                  icon={GraduationCap}
-                  name="promotion"
-                  value={formData.promotion || ""}
-                  onChange={handleInputChange}
-                  placeholder="MSC2027"
-                  error={errors.promotion}
+                <PromotionDropdown
+                  promotions={promotions}
+                  selectedPromotion={formData.promotion || ""}
+                  onPromotionChange={handlePromotionChange}
+                  loading={promotionsLoading}
+                  error={promotionsError || errors.promotion}
+                  placeholder="Sélectionner une promotion"
                   required
                 />
 
@@ -475,6 +502,19 @@ const RegisterPage = () => {
                   error={errors.major}
                   required
                 />
+              </div>
+            )}
+
+            {/* Message d'erreur pour les promotions */}
+            {formData.role === "student" && promotionsError && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm">
+                  Erreur lors du chargement des promotions : {promotionsError}
+                </p>
+                <p className="text-red-600 text-xs mt-1">
+                  Vous pouvez continuer en saisissant manuellement la promotion
+                  dans le champ spécialité.
+                </p>
               </div>
             )}
 

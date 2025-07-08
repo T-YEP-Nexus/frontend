@@ -1,5 +1,10 @@
 import React from "react";
-import { Search, Filter, ChevronDown } from "lucide-react";
+import { Search, Filter, ChevronDown, Loader2 } from "lucide-react";
+
+interface FilterOption {
+  value: string;
+  label: string;
+}
 
 interface AdminFilterBarProps {
   searchTerm: string;
@@ -7,9 +12,10 @@ interface AdminFilterBarProps {
   selectedPromotion: string;
   setSelectedPromotion: (v: string) => void;
   promotions: string[];
+  promotionsLoading?: boolean;
   selectedSecond: string;
   setSelectedSecond: (v: string) => void;
-  seconds: string[];
+  seconds: (string | FilterOption)[];
   secondLabel: string;
   secondPlaceholder: string;
   promotionDropdownRef: React.RefObject<HTMLDivElement | null>;
@@ -26,6 +32,7 @@ export default function AdminFilterBar({
   selectedPromotion,
   setSelectedPromotion,
   promotions,
+  promotionsLoading = false,
   selectedSecond,
   setSelectedSecond,
   seconds,
@@ -65,8 +72,15 @@ export default function AdminFilterBar({
         {/* Filtre par promotion */}
         <div className="relative" ref={promotionDropdownRef}>
           <div
-            onClick={() => setPromotionDropdownOpen(!promotionDropdownOpen)}
-            className="flex items-center justify-between px-4 py-4 border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm text-blue-900 cursor-pointer transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]"
+            onClick={() =>
+              !promotionsLoading &&
+              setPromotionDropdownOpen(!promotionDropdownOpen)
+            }
+            className={`flex items-center justify-between px-4 py-4 border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm text-blue-900 transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02] ${
+              promotionsLoading
+                ? "cursor-not-allowed opacity-60"
+                : "cursor-pointer"
+            }`}
           >
             <span
               className={
@@ -79,12 +93,16 @@ export default function AdminFilterBar({
                 ? "Toutes les promotions"
                 : selectedPromotion}
             </span>
-            <ChevronDown
-              size={18}
-              className={`text-blue-400 transition-transform duration-300 ${
-                promotionDropdownOpen ? "rotate-180" : ""
-              }`}
-            />
+            {promotionsLoading ? (
+              <Loader2 size={18} className="text-blue-400 animate-spin" />
+            ) : (
+              <ChevronDown
+                size={18}
+                className={`text-blue-400 transition-transform duration-300 ${
+                  promotionDropdownOpen ? "rotate-180" : ""
+                }`}
+              />
+            )}
           </div>
           {promotionDropdownOpen && (
             <div className="absolute z-10 w-full mt-2 bg-white/95 backdrop-blur-md border-2 border-blue-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
@@ -128,7 +146,18 @@ export default function AdminFilterBar({
                   : "text-blue-900 font-medium"
               }
             >
-              {selectedSecond === "all" ? secondPlaceholder : selectedSecond}
+              {selectedSecond === "all"
+                ? secondPlaceholder
+                : (() => {
+                    const selectedRole = seconds.find((role) =>
+                      typeof role === "string"
+                        ? role === selectedSecond
+                        : role.value === selectedSecond
+                    );
+                    return typeof selectedRole === "string"
+                      ? selectedRole
+                      : selectedRole?.label || selectedSecond;
+                  })()}
             </span>
             <ChevronDown
               size={18}
@@ -150,18 +179,23 @@ export default function AdminFilterBar({
                   {secondPlaceholder}
                 </span>
               </div>
-              {seconds.map((item) => (
-                <div
-                  key={item}
-                  onClick={() => {
-                    setSelectedSecond(item);
-                    setSecondDropdownOpen(false);
-                  }}
-                  className="px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors duration-200 border-b border-blue-100 last:border-b-0 last:rounded-b-xl"
-                >
-                  <span className="text-blue-900">{item}</span>
-                </div>
-              ))}
+              {seconds.map((item) => {
+                const value = typeof item === "string" ? item : item.value;
+                const label = typeof item === "string" ? item : item.label;
+
+                return (
+                  <div
+                    key={value}
+                    onClick={() => {
+                      setSelectedSecond(value);
+                      setSecondDropdownOpen(false);
+                    }}
+                    className="px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors duration-200 border-b border-blue-100 last:border-b-0 last:rounded-b-xl"
+                  >
+                    <span className="text-blue-900">{label}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

@@ -29,6 +29,7 @@ import {
 import Header from "@/components/Header/Header";
 import { Button } from "@/components/ui/button";
 import { useUserData } from "@/hooks/useUserData";
+import usePromotionsData from "@/hooks/usePromotionsData";
 import { getUserIdFromToken } from "@/lib/auth";
 import { getUserProfileData } from "@/lib/userData";
 import { useRouter } from "next/navigation";
@@ -36,6 +37,13 @@ import AdminButton from "@/components/admin/buttons/AdminButton";
 import AdminStatCard from "@/components/admin/AdminStatCard";
 import AdminFilterBar from "@/components/admin/AdminFilterBar";
 import AdminLoading from "@/components/admin/AdminLoading";
+
+// Interface pour les promotions
+interface Promotion {
+  id: number;
+  name: string;
+  created_at: string;
+}
 
 // Interface pour les données utilisateur dans le contexte admin
 interface AdminUser {
@@ -89,6 +97,13 @@ export default function AdminDashboard() {
 
   // Utiliser le hook existant pour l'utilisateur connecté
   const { userData: currentUser } = useUserData(getUserIdFromToken());
+
+  // Hook pour récupérer les promotions
+  const {
+    promotions,
+    loading: promotionsLoading,
+    error: promotionsError,
+  } = usePromotionsData();
 
   // Fonction pour récupérer tous les utilisateurs
   const fetchAllUsers = async () => {
@@ -257,18 +272,44 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  // Extraire les promotions uniques
-  const promotions = useMemo(() => {
+  // Extraire les promotions utilisées par les utilisateurs
+  const usedPromotions = useMemo(() => {
     const promoSet = new Set<string>();
     allUsers.forEach((user) => {
       if (user.student?.promotion) {
         promoSet.add(user.student.promotion);
       }
     });
-    return Array.from(promoSet).sort();
+    return Array.from(promoSet);
   }, [allUsers]);
 
-  // Extraire les rôles uniques
+  // Utiliser toutes les promotions de l'API
+  const availablePromotions = useMemo(() => {
+    if (!promotions || promotionsLoading) {
+      return usedPromotions.sort();
+    }
+
+    // Utiliser toutes les promotions de l'API
+    const allPromotions = promotions.map((promo) => promo.name).sort();
+
+    return allPromotions;
+  }, [promotions, promotionsLoading, usedPromotions]);
+
+  // Obtenir le label du rôle
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "student":
+        return "Étudiant";
+      case "advisor":
+        return "Conseiller";
+      case "admin":
+        return "Administrateur";
+      default:
+        return role;
+    }
+  };
+
+  // Extraire les rôles uniques avec leurs labels français
   const roles = useMemo(() => {
     const roleSet = new Set<string>();
     allUsers.forEach((user) => {
@@ -276,7 +317,15 @@ export default function AdminDashboard() {
         roleSet.add(user.roles_user);
       }
     });
-    return Array.from(roleSet).sort();
+
+    // Créer des objets avec label et valeur
+    const roleObjects = Array.from(roleSet).map((role) => ({
+      value: role,
+      label: getRoleLabel(role),
+    }));
+
+    // Trier par label français
+    return roleObjects.sort((a, b) => a.label.localeCompare(b.label));
   }, [allUsers]);
 
   // Filtrer et trier les utilisateurs
@@ -347,6 +396,16 @@ export default function AdminDashboard() {
     sortOrder,
   ]);
 
+  // Utilisateurs à afficher (pagination)
+  const usersToDisplay = useMemo(() => {
+    return filteredAndSortedUsers.slice(0, displayedUsers);
+  }, [filteredAndSortedUsers, displayedUsers]);
+
+  // Fonction pour afficher plus d'utilisateurs
+  const handleShowMore = () => {
+    setDisplayedUsers((prev) => prev + 20);
+  };
+
   // Statistiques
   const stats = useMemo(() => {
     const totalUsers = allUsers.length;
@@ -368,20 +427,6 @@ export default function AdminDashboard() {
         return <Shield size={16} className="text-blue-600" />;
       default:
         return <Users size={16} className="text-blue-600" />;
-    }
-  };
-
-  // Obtenir le label du rôle
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case "student":
-        return "Étudiant";
-      case "advisor":
-        return "Conseiller";
-      case "admin":
-        return "Administrateur";
-      default:
-        return role;
     }
   };
 
@@ -583,7 +628,8 @@ export default function AdminDashboard() {
           setSearchTerm={setSearchTerm}
           selectedPromotion={selectedPromotion}
           setSelectedPromotion={setSelectedPromotion}
-          promotions={promotions}
+          promotions={availablePromotions}
+          promotionsLoading={promotionsLoading}
           selectedSecond={selectedRole}
           setSelectedSecond={setSelectedRole}
           seconds={roles}
@@ -664,7 +710,7 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-blue-200/50">
-              {filteredAndSortedUsers.map((user) => (
+              {usersToDisplay.map((user) => (
                 <tr
                   key={user.id}
                   className="hover:bg-blue-100/80 transition-all duration-300 cursor-pointer group"
@@ -800,6 +846,26 @@ export default function AdminDashboard() {
           </table>
         </div>
 
+        {/* Bouton Afficher plus */}
+        {filteredAndSortedUsers.length > displayedUsers && (
+          <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-blue-100 border-t border-blue-200">
+            <div className="flex justify-center">
+              <Button
+                onClick={handleShowMore}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer border-0 flex items-center gap-2"
+              >
+                <Users size={20} />
+                Afficher plus (
+                {Math.min(
+                  20,
+                  filteredAndSortedUsers.length - displayedUsers
+                )}{" "}
+                de plus)
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Message si aucun utilisateur trouvé */}
         {filteredAndSortedUsers.length === 0 && (
           <div className="flex-1 flex items-center justify-center">
@@ -827,8 +893,8 @@ export default function AdminDashboard() {
         <div className="inline-flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full">
           <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
           <span className="text-blue-800 font-semibold text-sm">
-            {filteredAndSortedUsers.length} utilisateur(s) trouvé(s) sur{" "}
-            {allUsers.length} total
+            {usersToDisplay.length} utilisateur(s) affiché(s) sur{" "}
+            {filteredAndSortedUsers.length} trouvé(s) ({allUsers.length} total)
           </span>
         </div>
       </div>
