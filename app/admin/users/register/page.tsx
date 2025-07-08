@@ -25,6 +25,7 @@ import { useUserData } from "@/hooks/useUserData";
 import { getUserIdFromToken } from "@/lib/auth";
 import { getUserProfileData } from "@/lib/userData";
 import { createCompleteUser, NewUserInput, ApiResponse } from '@/lib/userData'
+import AdminLoading from "@/components/admin/AdminLoading";
 
 interface RegisterFormData {
   first_name: string;
@@ -161,14 +162,7 @@ const RegisterPage = () => {
 
   // Afficher un loader pendant le chargement
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Vérification des droits d'accès...</p>
-        </div>
-      </div>
-    );
+    return <AdminLoading message="Vérification des droits d'accès..." />;
   }
 
   // Ne pas afficher la page si l'utilisateur n'a pas les droits
@@ -291,7 +285,7 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
-      <ProjectHeader backHref="/admin" backIcon={<ArrowLeft />} />
+      <ProjectHeader backIcon={<ArrowLeft />} />
 
       <div className="max-w-2xl mx-auto">
         {/* Affichage des erreurs */}

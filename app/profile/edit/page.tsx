@@ -128,7 +128,6 @@ const EditProfilePage = () => {
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
       <ProjectHeader
-        backHref="/profile"
         backIcon={<ArrowLeft />}
       />
 

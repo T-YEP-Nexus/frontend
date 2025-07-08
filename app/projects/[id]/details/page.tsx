@@ -114,7 +114,6 @@ export default function ProjectDetails({
           <ProjectHeader
             title={project.name}
             description="Détails du projet"
-            backHref="/projects"
             backIcon={<ArrowLeft size={20} />}
           />
         </div>

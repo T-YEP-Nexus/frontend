@@ -30,6 +30,9 @@ interface CardsProps {
   onToggle?: () => void;
   isBlurred?: boolean;
   projectId?: number; // Ajout de l'ID du projet pour la navigation
+  userRole?: string;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 function Cards({
@@ -45,6 +48,9 @@ function Cards({
   onToggle,
   isBlurred = false,
   projectId,
+  userRole,
+  onEdit,
+  onDelete,
 }: CardsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hoveredTrophy, setHoveredTrophy] = useState<number | null>(null);
@@ -224,6 +230,22 @@ function Cards({
                         Mon équipe
                       </button>
                     </Link>
+                    {(userRole === "admin" || userRole === "advisor") && (
+                      <>
+                        <button
+                          onClick={onEdit}
+                          className="w-full px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm cursor-pointer"
+                        >
+                          Modifier
+                        </button>
+                        <button
+                          onClick={onDelete}
+                          className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm cursor-pointer"
+                        >
+                          Supprimer
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -417,6 +439,22 @@ function Cards({
                         Mon équipe
                       </button>
                     </Link>
+                    {(userRole === "admin" || userRole === "advisor") && (
+                      <>
+                        <button
+                          onClick={onEdit}
+                          className="w-full px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm cursor-pointer"
+                        >
+                          Modifier
+                        </button>
+                        <button
+                          onClick={onDelete}
+                          className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm cursor-pointer"
+                        >
+                          Supprimer
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

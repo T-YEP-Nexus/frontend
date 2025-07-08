@@ -1,5 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { getUserIdFromToken } from "@/lib/auth";
+import React, { useState } from "react";
+
+interface Slot {
+  start: string;
+  end: string;
+  user: string | null;
+}
 
 interface ModalEventRegistrationProps {
   open: boolean;
@@ -11,9 +16,10 @@ interface ModalEventRegistrationProps {
     end?: Date | string;
     event_type?: string;
     description?: string;
+    slots?: Slot[];
   } | null;
   isRegistered: boolean;
-  onRegister: (eventId: number) => Promise<void>;
+  onRegister: (eventId: number, slotIndex?: number) => Promise<void>;
   onUnregister: (eventId: number) => Promise<void>;
 }
 
@@ -25,28 +31,8 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
   onRegister,
   onUnregister,
 }) => {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<number | null>(null); // index du créneau en cours d'inscription
   const [error, setError] = useState<string | null>(null);
-
-  const handleAction = async () => {
-    if (!event) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      if (isRegistered) {
-        await onUnregister(Number(event.id));
-      } else {
-        await onRegister(Number(event.id));
-      }
-      onClose();
-    } catch (err: any) {
-      setError(err.message || "Une erreur s'est produite");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatDate = (date: Date | string) => {
     const d = new Date(date);
@@ -60,20 +46,17 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
     });
   };
 
-  const getEventTypeColor = (eventType?: string) => {
-    switch (eventType) {
-      case 'follow-up':
-        return 'bg-green-100 text-green-800';
-      case 'kick-off':
-        return 'bg-orange-100 text-orange-800';
-      case 'keynote':
-        return 'bg-purple-100 text-purple-800';
-      case 'hub-talk':
-        return 'bg-cyan-100 text-cyan-800';
-      case 'other':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const handleRegisterSlot = async (slotIdx: number) => {
+    if (!event) return;
+    setLoading(slotIdx);
+    setError(null);
+    try {
+      await onRegister(Number(event.id), slotIdx);
+      onClose();
+    } catch (err: any) {
+      setError(err.message || "Une erreur s'est produite");
+    } finally {
+      setLoading(null);
     }
   };
 
@@ -81,14 +64,12 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
 
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
-      <div className="bg-white/95 backdrop-blur-md rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border border-white/20">
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl p-6 max-w-md w-full sm:w-[700px] max-w-[98vw] mx-4 shadow-2xl border border-white/20 overflow-x-hidden max-h-[95vh]">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">
-            {isRegistered ? "Se désinscrire" : "S'inscrire"}
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900">S'inscrire</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors duration-200 hover:scale-110"
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none rounded-xl p-1 transition-all duration-200 hover:bg-gray-200"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -98,37 +79,52 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
 
         <div className="space-y-4">
           {/* Informations de l'événement */}
-          <div className="border border-gray-200/50 rounded-xl p-4 bg-gradient-to-br from-gray-50/80 to-white/60 backdrop-blur-sm">
-            <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
-            
-            {event.event_type && (
-              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mb-2 ${getEventTypeColor(event.event_type)}`}>
-                {event.event_type}
-              </span>
-            )}
-
+          <div className="border border-blue-200 rounded-xl p-4 bg-blue-50 flex flex-col gap-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-semibold text-lg">{event.title}</span>
+            </div>
             {event.start && (
-              <p className="text-sm text-gray-600 mb-2">
-                📅 {formatDate(event.start)}
-              </p>
+              <div className="flex items-center gap-2 text-blue-800 text-base mb-1">
+                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="18" rx="4" fill="#e0e7ff" />
+                  <path stroke="#1971FF" strokeWidth="2" d="M8 2v4M16 2v4M3 10h18" />
+                </svg>
+                <span>{formatDate(event.start)}</span>
+              </div>
             )}
-
             {event.description && (
-              <p className="text-sm text-gray-700">
-                {event.description}
-              </p>
+              <p className="text-base text-blue-900/80 mt-1">{event.description}</p>
             )}
           </div>
 
-          {/* Message de confirmation */}
-          <div className="text-center">
-            <p className="text-gray-600 mb-4">
-              {isRegistered 
-                ? "Êtes-vous sûr de vouloir vous désinscrire de cet événement ?"
-                : "Voulez-vous vous inscrire à cet événement ?"
-              }
-            </p>
-          </div>
+          {/* Liste des créneaux disponibles */}
+          {Array.isArray(event.slots) && event.slots.length > 0 && (
+            <div className="mt-2 bg-blue-50 border border-blue-200 rounded-xl p-3">
+              <div className="font-semibold text-blue-900 mb-2">Créneaux disponibles :</div>
+              <ul className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-2">
+                {event.slots.map((slot, idx) => (
+                  <li key={idx} className="flex items-center gap-2 text-blue-800 text-sm bg-white rounded-xl px-3 py-2">
+                    <span className="flex-1">{new Date(slot.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(slot.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    {slot.user ? (
+                      <span className="text-xs text-blue-700 font-semibold">{slot.user}</span>
+                    ) : (
+                      <button
+                        className="px-4 py-1 bg-blue-400 text-white rounded-xl font-semibold shadow-sm hover:bg-blue-500 hover:shadow-lg transition-all duration-200 text-sm"
+                        onClick={() => handleRegisterSlot(idx)}
+                        disabled={loading === idx}
+                      >
+                        {loading === idx ? (
+                          <span className="flex items-center"><span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>Inscription...</span>
+                        ) : (
+                          "S'inscrire"
+                        )}
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Message d'erreur */}
           {error && (
@@ -137,32 +133,14 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
             </div>
           )}
 
-          {/* Boutons d'action */}
-          <div className="flex gap-3">
+          {/* Bouton annuler */}
+          <div className="flex gap-3 mt-2">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300/50 rounded-xl text-gray-700 hover:bg-gray-50/80 backdrop-blur-sm transition-all duration-200 hover:shadow-md"
-              disabled={loading}
+              className="flex-1 px-5 py-2 border border-gray-300/50 rounded-xl text-gray-700 hover:bg-gray-50/80 backdrop-blur-sm transition-all duration-200 hover:shadow-md text-lg font-semibold"
+              disabled={loading !== null}
             >
               Annuler
-            </button>
-            <button
-              onClick={handleAction}
-              disabled={loading}
-              className={`flex-1 px-4 py-2 rounded-xl text-white transition-all duration-200 hover:shadow-lg ${
-                isRegistered
-                  ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:from-red-400 disabled:to-red-400'
-                  : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-blue-400 disabled:to-blue-400'
-              }`}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {isRegistered ? "Désinscription..." : "Inscription..."}
-                </div>
-              ) : (
-                isRegistered ? "Se désinscrire" : "S'inscrire"
-              )}
             </button>
           </div>
         </div>
