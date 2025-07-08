@@ -29,6 +29,7 @@ import {
 import Header from "@/components/Header/Header";
 import { Button } from "@/components/ui/button";
 import { useUserData } from "@/hooks/useUserData";
+import usePromotionsData from "@/hooks/usePromotionsData";
 import { getUserIdFromToken } from "@/lib/auth";
 import { getUserProfileData } from "@/lib/userData";
 import { useRouter } from "next/navigation";
@@ -36,6 +37,13 @@ import AdminButton from "@/components/admin/buttons/AdminButton";
 import AdminStatCard from "@/components/admin/AdminStatCard";
 import AdminFilterBar from "@/components/admin/AdminFilterBar";
 import AdminLoading from "@/components/admin/AdminLoading";
+
+// Interface pour les promotions
+interface Promotion {
+  id: number;
+  name: string;
+  created_at: string;
+}
 
 // Interface pour les données utilisateur dans le contexte admin
 interface AdminUser {
@@ -89,6 +97,13 @@ export default function AdminDashboard() {
 
   // Utiliser le hook existant pour l'utilisateur connecté
   const { userData: currentUser } = useUserData(getUserIdFromToken());
+
+  // Hook pour récupérer les promotions
+  const {
+    promotions,
+    loading: promotionsLoading,
+    error: promotionsError,
+  } = usePromotionsData();
 
   // Fonction pour récupérer tous les utilisateurs
   const fetchAllUsers = async () => {
@@ -257,18 +272,44 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  // Extraire les promotions uniques
-  const promotions = useMemo(() => {
+  // Extraire les promotions utilisées par les utilisateurs
+  const usedPromotions = useMemo(() => {
     const promoSet = new Set<string>();
     allUsers.forEach((user) => {
       if (user.student?.promotion) {
         promoSet.add(user.student.promotion);
       }
     });
-    return Array.from(promoSet).sort();
+    return Array.from(promoSet);
   }, [allUsers]);
 
-  // Extraire les rôles uniques
+  // Utiliser toutes les promotions de l'API
+  const availablePromotions = useMemo(() => {
+    if (!promotions || promotionsLoading) {
+      return usedPromotions.sort();
+    }
+
+    // Utiliser toutes les promotions de l'API
+    const allPromotions = promotions.map((promo) => promo.name).sort();
+
+    return allPromotions;
+  }, [promotions, promotionsLoading, usedPromotions]);
+
+  // Obtenir le label du rôle
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "student":
+        return "Étudiant";
+      case "advisor":
+        return "Conseiller";
+      case "admin":
+        return "Administrateur";
+      default:
+        return role;
+    }
+  };
+
+  // Extraire les rôles uniques avec leurs labels français
   const roles = useMemo(() => {
     const roleSet = new Set<string>();
     allUsers.forEach((user) => {
@@ -276,7 +317,15 @@ export default function AdminDashboard() {
         roleSet.add(user.roles_user);
       }
     });
-    return Array.from(roleSet).sort();
+
+    // Créer des objets avec label et valeur
+    const roleObjects = Array.from(roleSet).map((role) => ({
+      value: role,
+      label: getRoleLabel(role),
+    }));
+
+    // Trier par label français
+    return roleObjects.sort((a, b) => a.label.localeCompare(b.label));
   }, [allUsers]);
 
   // Filtrer et trier les utilisateurs
@@ -378,20 +427,6 @@ export default function AdminDashboard() {
         return <Shield size={16} className="text-blue-600" />;
       default:
         return <Users size={16} className="text-blue-600" />;
-    }
-  };
-
-  // Obtenir le label du rôle
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case "student":
-        return "Étudiant";
-      case "advisor":
-        return "Conseiller";
-      case "admin":
-        return "Administrateur";
-      default:
-        return role;
     }
   };
 
@@ -593,7 +628,8 @@ export default function AdminDashboard() {
           setSearchTerm={setSearchTerm}
           selectedPromotion={selectedPromotion}
           setSelectedPromotion={setSelectedPromotion}
-          promotions={promotions}
+          promotions={availablePromotions}
+          promotionsLoading={promotionsLoading}
           selectedSecond={selectedRole}
           setSelectedSecond={setSelectedRole}
           seconds={roles}
