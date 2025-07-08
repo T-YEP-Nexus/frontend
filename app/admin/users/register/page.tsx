@@ -24,12 +24,14 @@ import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 import { useUserData } from "@/hooks/useUserData";
 import { getUserIdFromToken } from "@/lib/auth";
 import { getUserProfileData } from "@/lib/userData";
+import { createCompleteUser, NewUserInput, ApiResponse } from '@/lib/userData'
 
 interface RegisterFormData {
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
+  address: string;
   password: string;
   confirmPassword: string;
   campus: string;
@@ -38,6 +40,7 @@ interface RegisterFormData {
   major?: string;
   room?: string;
   availability?: string;
+  specialty?: string;
 }
 
 type UserRole = "student" | "advisor" | "admin";
@@ -49,21 +52,81 @@ const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
 
-  // État du formulaire - DOIT être avant les useEffect
+  // État du formulaire
   const [formData, setFormData] = useState<RegisterFormData>({
-    firstName: "",
-    lastName: "",
+    first_name: "",
+    last_name: "",
     email: "",
     phone: "",
     password: "",
+    address: "",
     confirmPassword: "",
     campus: "",
+    specialty: "",
     role: "student",
     promotion: "",
     major: "",
     room: "",
-    availability: "",
+    availability: ""
   });
+  
+  const [err, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<boolean>(false);
+
+  // Fonction pour générer le numéro étudiant
+  const generateStudentNumber = (lastName: string, promotion: string): string => {
+    const firstThreeLetters = lastName.toUpperCase().substring(0, 3);
+    const promotionUpper = promotion.toUpperCase();
+    return `${firstThreeLetters}-${promotionUpper}`;
+  };
+
+  const handleSubmitUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      // Préparer les données pour l'API
+      const apiData: NewUserInput = {
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        phone: formData.phone ,
+        address: formData.address ,
+        campus: formData.campus ,
+        is_active: true,
+        roles_user: formData.role,
+        promotion:formData.promotion,
+        specialty:formData.specialty,
+        room:formData.room,
+        major:formData.major,
+        availability:formData.availability
+      };
+
+      // Ajouter les champs spécifiques selon le rôle
+      if (formData.role === "student") {
+        apiData.student_number = generateStudentNumber(formData.last_name, formData.promotion || "");
+      
+      } 
+      await createCompleteUser(apiData);
+      setSuccess(true);
+      
+      // Redirection avec message de succès
+      router.push("/admin?message=user_created");
+    } catch (error: any) {
+      console.error("Erreur lors de la création:", error);
+      setError(error.message || 'Erreur lors de la création du compte');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const { userData, loading, error, updateProfileImageUrl } = useUserData(
     getUserIdFromToken()
@@ -80,7 +143,6 @@ const RegisterPage = () => {
         }
       } catch (error) {
         console.error("Erreur lors de la récupération du rôle:", error);
-        // Rediriger vers la page de connexion si erreur
         router.push("/login");
       } finally {
         setIsLoading(false);
@@ -90,10 +152,9 @@ const RegisterPage = () => {
     fetchUserRole();
   }, [router]);
 
-  // Vérifier que l'utilisateur a les droits d'accès (admin ou advisor)
+  // Vérifier que l'utilisateur a les droits d'accès
   React.useEffect(() => {
     if (!isLoading && userRole && !["admin", "advisor"].includes(userRole)) {
-      // Rediriger si l'utilisateur n'est ni admin ni advisor
       router.push("/dashboard?error=unauthorized");
     }
   }, [userRole, isLoading, router]);
@@ -139,17 +200,14 @@ const RegisterPage = () => {
       },
     ];
 
-    // Si l'utilisateur est admin, il peut créer tous les rôles
     if (userRole === "admin") {
       return allRoles;
     }
 
-    // Si l'utilisateur est advisor, il ne peut créer que des étudiants
     if (userRole === "advisor") {
       return allRoles.filter((role) => role.value === "student");
     }
 
-    // Par défaut, retourner seulement les étudiants
     return allRoles.filter((role) => role.value === "student");
   };
 
@@ -175,17 +233,17 @@ const RegisterPage = () => {
     const newErrors: Partial<RegisterFormData> = {};
 
     // Validation prénom
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = "Le prénom est requis";
-    } else if (formData.firstName.length < 2) {
-      newErrors.firstName = "Le prénom doit contenir au moins 2 caractères";
+    if (!formData.first_name.trim()) {
+      newErrors.first_name = "Le prénom est requis";
+    } else if (formData.first_name.length < 2) {
+      newErrors.first_name = "Le prénom doit contenir au moins 2 caractères";
     }
 
     // Validation nom
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Le nom est requis";
-    } else if (formData.lastName.length < 2) {
-      newErrors.lastName = "Le nom doit contenir au moins 2 caractères";
+    if (!formData.last_name.trim()) {
+      newErrors.last_name = "Le nom est requis";
+    } else if (formData.last_name.length < 2) {
+      newErrors.last_name = "Le nom doit contenir au moins 2 caractères";
     }
 
     // Validation email
@@ -205,18 +263,16 @@ const RegisterPage = () => {
       newErrors.phone = "Format de téléphone invalide";
     }
 
-    // Validation mot de passe
-    if (!formData.password) {
-      newErrors.password = "Le mot de passe est requis";
-    } else if (formData.password.length < 8) {
-      newErrors.password =
-        "Le mot de passe doit contenir au moins 8 caractères";
-    } else if (!/(?=.*[A-Z])/.test(formData.password)) {
-      newErrors.password =
-        "Le mot de passe doit contenir au moins une majuscule";
-    } else if (!/(?=.*[0-9])/.test(formData.password)) {
-      newErrors.password = "Le mot de passe doit contenir au moins un chiffre";
-    }
+    // // Validation mot de passe
+    // if (!formData.password) {
+    //   newErrors.password = "Le mot de passe est requis";
+    // } else if (formData.password.length < 8) {
+    //   newErrors.password = "Le mot de passe doit contenir au moins 8 caractères";
+    // } else if (!/(?=.*[A-Z])/.test(formData.password)) {
+    //   newErrors.password = "Le mot de passe doit contenir au moins une majuscule";
+    // } else if (!/(?=.*[0-9])/.test(formData.password)) {
+    //   newErrors.password = "Le mot de passe doit contenir au moins un chiffre";
+    // }
 
     // Validation confirmation mot de passe
     if (!formData.confirmPassword) {
@@ -225,80 +281,8 @@ const RegisterPage = () => {
       newErrors.confirmPassword = "Les mots de passe ne correspondent pas";
     }
 
-    // Validation campus
-    if (!formData.campus.trim()) {
-      newErrors.campus = "Le campus est requis";
-    }
-
-    // Validation promotion et major pour les étudiants
-    if (formData.role === "student") {
-      if (!formData.promotion?.trim()) {
-        newErrors.promotion = "La promotion est requise pour un étudiant";
-      }
-      if (!formData.major?.trim()) {
-        newErrors.major = "La spécialité est requise pour un étudiant";
-      }
-    }
-
-    // Validation des champs spécifiques aux conseillers
-    if (formData.role === "advisor") {
-      if (!formData.major?.trim()) {
-        newErrors.major = "La spécialité est requise pour un conseiller";
-      }
-      if (!formData.room?.trim()) {
-        newErrors.room = "La salle est requise pour un conseiller";
-      }
-      if (!formData.availability?.trim()) {
-        newErrors.availability =
-          "Les jours de présence sont requis pour un conseiller";
-      }
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      // Simulation d'un délai d'envoi
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Simulation de succès
-      console.log("Données du formulaire:", {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-        campus: formData.campus,
-        role: formData.role,
-        ...(formData.role === "student" && {
-          promotion: formData.promotion,
-          major: formData.major,
-        }),
-        ...(formData.role === "advisor" && {
-          major: formData.major,
-          room: formData.room,
-          availability: formData.availability,
-        }),
-      });
-
-      // Redirection vers la page admin avec message de succès
-      router.push("/admin?message=user_created");
-    } catch (error) {
-      console.error("Erreur:", error);
-      setErrors({ email: "Erreur lors de la création de l'utilisateur" });
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   const handleCancel = () => {
@@ -310,6 +294,13 @@ const RegisterPage = () => {
       <ProjectHeader backHref="/admin" backIcon={<ArrowLeft />} />
 
       <div className="max-w-2xl mx-auto">
+        {/* Affichage des erreurs */}
+        {err && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700">{err}</p>
+          </div>
+        )}
+
         {/* Formulaire */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-6 text-white">
@@ -326,7 +317,7 @@ const RegisterPage = () => {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmitUser} className="p-6 space-y-6">
             {/* Sélection du rôle */}
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-4">
@@ -395,22 +386,22 @@ const RegisterPage = () => {
               <Input
                 label="Prénom"
                 icon={User}
-                name="firstName"
-                value={formData.firstName}
+                name="first_name"
+                value={formData.first_name}
                 onChange={handleInputChange}
                 placeholder="Prénom"
-                error={errors.firstName}
+                error={errors.first_name}
                 required
               />
 
               <Input
                 label="Nom"
                 icon={User}
-                name="lastName"
-                value={formData.lastName}
+                name="last_name"
+                value={formData.last_name}
                 onChange={handleInputChange}
                 placeholder="Nom"
-                error={errors.lastName}
+                error={errors.last_name}
                 required
               />
             </div>
@@ -442,8 +433,18 @@ const RegisterPage = () => {
               />
             </div>
 
-            {/* Campus */}
-            <div className="grid grid-cols-1 gap-6">
+            {/* Adresse et Campus */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Input
+                label="Adresse"
+                icon={Building}
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                placeholder="Votre adresse"
+                error={errors.address}
+              />
+
               <Input
                 label="Campus"
                 icon={Building}
@@ -465,7 +466,7 @@ const RegisterPage = () => {
                   name="promotion"
                   value={formData.promotion || ""}
                   onChange={handleInputChange}
-                  placeholder="2024"
+                  placeholder="MSC2027"
                   error={errors.promotion}
                   required
                 />
@@ -489,11 +490,11 @@ const RegisterPage = () => {
                 <Input
                   label="Spécialité"
                   icon={BookOpen}
-                  name="major"
-                  value={formData.major || ""}
+                  name="specialty"
+                  value={formData.specialty || ""}
                   onChange={handleInputChange}
                   placeholder="Informatique"
-                  error={errors.major}
+                  error={errors.specialty}
                   required
                 />
 
@@ -520,20 +521,11 @@ const RegisterPage = () => {
                 />
               </div>
             )}
-
             {/* Séparateur */}
             <div className="border-t border-gray-200 pt-6 gap-4 flex flex-col">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <Lock size={20} className="text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Sécurité du compte
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Créez un mot de passe sécurisé pour le compte
-                  </p>
                 </div>
               </div>
 
@@ -563,7 +555,7 @@ const RegisterPage = () => {
               </div>
 
               {/* Validation du mot de passe */}
-              {formData.password && (
+              {/* {formData.password && (
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <h4 className="text-sm font-medium text-blue-900 mb-2">
                     Critères de sécurité :
@@ -637,7 +629,7 @@ const RegisterPage = () => {
                     </li>
                   </ul>
                 </div>
-              )}
+              )} */}
             </div>
 
             {/* Actions */}
