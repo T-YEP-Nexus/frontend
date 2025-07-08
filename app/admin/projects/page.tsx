@@ -31,6 +31,33 @@ interface Project {
   id: string;
   name: string;
   description: string;
+  longDescription?: string;
+  details?: {
+    startDate: string;
+    endDate: string;
+    team: string;
+  };
+  deadline?: {
+    kickOff: string;
+    followUp: string;
+    keynote: string;
+  };
+  documentation?: {
+    pdfUrl: string;
+    pdfName: string;
+  };
+  medals?: Array<{
+    name: string;
+    description: string;
+  }>;
+  resources?: Array<{
+    name: string;
+    url: string;
+    description: string;
+    category: string;
+  }>;
+  hotTopics?: string;
+  skills?: string;
   ressources: Array<{
     filename: string;
     url: string;
@@ -309,48 +336,63 @@ export default function AdminProjectsPage() {
             projectId={project.id}
             projectName={project.name}
             progress={
-              project.ressources
+              project.resources
+                ? Math.min(project.resources.length * 10, 100)
+                : project.ressources
                 ? Math.min(project.ressources.length * 10, 100)
                 : 0
             }
             description={project.description}
             details={{
-              startDate: new Date(project.created_at).toLocaleDateString(
-                "fr-FR"
-              ),
-              endDate: new Date(
-                new Date(project.created_at).getTime() +
-                  30 * 24 * 60 * 60 * 1000
-              ).toLocaleDateString("fr-FR"),
-              team:
-                project.students && project.students.length > 0
+              startDate: project.details?.startDate
+                ? new Date(project.details.startDate).toLocaleDateString("fr-FR")
+                : new Date(project.created_at).toLocaleDateString("fr-FR"),
+              endDate: project.details?.endDate
+                ? new Date(project.details.endDate).toLocaleDateString("fr-FR")
+                : new Date(
+                    new Date(project.created_at).getTime() + 30 * 24 * 60 * 60 * 1000
+                  ).toLocaleDateString("fr-FR"),
+              team: project.details?.team ||
+                (project.students && project.students.length > 0
                   ? project.students
                       .map((s: any) => `${s.first_name} ${s.last_name}`)
                       .join(", ")
-                  : "-",
+                  : "-"),
             }}
             deadline={{
-              kickOff: new Date(project.created_at).toLocaleDateString("fr-FR"),
-              followUp: new Date(
-                new Date(project.created_at).getTime() +
-                  15 * 24 * 60 * 60 * 1000
-              ).toLocaleDateString("fr-FR"),
-              keynote: new Date(
-                new Date(project.created_at).getTime() +
-                  30 * 24 * 60 * 60 * 1000
-              ).toLocaleDateString("fr-FR"),
-              daysRemaining: Math.max(
-                0,
-                30 -
-                  Math.floor(
-                    (Date.now() - new Date(project.created_at).getTime()) /
-                      (1000 * 60 * 60 * 24)
+              kickOff: project.deadline?.kickOff
+                ? new Date(project.deadline.kickOff).toLocaleDateString("fr-FR")
+                : new Date(project.created_at).toLocaleDateString("fr-FR"),
+              followUp: project.deadline?.followUp
+                ? new Date(project.deadline.followUp).toLocaleDateString("fr-FR")
+                : new Date(
+                    new Date(project.created_at).getTime() + 15 * 24 * 60 * 60 * 1000
+                  ).toLocaleDateString("fr-FR"),
+              keynote: project.deadline?.keynote
+                ? new Date(project.deadline.keynote).toLocaleDateString("fr-FR")
+                : new Date(
+                    new Date(project.created_at).getTime() + 30 * 24 * 60 * 60 * 1000
+                  ).toLocaleDateString("fr-FR"),
+              daysRemaining: project.deadline?.keynote
+                ? Math.max(
+                    0,
+                    Math.floor(
+                      (new Date(project.deadline.keynote).getTime() - Date.now()) /
+                        (1000 * 60 * 60 * 24)
+                    )
                   )
-              ),
+                : Math.max(
+                    0,
+                    30 -
+                      Math.floor(
+                        (Date.now() - new Date(project.created_at).getTime()) /
+                          (1000 * 60 * 60 * 24)
+                      )
+                  ),
             }}
             documentation={{
-              pdfUrl: project.ressources?.[0]?.url || "#",
-              pdfName: project.ressources?.[0]?.filename || "Documentation.pdf",
+              pdfUrl: project.documentation?.pdfUrl || project.ressources?.[0]?.url || "#",
+              pdfName: project.documentation?.pdfName || project.ressources?.[0]?.filename || "Documentation.pdf",
             }}
             tasks={[
               "Analyser les besoins",
@@ -361,27 +403,27 @@ export default function AdminProjectsPage() {
             trophies={[
               {
                 name: "Premier commit",
-                obtained: (project.ressources?.length || 0) > 0,
+                obtained: (project.resources?.length || project.ressources?.length || 0) > 0,
                 description: "Premier commit réalisé",
               },
               {
                 name: "Architecture validée",
-                obtained: (project.ressources?.length || 0) > 2,
+                obtained: (project.resources?.length || project.ressources?.length || 0) > 2,
                 description: "Architecture du projet validée",
               },
               {
                 name: "MVP terminé",
-                obtained: (project.ressources?.length || 0) > 5,
+                obtained: (project.resources?.length || project.ressources?.length || 0) > 5,
                 description: "Version minimale viable terminée",
               },
               {
                 name: "Tests passants",
-                obtained: (project.ressources?.length || 0) > 8,
+                obtained: (project.resources?.length || project.ressources?.length || 0) > 8,
                 description: "Tous les tests passent",
               },
               {
                 name: "Projet livré",
-                obtained: (project.ressources?.length || 0) > 10,
+                obtained: (project.resources?.length || project.ressources?.length || 0) > 10,
                 description: "Projet entièrement livré",
               },
             ]}

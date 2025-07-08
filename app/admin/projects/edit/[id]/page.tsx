@@ -70,15 +70,12 @@ interface Project {
 interface EditFormData {
   name: string;
   description: string;
-  longDescription: string;
   startDate: string;
   endDate: string;
   teamSize: string;
   kickOffDate: string;
   followUpDate: string;
   keynoteDate: string;
-  documentationName: string;
-  documentationUrl: string;
   medals: Medal[];
   resources: Resource[];
   hotTopics: string;
@@ -94,15 +91,12 @@ export default function EditProjectPage() {
   const [formData, setFormData] = useState<EditFormData>({
     name: "",
     description: "",
-    longDescription: "",
     startDate: "",
     endDate: "",
     teamSize: "",
     kickOffDate: "",
     followUpDate: "",
     keynoteDate: "",
-    documentationName: "",
-    documentationUrl: "",
     medals: [{ name: "", description: "" }],
     resources: [
       {
@@ -160,39 +154,76 @@ export default function EditProjectPage() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(
-          `http://localhost:3003/projects/${projectId}`
-        );
-        if (!response.ok) {
-          throw new Error("Erreur lors de la récupération du projet");
-        }
+        // TODO: Implémenter l'appel API pour récupérer le projet
+        console.log("Récupération du projet avec l'ID:", projectId);
 
-        const result = await response.json();
-        if (!result.success) {
-          throw new Error(result.message || "Erreur serveur");
-        }
+        // Données de test pour simuler un projet
+        const mockProjectData: Project = {
+          id: projectId,
+          name: "Projet de test",
+          description: "Description du projet de test",
+          details: {
+            startDate: "2024-01-01",
+            endDate: "2024-12-31",
+            team: "5 développeurs",
+          },
+          deadline: {
+            kickOff: "2024-01-15",
+            followUp: "2024-06-15",
+            keynote: "2024-12-15",
+          },
+          medals: [
+            { name: "Premier commit", description: "Premier commit réalisé" },
+            {
+              name: "Architecture validée",
+              description: "Architecture du projet validée",
+            },
+          ],
+          resources: [
+            {
+              name: "Documentation Kick Off",
+              url: "",
+              description: "Documentation pour la phase de lancement",
+              category: "kickoff" as const,
+            },
+            {
+              name: "Documentation Bootstrap",
+              url: "",
+              description: "Documentation pour la phase de préparation",
+              category: "bootstrap" as const,
+            },
+            {
+              name: "Documentation Projet",
+              url: "",
+              description: "Documentation pour la phase de développement",
+              category: "project" as const,
+            },
+          ],
+          hotTopics: "Intelligence artificielle, Blockchain",
+          skills: "React, Node.js, Python",
+          is_active: true,
+          id_creator: "user-123",
+          created_at: "2024-01-01T00:00:00Z",
+          updated_at: "2024-01-01T00:00:00Z",
+        };
 
-        const projectData = result.data;
-        setProject(projectData);
+        setProject(mockProjectData);
         setFormData({
-          name: projectData.name || "",
-          description: projectData.description || "",
-          longDescription: projectData.longDescription || "",
-          startDate: projectData.details?.startDate || "",
-          endDate: projectData.details?.endDate || "",
-          teamSize: projectData.details?.team || "",
-          kickOffDate: projectData.deadline?.kickOff || "",
-          followUpDate: projectData.deadline?.followUp || "",
-          keynoteDate: projectData.deadline?.keynote || "",
-          documentationName: projectData.documentation?.pdfName || "",
-          documentationUrl: projectData.documentation?.pdfUrl || "",
+          name: mockProjectData.name || "",
+          description: mockProjectData.description || "",
+          startDate: mockProjectData.details?.startDate || "",
+          endDate: mockProjectData.details?.endDate || "",
+          teamSize: mockProjectData.details?.team || "",
+          kickOffDate: mockProjectData.deadline?.kickOff || "",
+          followUpDate: mockProjectData.deadline?.followUp || "",
+          keynoteDate: mockProjectData.deadline?.keynote || "",
           medals:
-            projectData.medals?.length > 0
-              ? projectData.medals
+            mockProjectData.medals && mockProjectData.medals.length > 0
+              ? mockProjectData.medals
               : [{ name: "", description: "" }],
           resources:
-            projectData.resources?.length > 0
-              ? projectData.resources
+            mockProjectData.resources && mockProjectData.resources.length > 0
+              ? mockProjectData.resources
               : [
                   {
                     name: "Documentation Kick Off",
@@ -213,10 +244,12 @@ export default function EditProjectPage() {
                     category: "project",
                   },
                 ],
-          hotTopics: projectData.hotTopics || "",
-          skills: projectData.skills || "",
+          hotTopics: mockProjectData.hotTopics || "",
+          skills: mockProjectData.skills || "",
           is_active:
-            projectData.is_active !== undefined ? projectData.is_active : true,
+            mockProjectData.is_active !== undefined
+              ? mockProjectData.is_active
+              : true,
         });
       } catch (err) {
         console.error("Erreur lors de la récupération du projet:", err);
@@ -371,10 +404,11 @@ export default function EditProjectPage() {
       setError(null);
       setSuccess(null);
 
-      const projectData = {
+      // TODO: Implémenter l'appel API pour sauvegarder le projet
+      console.log("Sauvegarde du projet avec l'ID:", projectId);
+      console.log("Données du projet à sauvegarder:", {
         name: formData.name,
         description: formData.description,
-        longDescription: formData.longDescription,
         details: {
           startDate: formData.startDate,
           endDate: formData.endDate,
@@ -385,10 +419,6 @@ export default function EditProjectPage() {
           followUp: formData.followUpDate,
           keynote: formData.keynoteDate,
         },
-        documentation: {
-          pdfUrl: formData.documentationUrl,
-          pdfName: formData.documentationName,
-        },
         medals: formData.medals.filter(
           (medal) => medal.name.trim() && medal.description.trim()
         ),
@@ -396,29 +426,9 @@ export default function EditProjectPage() {
         hotTopics: formData.hotTopics,
         skills: formData.skills,
         is_active: formData.is_active,
-      };
+      });
 
-      const response = await fetch(
-        `http://localhost:3003/projects/${projectId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(projectData),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Erreur lors de la sauvegarde du projet");
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.message || "Erreur serveur");
-      }
-
-      setSuccess("Projet modifié avec succès !");
+      setSuccess("Projet modifié avec succès ! (API à implémenter)");
 
       // Rediriger après 2 secondes
       setTimeout(() => {
@@ -535,42 +545,23 @@ export default function EditProjectPage() {
                 />
               </div>
 
-              {/* Description courte */}
+              {/* Description */}
               <div className="group">
                 <label
                   htmlFor="description"
                   className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer"
                 >
-                  Description courte *
+                  Description *
                 </label>
                 <textarea
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 placeholder-blue-400 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
-                  placeholder="Description courte du projet..."
-                  required
-                />
-              </div>
-
-              {/* Description longue */}
-              <div className="group">
-                <label
-                  htmlFor="longDescription"
-                  className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer"
-                >
-                  Description détaillée
-                </label>
-                <textarea
-                  id="longDescription"
-                  name="longDescription"
-                  value={formData.longDescription}
-                  onChange={handleInputChange}
                   rows={4}
                   className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 placeholder-blue-400 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
-                  placeholder="Description détaillée du projet..."
+                  placeholder="Description du projet..."
+                  required
                 />
               </div>
             </div>

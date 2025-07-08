@@ -196,10 +196,7 @@ const EditUserPage = () => {
               advisor: {
                 ...advisorsData.data,
                 specialty: advisorsData.data.specialty || "",
-                availability:
-                  advisorsData.data.availibity ||
-                  advisorsData.data.availability ||
-                  "", // Gérer les deux noms de champ
+                availability: advisorsData.data.availability || "",
               },
             }),
         };
@@ -222,10 +219,7 @@ const EditUserPage = () => {
             userWithDetails.advisor?.specialty ||
             "",
           room: userWithDetails.advisor?.room || "",
-          availability:
-            userWithDetails.advisor?.availability ||
-            userWithDetails.advisor?.availibity ||
-            "",
+          availability: userWithDetails.advisor?.availability || "",
           address: userWithDetails.address || "",
         });
       } catch (error) {
@@ -535,7 +529,7 @@ const EditUserPage = () => {
           const advisorUpdateData = {
             specialty: formData.major,
             room: formData.room,
-            availibity: formData.availability, // Note: API utilise "availibity" (faute d'orthographe)
+            availability: formData.availability,
           };
 
           const advisorResponse = await fetch(
@@ -562,7 +556,7 @@ const EditUserPage = () => {
             id_user_profile: userData?.id,
             specialty: formData.major,
             room: formData.room,
-            availibity: formData.availability, // Note: API utilise "availibity" (faute d'orthographe)
+            availability: formData.availability,
           };
 
           const advisorResponse = await fetch(`http://localhost:3004/advisor`, {

@@ -41,15 +41,12 @@ interface Resource {
 interface CreateFormData {
   name: string;
   description: string;
-  longDescription: string;
   startDate: string;
   endDate: string;
   teamSize: string;
   kickOffDate: string;
   followUpDate: string;
   keynoteDate: string;
-  documentationName: string;
-  documentationUrl: string;
   medals: Medal[];
   resources: Resource[];
   hotTopics: string;
@@ -62,15 +59,12 @@ export default function CreateProjectPage() {
   const [formData, setFormData] = useState<CreateFormData>({
     name: "",
     description: "",
-    longDescription: "",
     startDate: "",
     endDate: "",
     teamSize: "",
     kickOffDate: "",
     followUpDate: "",
     keynoteDate: "",
-    documentationName: "",
-    documentationUrl: "",
     medals: [{ name: "", description: "" }],
     resources: [
       {
@@ -282,10 +276,10 @@ export default function CreateProjectPage() {
       setError(null);
       setSuccess(null);
 
-      const projectData = {
+      // TODO: Implémenter l'appel API pour créer le projet
+      console.log("Données du projet à créer:", {
         name: formData.name,
         description: formData.description,
-        longDescription: formData.longDescription,
         details: {
           startDate: formData.startDate,
           endDate: formData.endDate,
@@ -296,10 +290,6 @@ export default function CreateProjectPage() {
           followUp: formData.followUpDate,
           keynote: formData.keynoteDate,
         },
-        documentation: {
-          pdfUrl: formData.documentationUrl,
-          pdfName: formData.documentationName,
-        },
         medals: formData.medals.filter(
           (medal) => medal.name.trim() && medal.description.trim()
         ),
@@ -307,26 +297,9 @@ export default function CreateProjectPage() {
         hotTopics: formData.hotTopics,
         skills: formData.skills,
         is_active: formData.is_active,
-      };
-
-      const response = await fetch("http://localhost:3003/projects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(projectData),
       });
 
-      if (!response.ok) {
-        throw new Error("Erreur lors de la création du projet");
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.message || "Erreur serveur");
-      }
-
-      setSuccess("Projet créé avec succès !");
+      setSuccess("Projet créé avec succès ! (API à implémenter)");
 
       // Rediriger après 2 secondes
       setTimeout(() => {
@@ -414,42 +387,23 @@ export default function CreateProjectPage() {
                 />
               </div>
 
-              {/* Description courte */}
+              {/* Description */}
               <div className="group">
                 <label
                   htmlFor="description"
                   className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer"
                 >
-                  Description courte *
+                  Description *
                 </label>
                 <textarea
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 placeholder-blue-400 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
-                  placeholder="Description courte du projet..."
-                  required
-                />
-              </div>
-
-              {/* Description longue */}
-              <div className="group">
-                <label
-                  htmlFor="longDescription"
-                  className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer"
-                >
-                  Description détaillée
-                </label>
-                <textarea
-                  id="longDescription"
-                  name="longDescription"
-                  value={formData.longDescription}
-                  onChange={handleInputChange}
                   rows={4}
                   className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 placeholder-blue-400 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
-                  placeholder="Description détaillée du projet..."
+                  placeholder="Description du projet..."
+                  required
                 />
               </div>
             </div>
