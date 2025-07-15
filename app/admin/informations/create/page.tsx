@@ -19,7 +19,6 @@ interface InformationFormData {
   content: string;
   author: string;
   authorRole: "admin" | "advisor" | "external";
-  isActive: boolean;
 }
 
 interface User {
@@ -48,7 +47,6 @@ export default function CreateInformationPage() {
     content: "",
     author: "",
     authorRole: "admin",
-    isActive: true,
   });
   const [showExternalAuthorInput, setShowExternalAuthorInput] = useState(false);
   const [externalAuthorName, setExternalAuthorName] = useState("");
@@ -438,24 +436,6 @@ export default function CreateInformationPage() {
                 />
               </div>
             )}
-
-            {/* Statut actif */}
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="isActive"
-                name="isActive"
-                checked={formData.isActive}
-                onChange={handleInputChange}
-                className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-              />
-              <label
-                htmlFor="isActive"
-                className="text-sm font-medium text-gray-700"
-              >
-                Information active
-              </label>
-            </div>
 
             {/* Boutons d'action */}
             <div className="flex gap-4 pt-6 border-t border-gray-200">

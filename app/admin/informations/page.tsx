@@ -11,8 +11,6 @@ import {
   Search,
   Filter,
   MoreVertical,
-  Eye,
-  EyeOff,
   ChevronDown,
   Loader2,
   Users,
@@ -51,9 +49,7 @@ export default function AdminInformations() {
     Information[]
   >([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "active" | "inactive"
-  >("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [informationToDelete, setInformationToDelete] =
     useState<Information | null>(null);
@@ -112,12 +108,12 @@ export default function AdminInformations() {
       );
     }
 
-    // Filtre par statut
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((info) =>
-        statusFilter === "active" ? info.isActive : !info.isActive
-      );
-    }
+    // Filtre par statut (supprimé car plus de isActive)
+    // if (statusFilter !== "all") {
+    //   filtered = filtered.filter((info) =>
+    //     statusFilter === "active" ? info.isActive : !info.isActive
+    //   );
+    // }
 
     setFilteredInformations(filtered);
     setDisplayedCount(INITIAL_DISPLAY_COUNT); // Reset le compteur quand les filtres changent
@@ -145,18 +141,17 @@ export default function AdminInformations() {
     setInformationToDelete(null);
   };
 
-  const handleToggleStatus = (information: Information) => {
-    try {
-      const updated = toggleInformationStatus(information.id);
-      if (updated) {
-        setInformations((prev) =>
-          prev.map((info) => (info.id === information.id ? updated : info))
-        );
-      }
-    } catch (error) {
-      console.error("Erreur lors du changement de statut:", error);
-    }
-  };
+  // const handleToggleStatus = (information: Information) => {
+  //   try {
+  //     const updated = toggleInformationStatus(information.id);
+  //     if (updated) {
+  //       setInformations((prev) =>
+  //         prev.map((info) => (info.id === information.id ? updated : info))
+  //     );
+  //   } catch (error) {
+  //     console.error("Erreur lors du changement de statut:", error);
+  //   }
+  // };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("fr-FR", {
@@ -198,8 +193,8 @@ export default function AdminInformations() {
       <AdminStatsCards
         stats={createInformationsStats(
           informations.length,
-          informations.filter((info) => info.isActive).length,
-          informations.filter((info) => !info.isActive).length
+          informations.length,
+          0
         )}
       />
 
@@ -210,12 +205,10 @@ export default function AdminInformations() {
         searchPlaceholder="Rechercher par titre, contenu ou auteur..."
         showSearch={true}
         selectedPromotion={statusFilter}
-        setSelectedPromotion={(value: string) =>
-          setStatusFilter(value as "all" | "active" | "inactive")
-        }
-        promotions={["active", "inactive"]}
-        promotionPlaceholder="Tous les statuts"
-        showPromotionFilter={true}
+        setSelectedPromotion={(value: string) => setStatusFilter(value)}
+        promotions={[]}
+        promotionPlaceholder=""
+        showPromotionFilter={false}
         selectedSecond="all"
         setSelectedSecond={() => {}}
         seconds={[]}
@@ -262,9 +255,7 @@ export default function AdminInformations() {
                 {displayedInformations.map((information) => (
                   <div
                     key={information.id}
-                    className={`bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-md ${
-                      !information.isActive ? "opacity-60" : ""
-                    }`}
+                    className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-md"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                       <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
@@ -277,15 +268,6 @@ export default function AdminInformations() {
                               {information.title}
                             </h3>
                             <div className="flex flex-wrap gap-2">
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                                  information.isActive
-                                    ? "bg-green-100 text-green-800 border border-green-200"
-                                    : "bg-red-100 text-red-800 border border-red-200"
-                                }`}
-                              >
-                                {information.isActive ? "Active" : "Inactive"}
-                              </span>
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 whitespace-nowrap">
                                 {information.authorRole === "admin"
                                   ? "Admin"
@@ -307,18 +289,6 @@ export default function AdminInformations() {
                         </div>
                       </div>
                       <div className="flex items-center justify-end sm:justify-start gap-2 flex-shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleStatus(information)}
-                          className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-2 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
-                        >
-                          {information.isActive ? (
-                            <EyeOff size={14} />
-                          ) : (
-                            <Eye size={14} />
-                          )}
-                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
