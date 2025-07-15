@@ -144,7 +144,7 @@ const RegisterPage = () => {
         campus: formData.campus,
         is_active: true,
         roles_user: formData.role,
-        id_prom: promotionId?.[0]?.id || null,
+        id_promotion: promotionId?.[0]?.id || null,
         specialty: formData.specialty,
         room: formData.room,
         major: formData.major,
