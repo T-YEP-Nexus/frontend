@@ -60,7 +60,6 @@ const RegisterPage = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [promotionSuggestions, setPromotionSuggestions] = useState<Promotion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -85,6 +84,13 @@ const RegisterPage = () => {
   const [err, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 
+  // Hook pour récupérer les promotions
+  const {
+    promotions,
+    loading: promotionsLoading,
+    error: promotionsError,
+  } = usePromotionsData();
+
   // Fonction pour récupérer les promotions
   const getPromotionIdByName = async (name: string) => {
     try {
@@ -93,26 +99,12 @@ const RegisterPage = () => {
         throw new Error('Erreur lors de la récupération de la promotions');
       }
       const data = await response.json();
-      return data.data; // <-- retourne la promotion trouvée
+      return data.data;
     } catch (error) {
       console.error('Erreur lors de la récupération de la promotions:', error);
       return null;
     }
   };
-
-
-
-  
-
-  // Fonction pour générer le numéro étudiant
-  const generateStudentNumber = (lastName: string, promotionName: string): string => {
-
-  // Hook pour récupérer les promotions
-  const {
-    promotions,
-    loading: promotionsLoading,
-    error: promotionsError,
-  } = usePromotionsData();
 
   // Fonction pour générer le numéro étudiant
   const generateStudentNumber = (
@@ -120,7 +112,7 @@ const RegisterPage = () => {
     promotion: string
   ): string => {
     const firstThreeLetters = lastName.toUpperCase().substring(0, 3);
-    const promotionUpper = promotionName.toUpperCase();
+    const promotionUpper = promotion.toUpperCase();
     return `${firstThreeLetters}-${promotionUpper}`;
   };
 
@@ -137,15 +129,9 @@ const RegisterPage = () => {
     try {
       let promotionId = null;
 
-    if (formData.role === "student" && formData.promotion) {
-      promotionId = await getPromotionIdByName(formData.promotion); // <-- ici le await
-      // if (!promotionId || !promotionId.id) {
-      //   setError("Promotion non trouvée. Veuillez sélectionner une promotion valide.");
-      //   setIsSaving(false);
-      //   return;
-      // }
-    }
-
+      if (formData.role === "student" && formData.promotion) {
+        promotionId = await getPromotionIdByName(formData.promotion);
+      }
 
       // Préparer les données pour l'API
       const apiData: NewUserInput = {
@@ -158,7 +144,7 @@ const RegisterPage = () => {
         campus: formData.campus,
         is_active: true,
         roles_user: formData.role,
-        id_prom: promotionId[0].id, // Utiliser l'ID de la promotion
+        id_prom: promotionId?.[0]?.id || null,
         specialty: formData.specialty,
         room: formData.room,
         major: formData.major,
@@ -169,6 +155,7 @@ const RegisterPage = () => {
       if (formData.role === "student") {
         apiData.student_number = generateStudentNumber(formData.last_name, formData.promotion || "");
       } 
+      
       console.log("data envoyé", apiData);
       console.log("La prom:", promotionId);
       await createCompleteUser(apiData);
@@ -188,7 +175,7 @@ const RegisterPage = () => {
     getUserIdFromToken()
   );
 
-  // Récupérer le rôle de l'utilisateur connecté et les promotions
+  // Récupérer le rôle de l'utilisateur connecté
   React.useEffect(() => {
     const fetchUserRole = async () => {
       try {
@@ -285,6 +272,8 @@ const RegisterPage = () => {
     }));
     setShowSuggestions(false);
     setPromotionSuggestions([]);
+  };
+
   const handlePromotionChange = (promotion: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -529,42 +518,6 @@ const RegisterPage = () => {
             {/* Champs spécifiques aux étudiants */}
             {formData.role === "student" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Champ promotion avec autocomplétion */}
-                <div className="relative">
-                  <Input
-                    label="Promotion"
-                    icon={GraduationCap}
-                    name="promotion"
-                    value={formData.promotion || ""}
-                    onChange={handleInputChange}
-                    placeholder="MSC2027"
-                    error={errors.promotion}
-                    required
-                    onFocus={() => {
-                    }}
-                    onBlur={() => {
-                      // Délai pour permettre la sélection
-                      setTimeout(() => setShowSuggestions(false), 200);
-                    }}
-                  />
-                  
-                  {/* Suggestions de promotion */}
-                  {showSuggestions && promotionSuggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {promotionSuggestions.map((promotion) => (
-                        <button
-                          key={promotion.id}
-                          type="button"
-                          onClick={() => handlePromotionSelect(promotion)}
-                          className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                        >
-                          <div className="font-medium">{promotion.name}</div>
-                          <div className="text-sm text-gray-600">Année {promotion.year}</div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
                 <PromotionDropdown
                   promotions={promotions}
                   selectedPromotion={formData.promotion || ""}
