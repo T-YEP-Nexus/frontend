@@ -31,8 +31,8 @@ const links = [
     icon: <MessageSquare size={24} />,
     href: "/informations",
   },
-  { label: "Emargement", icon: <Edit size={24} />, href: "/emargement" },
-  { label: "Absences", icon: <BookOpen size={24} />, href: "/absences" },
+//   { label: "Emargement", icon: <Edit size={24} />, href: "/emargement" },
+//   { label: "Absences", icon: <BookOpen size={24} />, href: "/absences" },
 ];
 
 const russo = Russo_One({

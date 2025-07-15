@@ -93,10 +93,10 @@ export default function AdminDashboard() {
       color: "from-blue-600 to-blue-700",
     },
     {
-      title: "Créer une promotion",
-      description: "Créer une nouvelle promotion d'étudiants",
+      title: "Gérer les promotions",
+      description: "Créer, modifier et visionner les promotions",
       icon: GraduationCap,
-      href: "/admin/promotions/create",
+      href: "/admin/promotions",
       color: "from-green-600 to-green-700",
     },
     {
