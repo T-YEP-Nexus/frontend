@@ -4,6 +4,8 @@ interface Promotion {
   id: number;
   name: string;
   created_at: string;
+  is_active?: boolean;
+  student_count?: number;
 }
 
 interface UsePromotionsDataReturn {

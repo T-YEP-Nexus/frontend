@@ -28,12 +28,14 @@ import {
   Settings,
   Database,
   Zap,
+  MessageSquare,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getUserIdFromToken } from "@/lib/auth";
 import Header from "@/components/Header/Header";
 import AdminLoading from "@/components/admin/AdminLoading";
+import AdminStatsCards from "@/components/admin/AdminStatsCards";
 
 // Interfaces pour les données
 interface DashboardStats {
@@ -91,11 +93,18 @@ export default function AdminDashboard() {
       color: "from-blue-600 to-blue-700",
     },
     {
-      title: "Créer une promotion",
-      description: "Créer une nouvelle promotion d'étudiants",
+      title: "Gérer les promotions",
+      description: "Créer, modifier et visionner les promotions",
       icon: GraduationCap,
-      href: "/admin/promotions/create",
+      href: "/admin/promotions",
       color: "from-green-600 to-green-700",
+    },
+    {
+      title: "Gérer les informations",
+      description: "Créer et gérer les annonces générales",
+      icon: MessageSquare,
+      href: "/admin/informations",
+      color: "from-indigo-600 to-indigo-700",
     },
     {
       title: "Import en masse",
@@ -302,71 +311,47 @@ export default function AdminDashboard() {
       />
 
       {/* Statistiques principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Total Utilisateurs
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                {stats.totalUsers}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <Users size={32} className="text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Projets Actifs
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
-                {stats.activeProjects}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <Briefcase size={32} className="text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Promotions
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent">
-                {stats.totalPromotions}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <GraduationCap size={32} className="text-purple-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Activité Récente
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-orange-800 bg-clip-text text-transparent">
-                {stats.recentActivity}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-orange-100 to-orange-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <Activity size={32} className="text-orange-600" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminStatsCards
+        size="small"
+        stats={[
+          {
+            title: "Total Utilisateurs",
+            value: stats.totalUsers,
+            icon: <Users size={24} className="text-blue-600" />,
+            color: "blue" as const,
+            gradient: "from-blue-600 to-blue-800",
+            bgGradient: "from-blue-100 to-blue-200",
+            iconColor: "text-blue-600",
+          },
+          {
+            title: "Projets Actifs",
+            value: stats.activeProjects,
+            icon: <Briefcase size={24} className="text-green-600" />,
+            color: "green" as const,
+            gradient: "from-green-600 to-green-800",
+            bgGradient: "from-green-100 to-green-200",
+            iconColor: "text-green-600",
+          },
+          {
+            title: "Promotions",
+            value: stats.totalPromotions,
+            icon: <GraduationCap size={24} className="text-purple-600" />,
+            color: "purple" as const,
+            gradient: "from-purple-600 to-purple-800",
+            bgGradient: "from-purple-100 to-purple-200",
+            iconColor: "text-purple-600",
+          },
+          {
+            title: "Activité Récente",
+            value: stats.recentActivity,
+            icon: <Activity size={24} className="text-orange-600" />,
+            color: "orange" as const,
+            gradient: "from-orange-600 to-orange-800",
+            bgGradient: "from-orange-100 to-orange-200",
+            iconColor: "text-orange-600",
+          },
+        ]}
+      />
 
       {/* Actions rapides */}
       <div className="mb-10">
