@@ -71,17 +71,17 @@ export default function CreatePromotionPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Nom de la formation */}
+            {/* Nom de la promotion */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nom de la formation *
+                Nom de la promotion *
               </label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="ex: Formation 2027"
+                placeholder="ex: MSC2027"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
@@ -110,7 +110,7 @@ export default function CreatePromotionPage() {
                 ) : (
                   <>
                     <Save size={16} />
-                    Créer la formation
+                    Créer la promotion
                   </>
                 )}
               </Button>
