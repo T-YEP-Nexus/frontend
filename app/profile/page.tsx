@@ -30,9 +30,9 @@ import { Button } from "@/components/ui/button";
 import { useUserData } from "@/hooks/useUserData";
 import { getUserIdFromToken, isTokenExpired } from "@/lib/auth";
 import { useRouter } from "next/navigation";
-import router from "next/router";
 
 const ProfilePage = () => {
+  const router = useRouter();
   // État pour le modal d'image
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
@@ -53,7 +53,7 @@ const ProfilePage = () => {
     // Détecter si nous sommes en mode offline (services indisponibles)
     if (error) {
       // Handle both string and Error object cases
-      const errorMessage = typeof error === 'string' ? error : error || '';
+      const errorMessage = typeof error === "string" ? error : error || "";
       if (errorMessage.includes("Failed to fetch")) {
         setIsOfflineMode(true);
       }
@@ -85,8 +85,9 @@ const ProfilePage = () => {
 
   // Affichage d'erreur critique uniquement si pas de userData du tout
   if (error && !userData) {
-    const errorMessage = typeof error === 'string' ? error : error || 'Erreur inconnue';
-    
+    const errorMessage =
+      typeof error === "string" ? error : error || "Erreur inconnue";
+
     return (
       <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
         <div className="flex items-center justify-center h-64">
@@ -95,9 +96,7 @@ const ProfilePage = () => {
             <p className="text-red-600 mb-4">
               Erreur critique lors du chargement du profil
             </p>
-            <p className="text-gray-600 text-sm mb-4">
-              {errorMessage}
-            </p>
+            <p className="text-gray-600 text-sm mb-4">{errorMessage}</p>
             <Button onClick={() => window.location.reload()}>Réessayer</Button>
           </div>
         </div>
@@ -209,57 +208,93 @@ const ProfilePage = () => {
       <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-x-8 gap-y-6 items-start">
         {/* Colonne principale */}
         <div className="flex flex-col gap-6">
-          {/* Carte profil principale */}
-          <ProfileSection title="Informations personnelles" icon={Users}>
-            <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
-              <div className="relative">
-                <Image
-                  src={
-                    userData.profileImage && userData.profileImage.trim() !== ""
-                      ? userData.profileImage
-                      : "/default-avatar.png"
-                  }
-                  alt="Photo de profil"
-                  width={120}
-                  height={120}
-                  className="rounded-full border-4 border-blue-200 shadow-lg"
-                />
-                <button
-                  onClick={() => setIsImageModalOpen(true)}
-                  className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-2 shadow-md hover:shadow-lg transition-shadow hover:bg-blue-700 cursor-pointer"
-                >
-                  <Edit size={16} className="text-white" />
-                </button>
-              </div>
-              <div className="text-center md:text-left">
-                <h2 className="text-2xl font-bold text-blue-900 mb-2">
-                  {userData.firstName} {userData.lastName}
-                </h2>
-                <p className="text-blue-800/80 mb-1">
-                  {userData.role} - {userData.promotion}
-                </p>
-                <p className="text-blue-700/70 text-sm">{userData.campus}</p>
-              </div>
+          {/* Carte profil principale modernisée */}
+          <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+            <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+              <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
+                <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
+                  <Users className="w-4 h-4 text-blue-700" />
+                </div>
+                Informations personnelles
+              </h2>
             </div>
 
-            {/* Informations de contact */}
-            <div className="flex w-full justify-around">
-              <div className="flex items-center gap-3">
-                <Mail size={20} className="text-blue-600" />
-                <div>
-                  <p className="text-sm text-blue-800/60">Email</p>
-                  <p className="text-blue-900 font-medium">{userData.email}</p>
+            <div className="p-6">
+              <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
+                <div className="relative">
+                  <Image
+                    src={
+                      userData.profileImage &&
+                      userData.profileImage.trim() !== ""
+                        ? userData.profileImage
+                        : "/default-avatar.png"
+                    }
+                    alt="Photo de profil"
+                    width={100}
+                    height={100}
+                    className="rounded-full border-3 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300"
+                  />
+                  <button
+                    onClick={() => setIsImageModalOpen(true)}
+                    className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-1.5 shadow-md hover:shadow-lg transition-shadow hover:bg-blue-700 cursor-pointer"
+                  >
+                    <Edit size={14} className="text-white" />
+                  </button>
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-3 border-white flex items-center justify-center">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                </div>
+                <div className="text-center md:text-left">
+                  <h3 className="text-2xl font-bold text-blue-900 mb-2">
+                    {userData.firstName} {userData.lastName}
+                  </h3>
+                  <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                      {userData.role}
+                    </span>
+                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                      {userData.promotion}
+                    </span>
+                  </div>
+                  <p className="text-blue-600 text-sm">{userData.campus}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Phone size={20} className="text-blue-600" />
-                <div>
-                  <p className="text-sm text-blue-800/60">Téléphone</p>
-                  <p className="text-blue-900 font-medium">{userData.phone}</p>
+
+              {/* Informations de contact modernisées */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-200 rounded-lg">
+                      <Mail size={18} className="text-blue-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-600 font-medium mb-1">
+                        Email
+                      </p>
+                      <p className="text-blue-900 font-semibold text-sm">
+                        {userData.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-200 rounded-lg">
+                      <Phone size={18} className="text-green-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-green-600 font-medium mb-1">
+                        Téléphone
+                      </p>
+                      <p className="text-green-900 font-semibold text-sm">
+                        {userData.phone}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </ProfileSection>
+          </div>
 
           {/* Statistiques principales avec anneaux de progression */}
           <ProfileSection title="Statistiques principales" icon={TrendingUp}>
@@ -403,32 +438,45 @@ const ProfilePage = () => {
             </div>
           </ProfileSection>
 
-          {/* Actions rapides */}
-          <ProfileSection title="Actions rapides">
-            <div className="space-y-3">
-              <Button
-                onClick={() => router.push("/profile/edit")}
-                className="w-full !bg-blue-600 hover:!bg-blue-700 !text-white cursor-pointer"
-                variant="default"
-              >
-                Modifier le profil
-              </Button>
-              <Button
-                className="w-full !border-blue-600 !text-blue-600 hover:!bg-blue-50 hover:!text-blue-700 cursor-pointer"
-                variant="outline"
-              >
-                Exporter mes données
-              </Button>
-              <Button
-                onClick={handleLogout}
-                className="w-full !border-red-600 !text-red-600 hover:!bg-red-50 hover:!text-red-700 cursor-pointer"
-                variant="outline"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Se déconnecter
-              </Button>
+          {/* Actions rapides modernisées et compactes */}
+          <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+            <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200">
+              <h2 className="font-semibold text-lg text-green-900 flex items-center gap-2">
+                <div className="p-1.5 bg-gradient-to-br from-green-200 to-green-300 rounded-lg">
+                  <Target className="w-4 h-4 text-green-700" />
+                </div>
+                Actions rapides
+              </h2>
             </div>
-          </ProfileSection>
+
+            <div className="p-4">
+              <div className="grid grid-cols-1 gap-3">
+                <Button
+                  onClick={() => router.push("/profile/edit")}
+                  className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm text-white cursor-pointer"
+                  variant="default"
+                >
+                  <Edit className="w-4 h-4 mr-2 text-white" />
+                  Modifier le profil
+                </Button>
+                <Button
+                  className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-sm text-white cursor-pointer"
+                  variant="default"
+                >
+                  <BookOpen className="w-4 h-4 mr-2 text-white" />
+                  Exporter mes données
+                </Button>
+                <Button
+                  onClick={handleLogout}
+                  className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm text-white cursor-pointer"
+                  variant="default"
+                >
+                  <LogOut className="w-4 h-4 mr-2 text-white" />
+                  Se déconnecter
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
