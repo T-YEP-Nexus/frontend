@@ -243,6 +243,21 @@ const Sidebar = () => {
                 </span>
                 <span className="hidden md:inline">Gestion Projets</span>
               </Link>
+              <Link
+                href="/admin/informations"
+                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                  ${
+                    pathname === "/admin/informations"
+                      ? "bg-[#0e357a]/70 font-bold"
+                      : "hover:bg-[#0e357a]/40"
+                  }
+                `}
+              >
+                <span>
+                  <MessageSquare size={24} />
+                </span>
+                <span className="hidden md:inline">Gestion Informations</span>
+              </Link>
             </>
           )}
         </nav>

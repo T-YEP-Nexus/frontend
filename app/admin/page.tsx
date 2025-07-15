@@ -28,6 +28,7 @@ import {
   Settings,
   Database,
   Zap,
+  MessageSquare,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -96,6 +97,13 @@ export default function AdminDashboard() {
       icon: GraduationCap,
       href: "/admin/promotions/create",
       color: "from-green-600 to-green-700",
+    },
+    {
+      title: "Gérer les informations",
+      description: "Créer et gérer les annonces générales",
+      icon: MessageSquare,
+      href: "/admin/informations",
+      color: "from-indigo-600 to-indigo-700",
     },
     {
       title: "Import en masse",
