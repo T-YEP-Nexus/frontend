@@ -11,7 +11,14 @@ import { useCalendarData } from "@/hooks/useCalendarData";
 import { getStudentData, getUserData } from "@/lib/userData";
 import { getUserIdFromToken } from "@/lib/auth";
 
-const Calendar: React.FC = () => {
+// Ajout de la prop role
+interface CalendarProps {
+  role?: 'admin' | 'student';
+}
+
+type CalendarEventInput = EventInput & { id: string; extendedProps: { slots?: { start: string; end: string; user: string | null }[]; [key: string]: any } };
+
+const Calendar: React.FC<CalendarProps> = ({ role }) => {
   const { 
     events: backendEvents, 
     loading, 
@@ -30,7 +37,7 @@ const Calendar: React.FC = () => {
     canUnregisterFromEvents: false,
   });
   const [roleLoading, setRoleLoading] = useState(true);
-  const [events, setEvents] = useState<(EventInput & { id: string })[]>([]);
+  const [events, setEvents] = useState<CalendarEventInput[]>([]);
 
   // Charger le rôle utilisateur
   useEffect(() => {
@@ -90,13 +97,40 @@ const Calendar: React.FC = () => {
     loadUserRole();
   }, []);
 
+  // On adapte les permissions si la prop role est fournie
+  useEffect(() => {
+    if (role) {
+      setUserRole(role);
+      if (role === 'admin') {
+        setPermissions({
+          canCreateEvents: true,
+          canEditEvents: true,
+          canDeleteEvents: true,
+          canRegisterToEvents: true,
+          canUnregisterFromEvents: true,
+        });
+      } else {
+        setPermissions({
+          canCreateEvents: false, // Toujours false pour student
+          canEditEvents: false,
+          canDeleteEvents: false,
+          canRegisterToEvents: true,
+          canUnregisterFromEvents: true,
+        });
+      }
+      setRoleLoading(false);
+    }
+  }, [role]);
+
   // DEBUG : log du rôle et des permissions
   console.log("userRole", userRole, "permissions", permissions);
   // Forçage temporaire pour test admin
   // Sélecteur de rôle pour test front
   const [roleSelector, setRoleSelector] = useState<'admin' | 'student'>('admin');
-  const isAdmin = roleSelector === 'admin';
-  const isStudent = roleSelector === 'student';
+  // Si la prop role est fournie, on l'utilise, sinon on prend le sélecteur ou la détection auto
+  const effectiveRole = role || roleSelector || userRole;
+  const isAdmin = effectiveRole === 'admin';
+  const isStudent = effectiveRole === 'student';
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState<{start: string, end: string} | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -109,7 +143,7 @@ const Calendar: React.FC = () => {
   // Synchroniser les événements du backend avec le calendrier
   useEffect(() => {
     if (!loading && !error) {
-      const calendarEvents = backendEvents.map((event) => ({
+      let calendarEvents = backendEvents.map((event) => ({
         id: String(event.id),
         title: event.title,
         start: new Date(event.event_datetime),
@@ -189,7 +223,9 @@ const Calendar: React.FC = () => {
         start,
         end,
         color: "#60a5fa",
-        slots, // ajout des créneaux
+        extendedProps: {
+          slots,
+        },
       },
     ]);
     setModalOpen(false);
@@ -208,7 +244,7 @@ const Calendar: React.FC = () => {
         title: clickInfo.event.title,
         start: clickInfo.event.start ?? undefined,
         end: clickInfo.event.end ?? undefined,
-        slots: event && event.slots ? event.slots : [],
+        slots: event && event.extendedProps && event.extendedProps.slots ? event.extendedProps.slots : [],
       });
       setDeleteModalOpen(true);
       return;
@@ -231,7 +267,7 @@ const Calendar: React.FC = () => {
         end: clickInfo.event.end ?? undefined,
         event_type: event.event_type,
         description: event.description,
-        slots: event.slots || [],
+        slots: event.extendedProps && event.extendedProps.slots ? event.extendedProps.slots : [],
       });
       setShowRegistrationModal(true);
     }
@@ -290,18 +326,20 @@ const Calendar: React.FC = () => {
   return (
     <div className="bg-white rounded-lg shadow p-2 relative">
       {/* Sélecteur de rôle pour test front */}
-      <div className="mb-4 flex items-center gap-4">
-        <label className="text-sm font-medium text-gray-700">Rôle de test :</label>
-        <select
-          className="border border-blue-300 rounded-xl px-3 py-1 text-base focus:outline-none focus:border-blue-500 bg-blue-50"
-          value={roleSelector}
-          onChange={e => setRoleSelector(e.target.value as 'admin' | 'student')}
-        >
-          <option value="admin">Administrateur</option>
-          <option value="student">Étudiant</option>
-        </select>
-        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}`}>{isAdmin ? 'Administrateur' : 'Étudiant'}</span>
-      </div>
+      { !role && (
+        <div className="mb-4 flex items-center gap-4">
+          <label className="text-sm font-medium text-gray-700">Rôle de test :</label>
+          <select
+            className="border border-blue-300 rounded-xl px-3 py-1 text-base focus:outline-none focus:border-blue-500 bg-blue-50"
+            value={roleSelector}
+            onChange={e => setRoleSelector(e.target.value as 'admin' | 'student')}
+          >
+            <option value="admin">Administrateur</option>
+            <option value="student">Étudiant</option>
+          </select>
+          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}`}>{isAdmin ? 'Administrateur' : 'Étudiant'}</span>
+        </div>
+      )}
       {/* Indicateur de rôle utilisateur */}
       <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200/50">
         <div className="flex items-center justify-between">
@@ -345,13 +383,15 @@ const Calendar: React.FC = () => {
         dateClick={handleDateClick}
         eventClick={handleEventClick}
       />
-      <ModalEventForm
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleModalSubmit}
-        defaultStart={modalData?.start}
-        defaultEnd={modalData?.end}
-      />
+      {permissions.canCreateEvents && (
+        <ModalEventForm
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onSubmit={handleModalSubmit}
+          defaultStart={modalData?.start}
+          defaultEnd={modalData?.end}
+        />
+      )}
       {/* Modal admin : détail, créneaux/inscrits et suppression */}
       {isAdmin && eventToDelete && (
         <div className={`fixed inset-0 z-50 flex items-center justify-center ${deleteModalOpen ? '' : 'hidden'}`} style={{ background: 'rgba(0,0,0,0.3)' }}>
