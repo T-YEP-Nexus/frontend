@@ -20,11 +20,13 @@ import {
 import { Button } from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import PasswordInput from "@/components/ui/password-input";
+import PromotionDropdown from "@/components/ui/promotion-dropdown";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 import { useUserData } from "@/hooks/useUserData";
+import usePromotionsData from "@/hooks/usePromotionsData";
 import { getUserIdFromToken } from "@/lib/auth";
 import { getUserProfileData } from "@/lib/userData";
-import { createCompleteUser, NewUserInput, ApiResponse } from '@/lib/userData'
+import { createCompleteUser, NewUserInput, ApiResponse } from "@/lib/userData";
 import AdminLoading from "@/components/admin/AdminLoading";
 
 interface RegisterFormData {
@@ -77,9 +79,9 @@ const RegisterPage = () => {
     promotion: "",
     major: "",
     room: "",
-    availability: ""
+    availability: "",
   });
-  
+
   const [err, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 
@@ -104,6 +106,19 @@ const RegisterPage = () => {
 
   // Fonction pour générer le numéro étudiant
   const generateStudentNumber = (lastName: string, promotionName: string): string => {
+
+  // Hook pour récupérer les promotions
+  const {
+    promotions,
+    loading: promotionsLoading,
+    error: promotionsError,
+  } = usePromotionsData();
+
+  // Fonction pour générer le numéro étudiant
+  const generateStudentNumber = (
+    lastName: string,
+    promotion: string
+  ): string => {
     const firstThreeLetters = lastName.toUpperCase().substring(0, 3);
     const promotionUpper = promotionName.toUpperCase();
     return `${firstThreeLetters}-${promotionUpper}`;
@@ -158,12 +173,12 @@ const RegisterPage = () => {
       console.log("La prom:", promotionId);
       await createCompleteUser(apiData);
       setSuccess(true);
-      
+
       // Redirection avec message de succès
       router.push("/admin?message=user_created");
     } catch (error: any) {
       console.error("Erreur lors de la création:", error);
-      setError(error.message || 'Erreur lors de la création du compte');
+      setError(error.message || "Erreur lors de la création du compte");
     } finally {
       setIsSaving(false);
     }
@@ -270,6 +285,19 @@ const RegisterPage = () => {
     }));
     setShowSuggestions(false);
     setPromotionSuggestions([]);
+  const handlePromotionChange = (promotion: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      promotion,
+    }));
+
+    // Effacer l'erreur du champ promotion
+    if (errors.promotion) {
+      setErrors((prev) => ({
+        ...prev,
+        promotion: undefined,
+      }));
+    }
   };
 
   const validateForm = (): boolean => {
@@ -537,6 +565,15 @@ const RegisterPage = () => {
                     </div>
                   )}
                 </div>
+                <PromotionDropdown
+                  promotions={promotions}
+                  selectedPromotion={formData.promotion || ""}
+                  onPromotionChange={handlePromotionChange}
+                  loading={promotionsLoading}
+                  error={promotionsError || errors.promotion}
+                  placeholder="Sélectionner une promotion"
+                  required
+                />
 
                 <Input
                   label="Spécialité"
@@ -548,6 +585,19 @@ const RegisterPage = () => {
                   error={errors.major}
                   required
                 />
+              </div>
+            )}
+
+            {/* Message d'erreur pour les promotions */}
+            {formData.role === "student" && promotionsError && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm">
+                  Erreur lors du chargement des promotions : {promotionsError}
+                </p>
+                <p className="text-red-600 text-xs mt-1">
+                  Vous pouvez continuer en saisissant manuellement la promotion
+                  dans le champ spécialité.
+                </p>
               </div>
             )}
 

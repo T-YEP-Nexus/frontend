@@ -33,6 +33,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getUserIdFromToken } from "@/lib/auth";
 import Header from "@/components/Header/Header";
+import AdminLoading from "@/components/admin/AdminLoading";
 
 // Interfaces pour les données
 interface DashboardStats {
@@ -267,16 +268,7 @@ export default function AdminDashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-blue-800 text-lg">Chargement du dashboard...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <AdminLoading />;
   }
 
   if (error) {
