@@ -31,8 +31,8 @@ const links = [
     icon: <MessageSquare size={24} />,
     href: "/informations",
   },
-//   { label: "Emargement", icon: <Edit size={24} />, href: "/emargement" },
-//   { label: "Absences", icon: <BookOpen size={24} />, href: "/absences" },
+  //   { label: "Emargement", icon: <Edit size={24} />, href: "/emargement" },
+  //   { label: "Absences", icon: <BookOpen size={24} />, href: "/absences" },
 ];
 
 const russo = Russo_One({
@@ -159,10 +159,10 @@ const Sidebar = () => {
   }, [pathname]);
 
   return (
-    <div className="fixed top-0 left-0 h-screen w-20 md:w-68 z-30 flex flex-col justify-between bg-gradient-to-b from-[#1971FF] to-[#1971FF]/80 px-2 md:px-4 py-6 transition-all duration-300">
+    <div className="fixed top-0 left-0 h-screen w-20 md:w-68 z-30 flex flex-col justify-between bg-gradient-to-b from-[#1971FF] to-[#1971FF]/80 px-2 md:px-4 py-6 transition-all duration-300 overflow-hidden">
       {/* Logo + nom */}
-      <div>
-        <div className="flex flex-col items-center md:flex-row md:items-center gap-2 mb-10">
+      <div className="flex-1 overflow-y-auto">
+        <div className="flex flex-col items-center md:flex-row md:items-center gap-2 mb-6 md:mb-10">
           <Image
             src="/images/Nexus.png"
             alt="Nexus"
@@ -178,7 +178,7 @@ const Sidebar = () => {
         </div>
 
         {/* Liens */}
-        <nav className="flex flex-col gap-4">
+        <nav className="flex flex-col gap-2 md:gap-4">
           {links.map((link) => (
             <Link
               key={link.label}
@@ -280,37 +280,39 @@ const Sidebar = () => {
       </div>
 
       {/* Utilisateur avec données dynamiques */}
-      <Link
-        href="/profile"
-        className={`flex flex-col items-center md:flex-row md:items-center gap-2 mt-8 cursor-pointer p-2 rounded-lg transition-all
-          ${
-            pathname === "/profile"
-              ? "bg-[#0e357a]/70"
-              : "hover:bg-[#0e357a]/40"
-          }
-        `}
-      >
-        <Image
-          src="/images/Avatar.png"
-          alt="Avatar"
-          width={40}
-          height={40}
-          className="rounded-full bg-white"
-        />
-        <div className="hidden md:flex flex-col">
-          <span className="text-white font-bold leading-tight">
-            {firstName}
-          </span>
-          <span className="text-white/80 text-xs leading-tight">
-            {lastName}
-          </span>
-          {error && (
-            <span className="text-red-200 text-[10px] leading-tight">
-              Mode hors ligne
+      <div className="flex-shrink-0 mt-4 md:mt-8">
+        <Link
+          href="/profile"
+          className={`flex flex-col items-center md:flex-row md:items-center gap-2 cursor-pointer p-2 rounded-lg transition-all
+            ${
+              pathname === "/profile"
+                ? "bg-[#0e357a]/70"
+                : "hover:bg-[#0e357a]/40"
+            }
+          `}
+        >
+          <Image
+            src="/images/Avatar.png"
+            alt="Avatar"
+            width={40}
+            height={40}
+            className="rounded-full bg-white"
+          />
+          <div className="hidden md:flex flex-col">
+            <span className="text-white font-bold leading-tight">
+              {firstName}
             </span>
-          )}
-        </div>
-      </Link>
+            <span className="text-white/80 text-xs leading-tight">
+              {lastName}
+            </span>
+            {error && (
+              <span className="text-red-200 text-[10px] leading-tight">
+                Mode hors ligne
+              </span>
+            )}
+          </div>
+        </Link>
+      </div>
     </div>
   );
 };
