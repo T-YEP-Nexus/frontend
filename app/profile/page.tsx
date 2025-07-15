@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { useUserData } from "@/hooks/useUserData";
 import { getUserIdFromToken, isTokenExpired } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import AdminLoading from "@/components/admin/AdminLoading";
 
 const ProfilePage = () => {
   const router = useRouter();
@@ -71,16 +72,7 @@ const ProfilePage = () => {
 
   // Affichage du loading
   if (loading) {
-    return (
-      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-gray-600">Chargement du profil...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <AdminLoading message="Chargement du profil..." />;
   }
 
   // Affichage d'erreur critique uniquement si pas de userData du tout
@@ -240,9 +232,6 @@ const ProfilePage = () => {
                   >
                     <Edit size={14} className="text-white" />
                   </button>
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-3 border-white flex items-center justify-center">
-                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                  </div>
                 </div>
                 <div className="text-center md:text-left">
                   <h3 className="text-2xl font-bold text-blue-900 mb-2">

@@ -456,9 +456,6 @@ const AdminProfilePage = () => {
                       height={100}
                       className="rounded-full border-3 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300"
                     />
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-3 border-white flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
                   </div>
                   <div className="text-center md:text-left">
                     <h3 className="text-2xl font-bold text-blue-900 mb-2">
