@@ -34,16 +34,42 @@ export default function CreatePromotionPage() {
     setIsSaving(true);
 
     try {
-      // TODO: Implémenter l'API pour créer une promotion
-      console.log("Données de la promotion:", formData);
+      const response = await fetch('http://localhost:3004/promotion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      console.log(response);
+      // Vérifier si la réponse est en JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`API endpoint not found or returned HTML instead of JSON. Status: ${response.status}`);
+      }
 
-      // Simulation d'une requête API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to create promotion');
+      }
+
+      console.log("Promotion créée avec succès:", result.data);
 
       // Redirection vers le dashboard admin
       router.push("/admin?success=promotion-created");
     } catch (error) {
       console.error("Erreur lors de la création de la promotion:", error);
+
+      if (error instanceof Error) {
+        if (error.message.includes('JSON')) {
+          alert('Erreur: L\'endpoint API /api/promotion n\'est pas accessible. Vérifiez que votre serveur backend est démarré.');
+        } else {
+          alert(`Erreur: ${error.message}`);
+        }
+      } else {
+        alert("Une erreur inconnue est survenue.");
+      }
     } finally {
       setIsSaving(false);
     }
