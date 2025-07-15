@@ -324,7 +324,7 @@ export interface NewUserInput {
   roles_user?: string
   // Attributs spécifiques student
   student_number?: string
-  promotion?: string
+  id_prom?: number
   major?: string
   // Attributs spécifiques advisor
   room?: string
@@ -387,7 +387,7 @@ export async function createCompleteUser(input: NewUserInput) {
         body: JSON.stringify({
           id_user_profile: profileData!.id,
           student_number: input.student_number,
-          promotion: input.promotion,
+          id_prom: input.id_prom,
           major: input.major
         })
       });
@@ -445,3 +445,5 @@ export async function createCompleteUser(input: NewUserInput) {
     throw error;
   }
 }
+
+
