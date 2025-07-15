@@ -153,7 +153,11 @@ const Sidebar = () => {
   // Recharger les données quand on navigue vers certaines pages
   useEffect(() => {
     // Recharger les données quand on navigue vers des pages qui pourraient avoir modifié l'utilisateur
-    if (pathname === "/profile" || pathname === "/admin/users/dashboard") {
+    if (
+      pathname === "/profile" ||
+      pathname === "/admin/profile" ||
+      pathname === "/admin/users/dashboard"
+    ) {
       fetchUserData();
     }
   }, [pathname]);
@@ -282,10 +286,18 @@ const Sidebar = () => {
       {/* Utilisateur avec données dynamiques */}
       <div className="flex-shrink-0 mt-4 md:mt-8">
         <Link
-          href="/profile"
+          href={
+            userRole === "admin" || userRole === "advisor"
+              ? "/admin/profile"
+              : "/profile"
+          }
           className={`flex flex-col items-center md:flex-row md:items-center gap-2 cursor-pointer p-2 rounded-lg transition-all
             ${
-              pathname === "/profile"
+              (
+                userRole === "admin" || userRole === "advisor"
+                  ? pathname === "/admin/profile"
+                  : pathname === "/profile"
+              )
                 ? "bg-[#0e357a]/70"
                 : "hover:bg-[#0e357a]/40"
             }

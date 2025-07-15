@@ -83,7 +83,30 @@ const EditProfilePage = () => {
 
     try {
       await updateUserData(formData);
-      router.push("/profile");
+
+      // Debug: afficher le rôle pour vérifier
+      console.log("=== DEBUG REDIRECTION ===");
+      console.log("userData:", userData);
+      console.log("userData?.role:", userData?.role);
+      console.log(
+        "Condition admin/advisor:",
+        userData?.role === "admin" || userData?.role === "advisor"
+      );
+      console.log(
+        "Redirection vers:",
+        userData?.role === "admin" || userData?.role === "advisor"
+          ? "/admin/profile"
+          : "/profile"
+      );
+      console.log("========================");
+
+      const redirectUrl =
+        userData?.role === "admin" || userData?.role === "advisor"
+          ? "/admin/profile"
+          : "/profile";
+
+      console.log("Redirection forcée vers:", redirectUrl);
+      window.location.href = redirectUrl;
     } catch (error) {
       console.error("Erreur lors de la mise à jour:", error);
     } finally {
@@ -92,7 +115,29 @@ const EditProfilePage = () => {
   };
 
   const handleCancel = () => {
-    router.push("/profile");
+    // Debug: afficher le rôle pour vérifier
+    console.log("=== DEBUG CANCEL REDIRECTION ===");
+    console.log("userData:", userData);
+    console.log("userData?.role:", userData?.role);
+    console.log(
+      "Condition admin/advisor:",
+      userData?.role === "admin" || userData?.role === "advisor"
+    );
+    console.log(
+      "Redirection vers:",
+      userData?.role === "admin" || userData?.role === "advisor"
+        ? "/admin/profile"
+        : "/profile"
+    );
+    console.log("========================");
+
+    const redirectUrl =
+      userData?.role === "admin" || userData?.role === "advisor"
+        ? "/admin/profile"
+        : "/profile";
+
+    console.log("Redirection forcée vers:", redirectUrl);
+    window.location.href = redirectUrl;
   };
 
   // Affichage du loading
@@ -127,30 +172,26 @@ const EditProfilePage = () => {
 
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
-      <ProjectHeader
-        backIcon={<ArrowLeft />}
-      />
+      <ProjectHeader backIcon={<ArrowLeft />} />
 
       <div className="max-w-2xl mx-auto">
-        {/* Formulaire */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-6 text-white">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <User size={24} />
+        {/* Formulaire modernisé */}
+        <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+          <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+            <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
+              <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
+                <User className="w-4 h-4 text-blue-700" />
               </div>
-              <div>
-                <h2 className="text-xl font-bold">Informations personnelles</h2>
-                <p className="text-blue-100 text-sm">
-                  Modifiez vos données de profil
-                </p>
-              </div>
-            </div>
+              Informations personnelles
+            </h2>
+            <p className="text-blue-600 text-sm mt-1">
+              Modifiez vos données de profil
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {/* Informations de base */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Prénom"
                 icon={User}
@@ -173,7 +214,7 @@ const EditProfilePage = () => {
             </div>
 
             {/* Contact */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Email"
                 icon={Mail}
@@ -198,7 +239,7 @@ const EditProfilePage = () => {
             </div>
 
             {/* Informations académiques (désactivées) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Campus"
                 icon={Building}
@@ -229,16 +270,16 @@ const EditProfilePage = () => {
             />
 
             {/* Séparateur */}
-            <div className="border-t border-gray-200 pt-6 gap-4 flex flex-col">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Lock size={20} className="text-blue-600" />
+            <div className="border-t border-gray-200 pt-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-1.5 bg-purple-200 rounded-lg">
+                  <Lock size={16} className="text-purple-700" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-base font-semibold text-gray-900">
                     Modifier le mot de passe
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs text-gray-600">
                     Changez votre mot de passe pour sécuriser votre compte
                   </p>
                 </div>
@@ -255,7 +296,7 @@ const EditProfilePage = () => {
               />
 
               {/* Nouveau mot de passe */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <PasswordInput
                   label="Nouveau mot de passe"
                   icon={Lock}
@@ -277,11 +318,11 @@ const EditProfilePage = () => {
 
               {/* Validation du mot de passe */}
               {passwordData.newPassword && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="text-sm font-medium text-blue-900 mb-2">
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="text-xs font-medium text-blue-900 mb-2">
                     Critères de sécurité :
                   </h4>
-                  <ul className="text-sm text-blue-800 space-y-1">
+                  <ul className="text-xs text-blue-800 space-y-1">
                     <li
                       className={`flex items-center gap-2 ${
                         passwordData.newPassword.length >= 8
@@ -290,7 +331,7 @@ const EditProfilePage = () => {
                       }`}
                     >
                       <div
-                        className={`w-2 h-2 rounded-full ${
+                        className={`w-1.5 h-1.5 rounded-full ${
                           passwordData.newPassword.length >= 8
                             ? "bg-green-500"
                             : "bg-blue-400"
@@ -306,7 +347,7 @@ const EditProfilePage = () => {
                       }`}
                     >
                       <div
-                        className={`w-2 h-2 rounded-full ${
+                        className={`w-1.5 h-1.5 rounded-full ${
                           /[A-Z]/.test(passwordData.newPassword)
                             ? "bg-green-500"
                             : "bg-blue-400"
@@ -322,7 +363,7 @@ const EditProfilePage = () => {
                       }`}
                     >
                       <div
-                        className={`w-2 h-2 rounded-full ${
+                        className={`w-1.5 h-1.5 rounded-full ${
                           /[0-9]/.test(passwordData.newPassword)
                             ? "bg-green-500"
                             : "bg-blue-400"
@@ -340,7 +381,7 @@ const EditProfilePage = () => {
                       }`}
                     >
                       <div
-                        className={`w-2 h-2 rounded-full ${
+                        className={`w-1.5 h-1.5 rounded-full ${
                           passwordData.newPassword ===
                             passwordData.confirmPassword &&
                           passwordData.confirmPassword
@@ -355,20 +396,20 @@ const EditProfilePage = () => {
               )}
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-4 pt-6 border-t border-gray-200">
+            {/* Actions modernisées */}
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
               <Button
                 type="button"
                 onClick={handleCancel}
                 variant="outline"
-                className="flex-1 border-gray-300 hover:bg-gray-100 hover:border-gray-400 hover:shadow-md transition-all duration-300 ease-in-out cursor-pointer"
+                className="flex-1 h-12 text-sm font-medium border-gray-300 hover:bg-gray-100 hover:border-gray-400 hover:shadow-md transition-all duration-300 cursor-pointer"
               >
                 Annuler
               </Button>
               <Button
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="flex-1 h-12 text-sm font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white border-0 shadow-sm hover:shadow-md hover:scale-102 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isSaving ? (
                   <>

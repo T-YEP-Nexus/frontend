@@ -13,8 +13,6 @@ import {
   Loader2,
   Users,
   Clock,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -28,19 +26,16 @@ import AdminFilterBar from "@/components/admin/AdminFilterBar";
 import usePromotionsData from "@/hooks/usePromotionsData";
 
 interface Promotion {
-  id: number;
+  id: string;
   name: string;
   created_at: string;
-  is_active?: boolean;
   student_count?: number;
 }
 
 export default function AdminPromotionsPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "active" | "inactive"
-  >("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
@@ -58,6 +53,11 @@ export default function AdminPromotionsPage() {
     refetch: refetchPromotions,
   } = usePromotionsData();
 
+  // État pour stocker le nombre d'étudiants par promotion
+  const [studentsCount, setStudentsCount] = useState<{ [key: string]: number }>(
+    {}
+  );
+
   // Utiliser les données du hook usePromotionsData
   useEffect(() => {
     if (!promotionsLoading) {
@@ -67,16 +67,82 @@ export default function AdminPromotionsPage() {
       } else {
         // Ajouter les champs manquants avec des valeurs par défaut
         const promotionsWithDefaults = hookPromotions.map((promotion) => ({
-          ...promotion,
-          is_active:
-            promotion.is_active !== undefined ? promotion.is_active : true,
+          id: promotion.id,
+          name: promotion.name,
+          created_at: promotion.created_at,
           student_count: promotion.student_count || 0,
         }));
         setPromotions(promotionsWithDefaults);
         setError(null);
+
+        // Récupérer le nombre d'étudiants pour chaque promotion
+        fetchStudentsCountForAllPromotions();
       }
     }
   }, [hookPromotions, promotionsLoading, promotionsError]);
+
+  // Fonction pour récupérer le nombre d'étudiants pour toutes les promotions
+  const fetchStudentsCountForAllPromotions = async () => {
+    try {
+      const counts: { [key: string]: number } = {};
+
+      console.log("=== DEBUG fetchStudentsCountForAllPromotions ===");
+      console.log("hookPromotions:", hookPromotions);
+
+      for (const promotion of hookPromotions) {
+        try {
+          console.log(
+            `Récupération des étudiants pour la promotion ${promotion.id} (${promotion.name})`
+          );
+
+          const response = await fetch(
+            `http://localhost:3004/students/promotion/${promotion.id}`
+          );
+
+          console.log(`Response status pour ${promotion.id}:`, response.status);
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`Data pour ${promotion.id}:`, data);
+
+            if (data.success) {
+              counts[promotion.id] = data.data.length;
+              console.log(
+                `Nombre d'étudiants pour ${promotion.id}:`,
+                data.data.length
+              );
+            } else {
+              counts[promotion.id] = 0;
+              console.log(`Erreur API pour ${promotion.id}:`, data.message);
+            }
+          } else {
+            const errorText = await response.text();
+            console.error(
+              `Erreur HTTP pour ${promotion.id}:`,
+              response.status,
+              errorText
+            );
+            counts[promotion.id] = 0;
+          }
+        } catch (error) {
+          console.error(
+            `Erreur lors de la récupération des étudiants pour la promotion ${promotion.id}:`,
+            error
+          );
+          counts[promotion.id] = 0;
+        }
+      }
+
+      console.log("Counts final:", counts);
+      setStudentsCount(counts);
+      console.log("========================");
+    } catch (error) {
+      console.error(
+        "Erreur lors de la récupération des comptes d'étudiants:",
+        error
+      );
+    }
+  };
 
   useEffect(() => {
     let filtered = promotions;
@@ -88,12 +154,12 @@ export default function AdminPromotionsPage() {
       );
     }
 
-    // Filtre par statut
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((promo) =>
-        statusFilter === "active" ? promo.is_active : !promo.is_active
-      );
-    }
+    // Filtre par statut (supprimé car plus de is_active)
+    // if (statusFilter !== "all") {
+    //   filtered = filtered.filter((promo) =>
+    //     statusFilter === "active" ? promo.is_active : !promo.is_active
+    //   );
+    // }
 
     setFilteredPromotions(filtered);
     setDisplayedCount(6); // Reset le compteur quand les filtres changent
@@ -157,11 +223,7 @@ export default function AdminPromotionsPage() {
 
       {/* Statistiques */}
       <AdminStatsCards
-        stats={createPromotionsStats(
-          promotions.length,
-          promotions.filter((promo) => promo.is_active).length,
-          promotions.filter((promo) => !promo.is_active).length
-        )}
+        stats={createPromotionsStats(promotions.length, promotions.length, 0)}
       />
 
       {/* Filtres et recherche */}
@@ -171,12 +233,10 @@ export default function AdminPromotionsPage() {
         searchPlaceholder="Rechercher par nom de promotion..."
         showSearch={true}
         selectedPromotion={statusFilter}
-        setSelectedPromotion={(value: string) =>
-          setStatusFilter(value as "all" | "active" | "inactive")
-        }
-        promotions={["active", "inactive"]}
-        promotionPlaceholder="Tous les statuts"
-        showPromotionFilter={true}
+        setSelectedPromotion={(value: string) => setStatusFilter(value)}
+        promotions={[]}
+        promotionPlaceholder=""
+        showPromotionFilter={false}
         selectedSecond="all"
         setSelectedSecond={() => {}}
         seconds={[]}
@@ -223,9 +283,7 @@ export default function AdminPromotionsPage() {
                 {displayedPromotions.map((promotion) => (
                   <div
                     key={promotion.id}
-                    className={`bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 transition-all duration-300 hover:shadow-md ${
-                      !promotion.is_active ? "opacity-60" : ""
-                    }`}
+                    className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 transition-all duration-300 hover:shadow-md"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4 flex-1">
@@ -237,21 +295,13 @@ export default function AdminPromotionsPage() {
                             <h3 className="font-semibold text-blue-900 text-lg">
                               {promotion.name}
                             </h3>
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                promotion.is_active
-                                  ? "bg-green-100 text-green-800 border border-green-200"
-                                  : "bg-red-100 text-red-800 border border-red-200"
-                              }`}
-                            >
-                              {promotion.is_active ? "Active" : "Inactive"}
-                            </span>
                           </div>
                           <div className="flex items-center gap-6 text-sm text-blue-600">
                             <div className="flex items-center gap-2">
                               <Users size={16} />
                               <span>
-                                {promotion.student_count || 0} étudiants
+                                {studentsCount[promotion.id.toString()] || 0}{" "}
+                                étudiants
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -264,26 +314,6 @@ export default function AdminPromotionsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            /* TODO: Implémenter le toggle de statut */
-                            const updatedPromotions = promotions.map((p) =>
-                              p.id === promotion.id
-                                ? { ...p, is_active: !p.is_active }
-                                : p
-                            );
-                            setPromotions(updatedPromotions);
-                          }}
-                          className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
-                        >
-                          {promotion.is_active ? (
-                            <EyeOff size={16} />
-                          ) : (
-                            <Eye size={16} />
-                          )}
-                        </Button>
                         <Button
                           onClick={() => {
                             /* TODO: Implémenter la suppression */

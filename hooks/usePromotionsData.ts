@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 interface Promotion {
-  id: number;
+  id: string; // UUID
   name: string;
   created_at: string;
   is_active?: boolean;
