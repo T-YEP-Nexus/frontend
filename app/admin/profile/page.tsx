@@ -663,7 +663,7 @@ const AdminProfilePage = () => {
                     Consulter les profils étudiants
                   </AdminButton>
                   <Button
-                    onClick={() => router.push("/admin/profile/edit")}
+                    onClick={() => router.push("/profile/edit")}
                     className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm text-white cursor-pointer"
                     variant="default"
                   >

@@ -44,13 +44,6 @@ const ProfilePage = () => {
   );
 
   useEffect(() => {
-    console.log("=== DEBUG ProfilePage ===");
-    console.log("userData:", userData);
-    console.log("loading:", loading);
-    console.log("error:", error);
-    console.log("getUserIdFromToken():", getUserIdFromToken());
-    console.log("========================");
-
     // Redirection automatique pour les admins/advisor
     if (userData && !loading && !error) {
       if (userData.role === "admin" || userData.role === "advisor") {
