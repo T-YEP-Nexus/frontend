@@ -25,6 +25,9 @@ import { getUserIdFromToken } from "@/lib/auth";
 import AdminButton from "@/components/admin/buttons/AdminButton";
 import AdminFilterBar from "@/components/admin/AdminFilterBar";
 import AdminLoading from "@/components/admin/AdminLoading";
+import AdminStatsCards, {
+  createProjectsStats,
+} from "@/components/admin/AdminStatsCards";
 
 // Pour filtrer par promo et étudiant
 interface Project {
@@ -274,39 +277,13 @@ export default function AdminProjectsPage() {
       </div>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 ">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Total Projets
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                {projects.length}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <FileText size={32} className="text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 ">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Projets Actifs
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                {projects.filter((p: any) => p.is_active).length}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <CheckSquare size={32} className="text-blue-600" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <AdminStatsCards
+        stats={createProjectsStats(
+          projects.length,
+          projects.filter((p: any) => p.is_active).length,
+          projects.filter((p: any) => !p.is_active).length
+        )}
+      />
 
       {/* Filtres et recherche */}
       <AdminFilterBar
@@ -345,14 +322,18 @@ export default function AdminProjectsPage() {
             description={project.description}
             details={{
               startDate: project.details?.startDate
-                ? new Date(project.details.startDate).toLocaleDateString("fr-FR")
+                ? new Date(project.details.startDate).toLocaleDateString(
+                    "fr-FR"
+                  )
                 : new Date(project.created_at).toLocaleDateString("fr-FR"),
               endDate: project.details?.endDate
                 ? new Date(project.details.endDate).toLocaleDateString("fr-FR")
                 : new Date(
-                    new Date(project.created_at).getTime() + 30 * 24 * 60 * 60 * 1000
+                    new Date(project.created_at).getTime() +
+                      30 * 24 * 60 * 60 * 1000
                   ).toLocaleDateString("fr-FR"),
-              team: project.details?.team ||
+              team:
+                project.details?.team ||
                 (project.students && project.students.length > 0
                   ? project.students
                       .map((s: any) => `${s.first_name} ${s.last_name}`)
@@ -364,20 +345,25 @@ export default function AdminProjectsPage() {
                 ? new Date(project.deadline.kickOff).toLocaleDateString("fr-FR")
                 : new Date(project.created_at).toLocaleDateString("fr-FR"),
               followUp: project.deadline?.followUp
-                ? new Date(project.deadline.followUp).toLocaleDateString("fr-FR")
+                ? new Date(project.deadline.followUp).toLocaleDateString(
+                    "fr-FR"
+                  )
                 : new Date(
-                    new Date(project.created_at).getTime() + 15 * 24 * 60 * 60 * 1000
+                    new Date(project.created_at).getTime() +
+                      15 * 24 * 60 * 60 * 1000
                   ).toLocaleDateString("fr-FR"),
               keynote: project.deadline?.keynote
                 ? new Date(project.deadline.keynote).toLocaleDateString("fr-FR")
                 : new Date(
-                    new Date(project.created_at).getTime() + 30 * 24 * 60 * 60 * 1000
+                    new Date(project.created_at).getTime() +
+                      30 * 24 * 60 * 60 * 1000
                   ).toLocaleDateString("fr-FR"),
               daysRemaining: project.deadline?.keynote
                 ? Math.max(
                     0,
                     Math.floor(
-                      (new Date(project.deadline.keynote).getTime() - Date.now()) /
+                      (new Date(project.deadline.keynote).getTime() -
+                        Date.now()) /
                         (1000 * 60 * 60 * 24)
                     )
                   )
@@ -391,8 +377,14 @@ export default function AdminProjectsPage() {
                   ),
             }}
             documentation={{
-              pdfUrl: project.documentation?.pdfUrl || project.ressources?.[0]?.url || "#",
-              pdfName: project.documentation?.pdfName || project.ressources?.[0]?.filename || "Documentation.pdf",
+              pdfUrl:
+                project.documentation?.pdfUrl ||
+                project.ressources?.[0]?.url ||
+                "#",
+              pdfName:
+                project.documentation?.pdfName ||
+                project.ressources?.[0]?.filename ||
+                "Documentation.pdf",
             }}
             tasks={[
               "Analyser les besoins",
@@ -403,27 +395,42 @@ export default function AdminProjectsPage() {
             trophies={[
               {
                 name: "Premier commit",
-                obtained: (project.resources?.length || project.ressources?.length || 0) > 0,
+                obtained:
+                  (project.resources?.length ||
+                    project.ressources?.length ||
+                    0) > 0,
                 description: "Premier commit réalisé",
               },
               {
                 name: "Architecture validée",
-                obtained: (project.resources?.length || project.ressources?.length || 0) > 2,
+                obtained:
+                  (project.resources?.length ||
+                    project.ressources?.length ||
+                    0) > 2,
                 description: "Architecture du projet validée",
               },
               {
                 name: "MVP terminé",
-                obtained: (project.resources?.length || project.ressources?.length || 0) > 5,
+                obtained:
+                  (project.resources?.length ||
+                    project.ressources?.length ||
+                    0) > 5,
                 description: "Version minimale viable terminée",
               },
               {
                 name: "Tests passants",
-                obtained: (project.resources?.length || project.ressources?.length || 0) > 8,
+                obtained:
+                  (project.resources?.length ||
+                    project.ressources?.length ||
+                    0) > 8,
                 description: "Tous les tests passent",
               },
               {
                 name: "Projet livré",
-                obtained: (project.resources?.length || project.ressources?.length || 0) > 10,
+                obtained:
+                  (project.resources?.length ||
+                    project.ressources?.length ||
+                    0) > 10,
                 description: "Projet entièrement livré",
               },
             ]}

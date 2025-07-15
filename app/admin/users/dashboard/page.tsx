@@ -34,7 +34,9 @@ import { getUserIdFromToken } from "@/lib/auth";
 import { getUserProfileData } from "@/lib/userData";
 import { useRouter } from "next/navigation";
 import AdminButton from "@/components/admin/buttons/AdminButton";
-import AdminStatCard from "@/components/admin/AdminStatCard";
+import AdminStatsCards, {
+  createUsersStats,
+} from "@/components/admin/AdminStatsCards";
 import AdminFilterBar from "@/components/admin/AdminFilterBar";
 import AdminLoading from "@/components/admin/AdminLoading";
 
@@ -598,49 +600,41 @@ export default function AdminDashboard() {
       </div>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <AdminStatCard
-          title="Total Utilisateurs"
-          value={stats.totalUsers}
-          icon={<Users size={32} className="text-blue-600" />}
-        />
-        <AdminStatCard
-          title="Étudiants"
-          value={stats.students}
-          icon={<GraduationCap size={32} className="text-blue-600" />}
-        />
-        <AdminStatCard
-          title="Conseillers"
-          value={stats.advisors}
-          icon={<UserCheck size={32} className="text-blue-600" />}
-        />
-        <AdminStatCard
-          title="Administrateurs"
-          value={stats.admins}
-          icon={<Shield size={32} className="text-blue-600" />}
-        />
-      </div>
+      <AdminStatsCards
+        stats={createUsersStats(
+          stats.totalUsers,
+          stats.students + stats.advisors + stats.admins, // Utilisateurs actifs (tous sauf inactifs)
+          stats.totalUsers - (stats.students + stats.advisors + stats.admins) // Utilisateurs inactifs
+        )}
+      />
 
       {/* Filtres et recherche */}
       <div className="mb-6">
         <AdminFilterBar
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
+          searchPlaceholder="Rechercher par nom, email ou campus..."
+          showSearch={true}
           selectedPromotion={selectedPromotion}
           setSelectedPromotion={setSelectedPromotion}
           promotions={availablePromotions}
           promotionsLoading={promotionsLoading}
+          promotionPlaceholder="Toutes les promotions"
+          showPromotionFilter={true}
           selectedSecond={selectedRole}
           setSelectedSecond={setSelectedRole}
           seconds={roles}
           secondLabel="Rôle"
           secondPlaceholder="Tous les rôles"
+          showSecondFilter={true}
           promotionDropdownRef={promotionDropdownRef}
           secondDropdownRef={roleDropdownRef}
           promotionDropdownOpen={promotionDropdownOpen}
           setPromotionDropdownOpen={setPromotionDropdownOpen}
           secondDropdownOpen={roleDropdownOpen}
           setSecondDropdownOpen={setRoleDropdownOpen}
+          title="Filtres et recherche"
+          showTitle={true}
         />
       </div>
 

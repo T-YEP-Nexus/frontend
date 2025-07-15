@@ -15,6 +15,7 @@ import {
   Users,
   Shield,
   BarChart3,
+  GraduationCap,
 } from "lucide-react";
 
 import { Russo_One } from "next/font/google";
@@ -227,6 +228,21 @@ const Sidebar = () => {
                   <Shield size={24} />
                 </span>
                 <span className="hidden md:inline">Dashboard Utilisateurs</span>
+              </Link>
+              <Link
+                href="/admin/promotions"
+                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                  ${
+                    pathname === "/admin/promotions"
+                      ? "bg-[#0e357a]/70 font-bold"
+                      : "hover:bg-[#0e357a]/40"
+                  }
+                `}
+              >
+                <span>
+                  <GraduationCap size={24} />
+                </span>
+                <span className="hidden md:inline">Dashboard Promotions</span>
               </Link>
               <Link
                 href="/admin/projects"

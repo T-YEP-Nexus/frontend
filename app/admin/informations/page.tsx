@@ -22,6 +22,10 @@ import { Button } from "@/components/ui/button";
 import Header from "@/components/Header/Header";
 import AdminLoading from "@/components/admin/AdminLoading";
 import AdminButton from "@/components/admin/buttons/AdminButton";
+import AdminStatsCards, {
+  createInformationsStats,
+} from "@/components/admin/AdminStatsCards";
+import AdminFilterBar from "@/components/admin/AdminFilterBar";
 import {
   getInformations,
   createInformation,
@@ -67,6 +71,7 @@ export default function AdminInformations() {
   // Références pour les dropdowns
   const authorDropdownRef = useRef<HTMLDivElement | null>(null);
   const statusDropdownRef = useRef<HTMLDivElement | null>(null);
+  const secondDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -379,148 +384,45 @@ export default function AdminInformations() {
       </div>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Total Informations
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                {informations.length}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <MessageSquare size={32} className="text-blue-600" />
-            </div>
-          </div>
-        </div>
+      <AdminStatsCards
+        stats={createInformationsStats(
+          informations.length,
+          informations.filter((info) => info.isActive).length,
+          informations.filter((info) => !info.isActive).length
+        )}
+      />
 
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Informations Actives
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
-                {informations.filter((info) => info.isActive).length}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <Eye size={32} className="text-green-600" />
-            </div>
-          </div>
-        </div>
+      {/* Filtres et recherche */}
+      <AdminFilterBar
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        searchPlaceholder="Rechercher par titre, contenu ou auteur..."
+        showSearch={true}
+        selectedPromotion={statusFilter}
+        setSelectedPromotion={(value: string) =>
+          setStatusFilter(value as "all" | "active" | "inactive")
+        }
+        promotions={["active", "inactive"]}
+        promotionPlaceholder="Tous les statuts"
+        showPromotionFilter={true}
+        selectedSecond="all"
+        setSelectedSecond={() => {}}
+        seconds={[]}
+        secondLabel=""
+        secondPlaceholder=""
+        showSecondFilter={false}
+        promotionDropdownRef={statusDropdownRef}
+        secondDropdownRef={secondDropdownRef}
+        promotionDropdownOpen={statusDropdownOpen}
+        setPromotionDropdownOpen={setStatusDropdownOpen}
+        secondDropdownOpen={false}
+        setSecondDropdownOpen={() => {}}
+        title="Filtres et recherche"
+        showTitle={true}
+      />
 
-        <div className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-600 font-medium mb-1">
-                Informations Inactives
-              </p>
-              <p className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-orange-800 bg-clip-text text-transparent">
-                {informations.filter((info) => !info.isActive).length}
-              </p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-orange-100 to-orange-200 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-              <EyeOff size={32} className="text-orange-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto">
-        {/* Filtres et recherche */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-10 border border-blue-200/50">
-          <h2 className="font-bold text-2xl text-blue-900 mb-6 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
-              <Filter className="w-6 h-6 text-blue-600" />
-            </div>
-            Filtres et recherche
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Barre de recherche */}
-            <div className="relative group">
-              <Search
-                className="absolute left-4 z-10 top-1/2 transform -translate-y-1/2 text-blue-700 group-focus-within:text-blue-600 transition-colors duration-200"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="Rechercher par titre, contenu ou auteur..."
-                value={searchTerm}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setSearchTerm(e.target.value)
-                }
-                className="w-full pl-12 pr-4 py-4 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white/80 backdrop-blur-sm text-blue-900 placeholder-blue-400 transition-all duration-300 hover:border-blue-300"
-              />
-            </div>
-
-            {/* Filtre par statut */}
-            <div className="relative" ref={statusDropdownRef}>
-              <div
-                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-                className="flex items-center justify-between px-4 py-4 border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm text-blue-900 cursor-pointer transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]"
-              >
-                <span
-                  className={
-                    statusFilter === "all"
-                      ? "text-blue-400"
-                      : "text-blue-900 font-medium"
-                  }
-                >
-                  {statusFilter === "all"
-                    ? "Tous les statuts"
-                    : statusFilter === "active"
-                    ? "Actives uniquement"
-                    : "Inactives uniquement"}
-                </span>
-                <ChevronDown
-                  size={18}
-                  className={`text-blue-400 transition-transform duration-300 ${
-                    statusDropdownOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </div>
-              {statusDropdownOpen && (
-                <div className="absolute z-10 w-full mt-2 bg-white/95 backdrop-blur-md border-2 border-blue-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
-                  <div
-                    onClick={() => {
-                      setStatusFilter("all");
-                      setStatusDropdownOpen(false);
-                    }}
-                    className="px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors duration-200 border-b border-blue-100 first:rounded-t-xl"
-                  >
-                    <span className="text-blue-900 font-medium">
-                      Tous les statuts
-                    </span>
-                  </div>
-                  <div
-                    onClick={() => {
-                      setStatusFilter("active");
-                      setStatusDropdownOpen(false);
-                    }}
-                    className="px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors duration-200 border-b border-blue-100"
-                  >
-                    <span className="text-blue-900">Actives uniquement</span>
-                  </div>
-                  <div
-                    onClick={() => {
-                      setStatusFilter("inactive");
-                      setStatusDropdownOpen(false);
-                    }}
-                    className="px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors duration-200 last:border-b-0 last:rounded-b-xl"
-                  >
-                    <span className="text-blue-900">Inactives uniquement</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Liste des informations */}
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-blue-200/50">
+      {/* Liste des informations */}
+      <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-blue-200/50">
           <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
             <h2 className="font-bold text-2xl text-blue-900 flex items-center gap-3">
               <div className="p-2 bg-gradient-to-br from-blue-200 to-blue-300 rounded-xl">
@@ -639,7 +541,6 @@ export default function AdminInformations() {
             )}
           </div>
         </div>
-      </div>
 
       {/* Modal de création/modification */}
       {isModalOpen && (
