@@ -38,6 +38,8 @@ interface User {
   roles_user: string;
 }
 
+const INITIAL_DISPLAY_COUNT = 6;
+
 export default function AdminInformations() {
   const router = useRouter();
   const [informations, setInformations] = useState<Information[]>([]);
@@ -60,6 +62,7 @@ export default function AdminInformations() {
   const [authorDropdownOpen, setAuthorDropdownOpen] = useState(false);
   const [authorSearchTerm, setAuthorSearchTerm] = useState("");
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [displayedCount, setDisplayedCount] = useState(INITIAL_DISPLAY_COUNT);
 
   // Références pour les dropdowns
   const authorDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -210,6 +213,7 @@ export default function AdminInformations() {
     }
 
     setFilteredInformations(filtered);
+    setDisplayedCount(INITIAL_DISPLAY_COUNT); // Reset le compteur quand les filtres changent
   }, [informations, searchTerm, statusFilter]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -342,6 +346,13 @@ export default function AdminInformations() {
         return role;
     }
   };
+
+  const handleShowMore = () => {
+    setDisplayedCount((prev) => prev + INITIAL_DISPLAY_COUNT);
+  };
+
+  const displayedInformations = filteredInformations.slice(0, displayedCount);
+  const hasMore = displayedCount < filteredInformations.length;
 
   if (loading) {
     return <AdminLoading />;
@@ -536,84 +547,95 @@ export default function AdminInformations() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {filteredInformations.map((information) => (
-                  <div
-                    key={information.id}
-                    className={`bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 transition-all duration-300 hover:shadow-md ${
-                      !information.isActive ? "opacity-60" : ""
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-200 to-blue-300 rounded-full flex items-center justify-center shadow-lg">
-                          <User className="text-blue-700" size={24} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <h3 className="font-semibold text-blue-900 text-lg">
-                              {information.title}
-                            </h3>
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                information.isActive
-                                  ? "bg-green-100 text-green-800 border border-green-200"
-                                  : "bg-red-100 text-red-800 border border-red-200"
-                              }`}
-                            >
-                              {information.isActive ? "Active" : "Inactive"}
-                            </span>
-                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                              {information.authorRole === "admin"
-                                ? "Admin"
-                                : information.authorRole === "advisor"
-                                ? "Conseiller"
-                                : "Externe"}
-                            </span>
+              <>
+                <div className="space-y-4">
+                  {displayedInformations.map((information) => (
+                    <div
+                      key={information.id}
+                      className={`bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 transition-all duration-300 hover:shadow-md ${
+                        !information.isActive ? "opacity-60" : ""
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4 flex-1">
+                          <div className="w-12 h-12 bg-gradient-to-br from-blue-200 to-blue-300 rounded-full flex items-center justify-center shadow-lg">
+                            <User className="text-blue-700" size={24} />
                           </div>
-                          <p className="text-blue-800 mb-3 leading-relaxed">
-                            {information.content}
-                          </p>
-                          <div className="flex items-center gap-2 text-sm text-blue-600">
-                            <Calendar size={16} />
-                            {formatDate(information.updatedAt)}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3">
+                              <h3 className="font-semibold text-blue-900 text-lg">
+                                {information.title}
+                              </h3>
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                  information.isActive
+                                    ? "bg-green-100 text-green-800 border border-green-200"
+                                    : "bg-red-100 text-red-800 border border-red-200"
+                                }`}
+                              >
+                                {information.isActive ? "Active" : "Inactive"}
+                              </span>
+                              <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                {information.authorRole === "admin"
+                                  ? "Admin"
+                                  : information.authorRole === "advisor"
+                                  ? "Conseiller"
+                                  : "Externe"}
+                              </span>
+                            </div>
+                            <p className="text-blue-800 mb-3 leading-relaxed">
+                              {information.content}
+                            </p>
+                            <div className="flex items-center gap-2 text-sm text-blue-600">
+                              <Calendar size={16} />
+                              {formatDate(information.updatedAt)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleStatus(information)}
-                          className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
-                        >
-                          {information.isActive ? (
-                            <EyeOff size={16} />
-                          ) : (
-                            <Eye size={16} />
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(information)}
-                          className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
-                        >
-                          <Edit size={16} />
-                        </Button>
-                        <Button
-                          onClick={() => handleDelete(information)}
-                          variant="outline"
-                          size="sm"
-                          className="group/btn border border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggleStatus(information)}
+                            className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
+                          >
+                            {information.isActive ? (
+                              <EyeOff size={16} />
+                            ) : (
+                              <Eye size={16} />
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(information)}
+                            className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
+                          >
+                            <Edit size={16} />
+                          </Button>
+                          <Button
+                            onClick={() => handleDelete(information)}
+                            variant="outline"
+                            size="sm"
+                            className="group/btn border border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+
+                {hasMore && (
+                  <div className="flex justify-center mt-8">
+                    <AdminButton onClick={handleShowMore}>
+                      <Plus size={20} />
+                      Afficher plus d'informations
+                    </AdminButton>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         </div>

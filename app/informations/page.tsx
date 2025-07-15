@@ -1,7 +1,6 @@
 "use client";
 import Header from "@/components/Header/Header";
-import Image from "next/image";
-import { ChevronDown, User } from "lucide-react";
+import { ChevronDown, User, Clock, Calendar, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   getActiveInformations,
@@ -31,12 +30,14 @@ function formatDateTime(dateString: string) {
 }
 
 const MIN_LENGTH_FOR_PLUS = 120;
+const INITIAL_DISPLAY_COUNT = 6;
 
 export default function Informations() {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const [informations, setInformations] = useState<Information[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [displayedCount, setDisplayedCount] = useState(INITIAL_DISPLAY_COUNT);
 
   useEffect(() => {
     const loadInformations = () => {
@@ -56,6 +57,13 @@ export default function Informations() {
 
     loadInformations();
   }, []);
+
+  const handleShowMore = () => {
+    setDisplayedCount((prev) => prev + INITIAL_DISPLAY_COUNT);
+  };
+
+  const displayedInformations = informations.slice(0, displayedCount);
+  const hasMore = displayedCount < informations.length;
 
   if (isLoading) {
     return (
@@ -88,9 +96,10 @@ export default function Informations() {
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
       <Header title="Informations Générales" />
+
       <div className="max-w-6xl mx-auto flex flex-col gap-6 mt-8">
         {informations.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="bg-white rounded-2xl shadow-lg p-12 text-center border border-gray-200/50">
             <div className="text-gray-400 text-6xl mb-4">📢</div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
               Aucune information disponible
@@ -100,54 +109,85 @@ export default function Informations() {
             </p>
           </div>
         ) : (
-          informations.map((info, idx) => {
-            const isOpen = openIdx === idx;
-            return (
-              <div
-                key={info.id}
-                className={`bg-white rounded-2xl shadow flex flex-row items-start px-8 py-6 gap-6 w-full transition-all duration-300 ${
-                  isOpen ? "" : "overflow-hidden"
-                }`}
-              >
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-200 to-blue-300 rounded-full flex items-center justify-center shadow-lg mt-1">
-                  <User className="text-blue-700" size={24} />
+          <>
+            {displayedInformations.map((info, idx) => {
+              const isOpen = openIdx === idx;
+              return (
+                <div
+                  key={info.id}
+                  className={`group bg-white rounded-2xl shadow-lg border border-blue-200/50 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 overflow-hidden ${
+                    isOpen ? "" : ""
+                  }`}
+                >
+                  <div className="flex flex-row items-start px-8 py-6 gap-6 w-full">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-200 to-blue-300 rounded-2xl flex items-center justify-center shadow-lg mt-1 group-hover:scale-110 transition-transform duration-300">
+                      <User className="text-blue-700" size={28} />
+                    </div>
+                    <div className="flex-1 flex flex-col min-w-0 h-full">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="font-bold text-blue-900 text-xl leading-tight">
+                          {info.author}
+                        </span>
+                        <div className="flex items-center gap-2 text-sm text-blue-600">
+                          <Clock size={14} />
+                          <span>{timeAgo(info.createdAt)}</span>
+                        </div>
+                      </div>
+
+                      <h3 className="font-bold text-blue-900 text-xl mb-3 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                        {info.title}
+                      </h3>
+
+                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 mb-4">
+                        <span
+                          className={`text-blue-800 text-base leading-relaxed transition-all duration-300 ${
+                            isOpen ? "" : "line-clamp-3"
+                          }`}
+                        >
+                          {info.content}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-blue-600">
+                          <Calendar size={14} />
+                          <span>{formatDateTime(info.createdAt)}</span>
+                        </div>
+
+                        {info.content.length > MIN_LENGTH_FOR_PLUS && (
+                          <button
+                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl px-6 py-2 transition-all duration-300 text-sm flex items-center gap-2 hover:scale-105 shadow-lg hover:shadow-xl"
+                            onClick={() => setOpenIdx(isOpen ? null : idx)}
+                            aria-expanded={isOpen}
+                          >
+                            {isOpen ? "Voir moins" : "Voir plus"}
+                            <ChevronDown
+                              size={16}
+                              className={`transition-transform duration-300 ${
+                                isOpen ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 flex flex-col min-w-0 h-full">
-                  <span className="font-semibold text-blue-900 text-lg leading-tight mb-2">
-                    {info.author}
-                  </span>
-                  <span className="text-xs text-blue-800/80 mb-2 block">
-                    {formatDateTime(info.createdAt)} • {timeAgo(info.createdAt)}
-                  </span>
-                  <h3 className="font-semibold text-blue-900 text-lg mb-2">
-                    {info.title}
-                  </h3>
-                  <span
-                    className={`text-blue-900/80 text-base mt-2 transition-all duration-300 ${
-                      isOpen ? "" : "line-clamp-2"
-                    }`}
-                  >
-                    {info.content}
-                  </span>
-                  {info.content.length > MIN_LENGTH_FOR_PLUS && (
-                    <button
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full px-4 py-1.5 transition-all text-base flex items-center gap-1 mt-4 self-end w-auto"
-                      onClick={() => setOpenIdx(isOpen ? null : idx)}
-                      aria-expanded={isOpen}
-                    >
-                      Plus
-                      <ChevronDown
-                        size={18}
-                        className={`transition-transform duration-300 ${
-                          isOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-                  )}
-                </div>
+              );
+            })}
+
+            {hasMore && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={handleShowMore}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl px-8 py-3 transition-all duration-300 flex items-center gap-2 hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  <Plus size={20} />
+                  Afficher plus d'informations
+                </button>
               </div>
-            );
-          })
+            )}
+          </>
         )}
       </div>
     </div>
