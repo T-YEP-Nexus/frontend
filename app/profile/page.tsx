@@ -51,6 +51,17 @@ const ProfilePage = () => {
     console.log("getUserIdFromToken():", getUserIdFromToken());
     console.log("========================");
 
+    // Redirection automatique pour les admins/advisor
+    if (userData && !loading && !error) {
+      if (userData.role === "admin" || userData.role === "advisor") {
+        console.log(
+          "Redirection automatique vers /admin/profile pour admin/advisor"
+        );
+        window.location.href = "/admin/profile";
+        return;
+      }
+    }
+
     // Détecter si nous sommes en mode offline (services indisponibles)
     if (error) {
       // Handle both string and Error object cases
@@ -441,7 +452,13 @@ const ProfilePage = () => {
             <div className="p-4">
               <div className="grid grid-cols-1 gap-3">
                 <Button
-                  onClick={() => router.push("/profile/edit")}
+                  onClick={() => {
+                    const editUrl =
+                      userData.role === "admin" || userData.role === "advisor"
+                        ? "/admin/profile/edit"
+                        : "/profile/edit";
+                    router.push(editUrl);
+                  }}
                   className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm text-white cursor-pointer"
                   variant="default"
                 >

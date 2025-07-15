@@ -526,115 +526,115 @@ export default function CreateProjectPage() {
               </div>
               Ressources du projet
             </h3>
-            <div className="space-y-4">
+              <div className="space-y-4">
               {formData.resources.map((resource, index) => (
                 <div
                   key={index}
                   className="space-y-3 p-4 border-2 border-emerald-200 rounded-xl bg-emerald-50/50 group"
-                >
-                  <div className="flex items-center justify-between">
+                        >
+                          <div className="flex items-center justify-between">
                     <h5 className="text-sm font-semibold text-emerald-900">
                       Ressource {index + 1}
-                    </h5>
-                    <Button
-                      type="button"
+                            </h5>
+                            <Button
+                              type="button"
                       onClick={() => removeResource(index)}
-                      className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                              className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="group">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="group">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                        Nom de la ressource *
-                      </label>
-                      <input
-                        type="text"
-                        value={resource.name}
-                        onChange={(e) =>
+                                Nom de la ressource *
+                              </label>
+                              <input
+                                type="text"
+                                value={resource.name}
+                                onChange={(e) =>
                           updateResource(index, "name", e.target.value)
                         }
                         className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
                         placeholder="Ex: Documentation du projet"
-                        required
-                      />
-                    </div>
+                                required
+                              />
+                            </div>
 
-                    <div className="group">
+                            <div className="group">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                        URL de la ressource
-                      </label>
-                      <input
-                        type="url"
-                        value={resource.url}
-                        onChange={(e) =>
+                                URL de la ressource
+                              </label>
+                              <input
+                                type="url"
+                                value={resource.url}
+                                onChange={(e) =>
                           updateResource(index, "url", e.target.value)
                         }
                         className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
-                        placeholder="https://..."
-                      />
-                    </div>
+                                placeholder="https://..."
+                              />
+                            </div>
 
                     {/* <div className="group">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                        Fichier de la ressource
-                      </label>
-                      <input
-                        type="file"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
+                                Fichier de la ressource
+                              </label>
+                              <input
+                                type="file"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
                             updateResourceFile(index, file);
-                          }
-                        }}
-                        accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif"
+                                  }
+                                }}
+                                accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif"
                         className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 file:cursor-pointer"
-                      />
-                      {resource.file && (
+                              />
+                              {resource.file && (
                         <p className="text-xs text-emerald-600 mt-1">
-                          Fichier sélectionné : {resource.file.name}
-                        </p>
-                      )}
+                                  Fichier sélectionné : {resource.file.name}
+                                </p>
+                              )}
                     </div> */}
 
-                    <div className="group">
+                            <div className="group">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                        Type de fichier accepté
-                      </label>
+                                Type de fichier accepté
+                              </label>
                       <div className="px-4 py-3 border-2 border-emerald-200 rounded-xl bg-emerald-50/30 text-emerald-700 text-xs">
-                        PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
-                      </div>
-                    </div>
+                                PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
+                              </div>
+                            </div>
 
                     {/* <div className="group md:col-span-2">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                        Description de la ressource *
-                      </label>
-                      <textarea
-                        value={resource.description}
-                        onChange={(e) =>
+                                Description de la ressource *
+                              </label>
+                              <textarea
+                                value={resource.description}
+                                onChange={(e) =>
                           updateResource(index, "description", e.target.value)
-                        }
-                        rows={2}
+                                }
+                                rows={2}
                         className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
-                        placeholder="Description de la ressource..."
-                        required
-                      />
+                                placeholder="Description de la ressource..."
+                                required
+                              />
                     </div> */}
-                  </div>
-                </div>
+                            </div>
+                          </div>
               ))}
 
-              <div className="flex justify-center">
-                <AdminButton
-                  type="button"
-                  onClick={() => addResource("project")}
-                >
-                  <Plus className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+                <div className="flex justify-center">
+                  <AdminButton
+                    type="button"
+                    onClick={() => addResource("project")}
+                  >
+                    <Plus className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
                   Ajouter une ressource
-                </AdminButton>
+                  </AdminButton>
               </div>
             </div>
           </div>

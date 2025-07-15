@@ -650,7 +650,7 @@ export default function EditProjectPage() {
             </h3>
               <div className="space-y-4">
               {formData.resources.map((resource, index) => (
-                <div
+                        <div
                   key={index}
                   className="space-y-3 p-4 border-2 border-emerald-200 rounded-xl bg-emerald-50/50 group"
                         >
@@ -677,7 +677,7 @@ export default function EditProjectPage() {
                                 value={resource.name}
                                 onChange={(e) =>
                           updateResource(index, "name", e.target.value)
-                        }
+                                }
                         className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
                         placeholder="Ex: Documentation du projet"
                                 required
@@ -693,7 +693,7 @@ export default function EditProjectPage() {
                                 value={resource.url}
                                 onChange={(e) =>
                           updateResource(index, "url", e.target.value)
-                        }
+                                }
                         className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
                                 placeholder="https://..."
                               />

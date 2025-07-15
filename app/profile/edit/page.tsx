@@ -83,7 +83,30 @@ const EditProfilePage = () => {
 
     try {
       await updateUserData(formData);
-      router.push("/profile");
+
+      // Debug: afficher le rôle pour vérifier
+      console.log("=== DEBUG REDIRECTION ===");
+      console.log("userData:", userData);
+      console.log("userData?.role:", userData?.role);
+      console.log(
+        "Condition admin/advisor:",
+        userData?.role === "admin" || userData?.role === "advisor"
+      );
+      console.log(
+        "Redirection vers:",
+        userData?.role === "admin" || userData?.role === "advisor"
+          ? "/admin/profile"
+          : "/profile"
+      );
+      console.log("========================");
+
+      const redirectUrl =
+        userData?.role === "admin" || userData?.role === "advisor"
+          ? "/admin/profile"
+          : "/profile";
+
+      console.log("Redirection forcée vers:", redirectUrl);
+      window.location.href = redirectUrl;
     } catch (error) {
       console.error("Erreur lors de la mise à jour:", error);
     } finally {
@@ -92,7 +115,29 @@ const EditProfilePage = () => {
   };
 
   const handleCancel = () => {
-    router.push("/profile");
+    // Debug: afficher le rôle pour vérifier
+    console.log("=== DEBUG CANCEL REDIRECTION ===");
+    console.log("userData:", userData);
+    console.log("userData?.role:", userData?.role);
+    console.log(
+      "Condition admin/advisor:",
+      userData?.role === "admin" || userData?.role === "advisor"
+    );
+    console.log(
+      "Redirection vers:",
+      userData?.role === "admin" || userData?.role === "advisor"
+        ? "/admin/profile"
+        : "/profile"
+    );
+    console.log("========================");
+
+    const redirectUrl =
+      userData?.role === "admin" || userData?.role === "advisor"
+        ? "/admin/profile"
+        : "/profile";
+
+    console.log("Redirection forcée vers:", redirectUrl);
+    window.location.href = redirectUrl;
   };
 
   // Affichage du loading
