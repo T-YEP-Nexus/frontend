@@ -37,7 +37,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     canUnregisterFromEvents: false,
   });
   const [roleLoading, setRoleLoading] = useState(true);
-  const [events, setEvents] = useState<CalendarEventInput[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
 
   // Charger le rôle utilisateur
   useEffect(() => {
@@ -143,22 +143,35 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   // Synchroniser les événements du backend avec le calendrier
   useEffect(() => {
     if (!loading && !error) {
-      let calendarEvents = backendEvents.map((event) => ({
-        id: String(event.id),
-        title: event.title,
-        start: new Date(event.event_datetime),
-        end: new Date(new Date(event.event_datetime).getTime() + event.duration_minutes * 60000),
-        color: getEventColor(event.event_type),
-        extendedProps: {
+      let calendarEvents = backendEvents.map((event: any) => {
+        // Par défaut, on affiche l'événement sur toute la plage
+        let start = new Date(event.event_datetime);
+        let end = new Date(new Date(event.event_datetime).getTime() + event.duration_minutes * 60000);
+        // Si étudiant et inscrit à un slot, on rétrécit l'affichage
+        if (isStudent && event.slots && Array.isArray(event.slots)) {
+          const userId = getUserIdFromToken();
+          const mySlot = event.slots.find((slot: any) => slot.user === userId);
+          if (mySlot) {
+            start = new Date(mySlot.start);
+            end = new Date(mySlot.end);
+          }
+        }
+        return {
+          id: String(event.id),
+          title: event.title,
+          start,
+          end,
+          color: getEventColor(event.event_type),
           description: event.description,
           event_type: event.event_type,
           report: event.report,
-          id_creator: event.id_creator
-        }
-      }));
+          id_creator: event.id_creator,
+          slots: event.slots || undefined,
+        };
+      });
       setEvents(calendarEvents);
     }
-  }, [backendEvents, loading, error]);
+  }, [backendEvents, loading, error, isStudent]);
 
   // Fonction pour obtenir la couleur selon le type d'événement
   const getEventColor = (eventType: string) => {
