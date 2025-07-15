@@ -180,14 +180,14 @@ export default function AdminInformations() {
   }
 
   return (
-    <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-6 sm:py-8 lg:py-12">
+    <div className="min-h-screen px-3 sm:px-4 lg:px-16 py-4 sm:py-6 lg:py-12">
       <Header
         title="Gestion des Informations"
         description="Créer et gérer les annonces générales"
       />
 
       {/* Boutons d'action */}
-      <div className="flex flex-wrap gap-4 mb-10">
+      <div className="flex flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-10">
         <AdminButton onClick={() => router.push("/admin/informations/create")}>
           <Plus size={20} />
           Nouvelle Information
@@ -234,16 +234,16 @@ export default function AdminInformations() {
 
       {/* Liste des informations */}
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-blue-200/50">
-        <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
-          <h2 className="font-bold text-2xl text-blue-900 flex items-center gap-3">
+        <div className="px-4 sm:px-8 py-4 sm:py-6 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+          <h2 className="font-bold text-xl sm:text-2xl text-blue-900 flex items-center gap-3">
             <div className="p-2 bg-gradient-to-br from-blue-200 to-blue-300 rounded-xl">
-              <MessageSquare className="w-6 h-6 text-blue-700" />
+              <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-blue-700" />
             </div>
             Liste des informations
           </h2>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {filteredInformations.length === 0 ? (
             <div className="text-center py-12">
               <MessageSquare className="mx-auto text-blue-400 mb-4" size={48} />
@@ -262,57 +262,61 @@ export default function AdminInformations() {
                 {displayedInformations.map((information) => (
                   <div
                     key={information.id}
-                    className={`bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 transition-all duration-300 hover:shadow-md ${
+                    className={`bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-md ${
                       !information.isActive ? "opacity-60" : ""
                     }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-200 to-blue-300 rounded-full flex items-center justify-center shadow-lg">
-                          <User className="text-blue-700" size={24} />
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-200 to-blue-300 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
+                          <User className="text-blue-700" size={20} />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            <h3 className="font-semibold text-blue-900 text-lg">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+                            <h3 className="font-semibold text-blue-900 text-base sm:text-lg break-words">
                               {information.title}
                             </h3>
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                information.isActive
-                                  ? "bg-green-100 text-green-800 border border-green-200"
-                                  : "bg-red-100 text-red-800 border border-red-200"
-                              }`}
-                            >
-                              {information.isActive ? "Active" : "Inactive"}
-                            </span>
-                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                              {information.authorRole === "admin"
-                                ? "Admin"
-                                : information.authorRole === "advisor"
-                                ? "Conseiller"
-                                : "Externe"}
-                            </span>
+                            <div className="flex flex-wrap gap-2">
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                                  information.isActive
+                                    ? "bg-green-100 text-green-800 border border-green-200"
+                                    : "bg-red-100 text-red-800 border border-red-200"
+                                }`}
+                              >
+                                {information.isActive ? "Active" : "Inactive"}
+                              </span>
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 whitespace-nowrap">
+                                {information.authorRole === "admin"
+                                  ? "Admin"
+                                  : information.authorRole === "advisor"
+                                  ? "Conseiller"
+                                  : "Externe"}
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-blue-800 mb-3 leading-relaxed">
+                          <p className="text-blue-800 mb-3 leading-relaxed break-words">
                             {information.content}
                           </p>
                           <div className="flex items-center gap-2 text-sm text-blue-600">
                             <Calendar size={16} />
-                            {formatDate(information.updatedAt)}
+                            <span className="whitespace-nowrap">
+                              {formatDate(information.updatedAt)}
+                            </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-end sm:justify-start gap-2 flex-shrink-0">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleToggleStatus(information)}
-                          className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
+                          className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-2 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
                         >
                           {information.isActive ? (
-                            <EyeOff size={16} />
+                            <EyeOff size={14} />
                           ) : (
-                            <Eye size={16} />
+                            <Eye size={14} />
                           )}
                         </Button>
                         <Button
@@ -323,17 +327,17 @@ export default function AdminInformations() {
                               `/admin/informations/edit/${information.id}`
                             )
                           }
-                          className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
+                          className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-2 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
                         >
-                          <Edit size={16} />
+                          <Edit size={14} />
                         </Button>
                         <Button
                           onClick={() => handleDelete(information)}
                           variant="outline"
                           size="sm"
-                          className="group/btn border border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
+                          className="group/btn border border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-300 font-medium px-2 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </Button>
                       </div>
                     </div>

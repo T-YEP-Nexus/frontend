@@ -67,9 +67,9 @@ export default function Informations() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
+      <div className="min-h-screen px-3 sm:px-4 lg:px-16 py-4 sm:py-6 lg:py-8">
         <Header title="Informations Générales" />
-        <div className="max-w-6xl mx-auto flex items-center justify-center mt-8">
+        <div className="max-w-6xl mx-auto flex items-center justify-center mt-6 sm:mt-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Chargement des informations...</p>
@@ -81,9 +81,9 @@ export default function Informations() {
 
   if (error) {
     return (
-      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
+      <div className="min-h-screen px-3 sm:px-4 lg:px-16 py-4 sm:py-6 lg:py-8">
         <Header title="Informations Générales" />
-        <div className="max-w-6xl mx-auto flex items-center justify-center mt-8">
+        <div className="max-w-6xl mx-auto flex items-center justify-center mt-6 sm:mt-8">
           <div className="text-center">
             <div className="text-red-600 text-xl mb-4">⚠️</div>
             <p className="text-gray-600">{error}</p>
@@ -94,14 +94,14 @@ export default function Informations() {
   }
 
   return (
-    <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
+    <div className="min-h-screen px-3 sm:px-4 lg:px-16 py-4 sm:py-6 lg:py-8">
       <Header title="Informations Générales" />
 
-      <div className="max-w-6xl mx-auto flex flex-col gap-6 mt-8">
+      <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6 mt-6 sm:mt-8">
         {informations.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-lg p-12 text-center border border-gray-200/50">
-            <div className="text-gray-400 text-6xl mb-4">📢</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <div className="bg-white rounded-2xl shadow-lg p-8 sm:p-12 text-center border border-gray-200/50">
+            <div className="text-gray-400 text-4xl sm:text-6xl mb-4">📢</div>
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
               Aucune information disponible
             </h3>
             <p className="text-gray-600">
@@ -119,28 +119,30 @@ export default function Informations() {
                     isOpen ? "" : ""
                   }`}
                 >
-                  <div className="flex flex-row items-start px-8 py-6 gap-6 w-full">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-200 to-blue-300 rounded-2xl flex items-center justify-center shadow-lg mt-1 group-hover:scale-110 transition-transform duration-300">
-                      <User className="text-blue-700" size={28} />
+                  <div className="flex flex-col sm:flex-row items-start px-4 sm:px-8 py-4 sm:py-6 gap-4 sm:gap-6 w-full">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-200 to-blue-300 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                      <User className="text-blue-700" size={20} />
                     </div>
                     <div className="flex-1 flex flex-col min-w-0 h-full">
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="font-bold text-blue-900 text-xl leading-tight">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+                        <span className="font-bold text-blue-900 text-base sm:text-xl leading-tight break-words">
                           {info.author}
                         </span>
                         <div className="flex items-center gap-2 text-sm text-blue-600">
                           <Clock size={14} />
-                          <span>{timeAgo(info.createdAt)}</span>
+                          <span className="whitespace-nowrap">
+                            {timeAgo(info.createdAt)}
+                          </span>
                         </div>
                       </div>
 
-                      <h3 className="font-bold text-blue-900 text-xl mb-3 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                      <h3 className="font-bold text-blue-900 text-lg sm:text-xl mb-3 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent break-words">
                         {info.title}
                       </h3>
 
-                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 mb-4">
+                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-3 sm:p-4 mb-4">
                         <span
-                          className={`text-blue-800 text-base leading-relaxed transition-all duration-300 ${
+                          className={`text-blue-800 text-sm sm:text-base leading-relaxed transition-all duration-300 break-words ${
                             isOpen ? "" : "line-clamp-3"
                           }`}
                         >
@@ -148,15 +150,17 @@ export default function Informations() {
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                         <div className="flex items-center gap-2 text-sm text-blue-600">
                           <Calendar size={14} />
-                          <span>{formatDateTime(info.createdAt)}</span>
+                          <span className="whitespace-nowrap">
+                            {formatDateTime(info.createdAt)}
+                          </span>
                         </div>
 
                         {info.content.length > MIN_LENGTH_FOR_PLUS && (
                           <button
-                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl px-6 py-2 transition-all duration-300 text-sm flex items-center gap-2 hover:scale-105 shadow-lg hover:shadow-xl"
+                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl px-4 sm:px-6 py-2 transition-all duration-300 text-sm flex items-center gap-2 hover:scale-105 shadow-lg hover:shadow-xl self-start sm:self-auto"
                             onClick={() => setOpenIdx(isOpen ? null : idx)}
                             aria-expanded={isOpen}
                           >
@@ -177,10 +181,10 @@ export default function Informations() {
             })}
 
             {hasMore && (
-              <div className="flex justify-center mt-8">
+              <div className="flex justify-center mt-6 sm:mt-8">
                 <button
                   onClick={handleShowMore}
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl px-8 py-3 transition-all duration-300 flex items-center gap-2 hover:scale-105 shadow-lg hover:shadow-xl"
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl px-6 sm:px-8 py-3 transition-all duration-300 flex items-center gap-2 hover:scale-105 shadow-lg hover:shadow-xl"
                 >
                   <Plus size={20} />
                   Afficher plus d'informations
