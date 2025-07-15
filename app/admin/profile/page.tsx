@@ -14,6 +14,7 @@ import {
   Search,
   User,
   GraduationCap,
+  LogOut,
 } from "lucide-react";
 import { faMedal, faCrown, faFire } from "@fortawesome/free-solid-svg-icons";
 import Header from "@/components/Header/Header";
@@ -150,6 +151,53 @@ const AdminProfilePage = () => {
     setSelectedPromotion("");
     setSelectedStudent("");
     setStudentData(null);
+  };
+
+  // Gestion de la déconnexion
+  const handleLogout = async () => {
+    try {
+      // Récupérer le token depuis les cookies
+      const cookies = document.cookie.split(";");
+      const tokenCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("token=")
+      );
+      const token = tokenCookie ? tokenCookie.split("=")[1] : null;
+
+      if (token) {
+        const response = await fetch("http://localhost:3001/logout", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Supprimer toutes les données du localStorage et cookies
+          localStorage.clear(); // Nettoie tout le localStorage
+          document.cookie =
+            "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict";
+
+          // Rediriger vers la page de login
+          window.location.href = "/login";
+        }
+      } else {
+        // Si pas de token, supprimer quand même les données et rediriger
+        localStorage.clear(); // Nettoie tout le localStorage
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict";
+        window.location.href = "/login";
+      }
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+      // En cas d'erreur, supprimer quand même les données et rediriger
+      localStorage.clear(); // Nettoie tout le localStorage
+      document.cookie =
+        "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict";
+      window.location.href = "/login";
+    }
   };
 
   // État pour les étudiants récupérés depuis la BDD
@@ -509,34 +557,39 @@ const AdminProfilePage = () => {
               </div>
             </div>
 
-            {/* Actions rapides modernisées et compactes */}
+            {/* Statistiques rapides */}
             <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-              <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200">
-                <h2 className="font-semibold text-lg text-green-900 flex items-center gap-2">
-                  <div className="p-1.5 bg-gradient-to-br from-green-200 to-green-300 rounded-lg">
-                    <Target className="w-4 h-4 text-green-700" />
+              <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+                <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
+                  <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
+                    <TrendingUp className="w-4 h-4 text-blue-700" />
                   </div>
-                  Actions rapides
+                  Statistiques rapides
                 </h2>
               </div>
 
               <div className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <AdminButton
-                    onClick={handleShowOtherUsers}
-                    className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm"
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    Consulter les profils étudiants
-                  </AdminButton>
-                  <Button
-                    onClick={() => router.push("/profile/edit")}
-                    className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-sm text-white cursor-pointer"
-                    variant="default"
-                  >
-                    <User className="w-4 h-4 mr-2 text-white" />
-                    Modifier mon profil
-                  </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <div className="text-lg font-bold text-blue-900">12</div>
+                    <div className="text-xs text-blue-600">Étudiants gérés</div>
+                  </div>
+                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <div className="text-lg font-bold text-blue-900">8</div>
+                    <div className="text-xs text-blue-600">Projets actifs</div>
+                  </div>
+                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <div className="text-lg font-bold text-blue-900">3</div>
+                    <div className="text-xs text-blue-600">
+                      Promotions gérées
+                    </div>
+                  </div>
+                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <div className="text-lg font-bold text-blue-900">24</div>
+                    <div className="text-xs text-blue-600">
+                      Heures cette semaine
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -545,11 +598,11 @@ const AdminProfilePage = () => {
           {/* Colonne droite modernisée */}
           <div className="flex flex-col gap-4">
             {/* Informations système modernisées */}
-            <div className="bg-white rounded-xl shadow-md border border-purple-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-              <div className="px-6 py-4 bg-gradient-to-r from-purple-50 to-purple-100 border-b border-purple-200">
-                <h2 className="font-semibold text-lg text-purple-900 flex items-center gap-2">
-                  <div className="p-1.5 bg-gradient-to-br from-purple-200 to-purple-300 rounded-lg">
-                    <User className="w-4 h-4 text-purple-700" />
+            <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+              <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+                <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
+                  <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
+                    <User className="w-4 h-4 text-blue-700" />
                   </div>
                   Informations système
                 </h2>
@@ -571,16 +624,16 @@ const AdminProfilePage = () => {
                     </div>
                   </div>
                 </div>
-                <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 hover:shadow-md transition-all duration-300">
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-200 rounded-lg">
-                      <GraduationCap size={16} className="text-purple-700" />
+                    <div className="p-2 bg-blue-200 rounded-lg">
+                      <GraduationCap size={16} className="text-blue-700" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-purple-900 mb-1 text-sm">
+                      <h4 className="font-semibold text-blue-900 mb-1 text-sm">
                         Campus
                       </h4>
-                      <p className="text-purple-700 font-medium text-sm">
+                      <p className="text-blue-700 font-medium text-sm">
                         {currentUser.campus}
                       </p>
                     </div>
@@ -589,37 +642,42 @@ const AdminProfilePage = () => {
               </div>
             </div>
 
-            {/* Statistiques rapides */}
-            <div className="bg-white rounded-xl shadow-md border border-orange-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-              <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200">
-                <h2 className="font-semibold text-lg text-orange-900 flex items-center gap-2">
-                  <div className="p-1.5 bg-gradient-to-br from-orange-200 to-orange-300 rounded-lg">
-                    <TrendingUp className="w-4 h-4 text-orange-700" />
+            {/* Actions rapides modernisées et compactes */}
+            <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+              <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+                <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
+                  <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
+                    <Target className="w-4 h-4 text-blue-700" />
                   </div>
-                  Statistiques rapides
+                  Actions rapides
                 </h2>
               </div>
 
               <div className="p-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-lg font-bold text-blue-900">12</div>
-                    <div className="text-xs text-blue-600">Étudiants gérés</div>
-                  </div>
-                  <div className="text-center p-3 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
-                    <div className="text-lg font-bold text-green-900">8</div>
-                    <div className="text-xs text-green-600">Projets actifs</div>
-                  </div>
-                  <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200">
-                    <div className="text-lg font-bold text-purple-900">3</div>
-                    <div className="text-xs text-purple-600">Promotions gérées</div>
-                  </div>
-                  <div className="text-center p-3 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border border-orange-200">
-                    <div className="text-lg font-bold text-orange-900">24</div>
-                    <div className="text-xs text-orange-600">
-                      Heures cette semaine
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 gap-3">
+                  <AdminButton
+                    onClick={handleShowOtherUsers}
+                    className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Consulter les profils étudiants
+                  </AdminButton>
+                  <Button
+                    onClick={() => router.push("/admin/profile/edit")}
+                    className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm text-white cursor-pointer"
+                    variant="default"
+                  >
+                    <User className="w-4 h-4 mr-2 text-white" />
+                    Modifier mon profil
+                  </Button>
+                  <Button
+                    onClick={handleLogout}
+                    className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm text-white cursor-pointer"
+                    variant="default"
+                  >
+                    <LogOut className="w-4 h-4 mr-2 text-white" />
+                    Se déconnecter
+                  </Button>
                 </div>
               </div>
             </div>
