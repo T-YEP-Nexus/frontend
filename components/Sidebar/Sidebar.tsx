@@ -124,7 +124,7 @@ const Sidebar = () => {
       if (user.data.roles_user === "student") {
         try {
           const studentRes = await fetch(
-            `http://localhost:3004/student/profile/${userId}`,
+            `http://localhost:3004/student/profile/${user.data.id}`,
             {
               method: "GET",
               headers: {
@@ -135,7 +135,50 @@ const Sidebar = () => {
 
           if (studentRes.ok) {
             const studentData = await studentRes.json();
-            setUserPromotion(studentData.data.promotion || "");
+            console.log("Données étudiant dans sidebar:", studentData);
+            console.log("Données étudiant complètes:", studentData.data);
+            console.log(
+              "ID promotion étudiant:",
+              studentData.data?.id_promotion
+            );
+            console.log(
+              "Toutes les propriétés de studentData.data:",
+              Object.keys(studentData.data || {})
+            );
+
+            // Récupérer toutes les promotions pour convertir l'ID en nom
+            const promotionsRes = await fetch(
+              "http://localhost:3004/promotions"
+            );
+            if (promotionsRes.ok) {
+              const promotionsData = await promotionsRes.json();
+              console.log(
+                "Promotions disponibles dans sidebar:",
+                promotionsData
+              );
+
+              // Fonction pour récupérer le nom de promotion par ID
+              const getPromotionNameById = (promotionId: string): string => {
+                if (!promotionsData.success || !promotionId) return "";
+                const promotion = promotionsData.data.find(
+                  (p: { id: string; name: string }) => p.id === promotionId
+                );
+                console.log(
+                  "Recherche promotion pour ID:",
+                  promotionId,
+                  "Résultat:",
+                  promotion
+                );
+                return promotion ? promotion.name : "";
+              };
+
+              // Convertir l'ID de promotion en nom
+              const promotionId = studentData.data?.id_promotion;
+              console.log("ID promotion à convertir:", promotionId);
+              const promotionName = getPromotionNameById(promotionId);
+              console.log("Nom de promotion trouvé:", promotionName);
+              setUserPromotion(promotionName);
+            }
           }
         } catch (studentError) {
           console.error(

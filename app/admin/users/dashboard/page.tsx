@@ -43,7 +43,7 @@ import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 // Interface pour les promotions
 interface Promotion {
-  id: number;
+  id: string; // UUID
   name: string;
   created_at: string;
 }
@@ -63,14 +63,15 @@ interface AdminUser {
   student?: {
     id: number;
     student_number: string;
-    promotion: string;
+    id_promotion: string; // UUID de la promotion
+    promotion_name?: string; // Nom de la promotion (à récupérer)
     major: string;
   };
   advisor?: {
     id: number;
     major: string;
     room: string;
-    availability: string; // Note: API utilise "availibity" mais on garde "availability" pour la cohérence
+    availability: string;
   };
 }
 
@@ -108,6 +109,45 @@ export default function AdminDashboard() {
     error: promotionsError,
   } = usePromotionsData();
 
+  // Fonction pour récupérer le nom de promotion par ID
+  const getPromotionNameById = (promotionId: string): string => {
+    if (
+      !promotions ||
+      !promotionId ||
+      promotionId === "null" ||
+      promotionId === "undefined"
+    ) {
+      console.log(
+        "Promotion inconnue - promotions:",
+        !!promotions,
+        "promotionId:",
+        promotionId
+      );
+      return "Promotion inconnue";
+    }
+    console.log(
+      "Recherche promotion pour ID:",
+      promotionId,
+      "Type:",
+      typeof promotionId
+    );
+    console.log(
+      "Promotions disponibles:",
+      promotions.map((p) => ({ id: p.id, name: p.name, type: typeof p.id }))
+    );
+    // Chercher par ID exact
+    const promotion = promotions.find((p) => p.id === promotionId);
+    console.log("Promotion trouvée:", promotion);
+    return promotion ? promotion.name : "Promotion inconnue";
+  };
+
+  // Fonction pour récupérer l'ID de promotion par nom
+  const getPromotionIdByName = (promotionName: string): string | null => {
+    if (!promotions || !promotionName) return null;
+    const promotion = promotions.find((p) => p.name === promotionName);
+    return promotion ? promotion.id : null;
+  };
+
   // Fonction pour récupérer tous les utilisateurs
   const fetchAllUsers = async () => {
     try {
@@ -143,6 +183,15 @@ export default function AdminDashboard() {
         ? await usersResponse.json()
         : { success: false, data: [] };
 
+      // Attendre que les promotions soient chargées
+      if (!promotions || promotionsLoading) {
+        console.log("Promotions pas encore chargées, on attend...");
+        return; // On sort de la fonction, elle sera rappelée quand les promotions seront chargées
+      }
+
+      console.log("Promotions chargées, on peut traiter les utilisateurs");
+      console.log("Promotions disponibles:", promotions);
+
       // Combiner les données
       const usersWithDetails = profilesData.data.map((profile: any) => {
         const student = studentsData.success
@@ -161,6 +210,31 @@ export default function AdminDashboard() {
         // Utiliser le rôle réel stocké dans la base de données
         const role = profile.roles_user;
 
+        // Si c'est un étudiant, récupérer le nom de la promotion
+        let studentWithPromotion = null;
+        if (student) {
+          console.log("Étudiant trouvé:", student);
+          console.log(
+            "ID promotion étudiant:",
+            student.id_promotion,
+            "Type:",
+            typeof student.id_promotion
+          );
+          // Récupérer l'ID de promotion depuis les données étudiant
+          const promotionId = student.id_promotion;
+          console.log("ID promotion à rechercher:", promotionId);
+
+          // Convertir l'ID en nom de promotion
+          const promotionName = getPromotionNameById(promotionId);
+          console.log("Nom de promotion trouvé:", promotionName);
+
+          studentWithPromotion = {
+            ...student,
+            promotion_name: promotionName,
+          };
+          console.log("Étudiant avec promotion:", studentWithPromotion);
+        }
+
         return {
           id: profile.id,
           id_user: profile.id_user, // UUID de l'utilisateur
@@ -172,7 +246,7 @@ export default function AdminDashboard() {
           campus: profile.campus,
           roles_user: role,
           profileImage: profile.profileImage,
-          ...(student && { student }),
+          ...(studentWithPromotion && { student: studentWithPromotion }),
           ...(advisor && {
             advisor: {
               ...advisor,
@@ -252,6 +326,14 @@ export default function AdminDashboard() {
     };
   }, []);
 
+  // Recharger les utilisateurs quand les promotions sont chargées
+  React.useEffect(() => {
+    if (promotions && !promotionsLoading && allUsers.length === 0) {
+      console.log("Promotions chargées, on recharge les utilisateurs");
+      fetchAllUsers();
+    }
+  }, [promotions, promotionsLoading, allUsers.length]);
+
   // Gestionnaire de clic à l'extérieur pour fermer les dropdowns
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -279,8 +361,8 @@ export default function AdminDashboard() {
   const usedPromotions = useMemo(() => {
     const promoSet = new Set<string>();
     allUsers.forEach((user) => {
-      if (user.student?.promotion) {
-        promoSet.add(user.student.promotion);
+      if (user.student?.promotion_name) {
+        promoSet.add(user.student.promotion_name);
       }
     });
     return Array.from(promoSet);
@@ -294,6 +376,11 @@ export default function AdminDashboard() {
 
     // Utiliser toutes les promotions de l'API
     const allPromotions = promotions.map((promo) => promo.name).sort();
+    console.log(
+      "Promotions disponibles dans availablePromotions:",
+      allPromotions
+    );
+    console.log("Promotions brutes:", promotions);
 
     return allPromotions;
   }, [promotions, promotionsLoading, usedPromotions]);
@@ -350,7 +437,7 @@ export default function AdminDashboard() {
       // Correction : filtre insensible à la casse
       const matchesPromotion =
         selectedPromotion === "all" ||
-        user.student?.promotion === selectedPromotion;
+        user.student?.promotion_name === selectedPromotion;
 
       const matchesRole =
         selectedRole === "all" ||
@@ -370,8 +457,8 @@ export default function AdminDashboard() {
           bValue = `${b.first_name || ""} ${b.last_name || ""}`.toLowerCase();
           break;
         case "promotion":
-          aValue = a.student?.promotion || "";
-          bValue = b.student?.promotion || "";
+          aValue = a.student?.promotion_name || "";
+          bValue = b.student?.promotion_name || "";
           break;
         case "role":
           aValue = a.roles_user || "";
@@ -403,6 +490,23 @@ export default function AdminDashboard() {
   const usersToDisplay = useMemo(() => {
     return filteredAndSortedUsers.slice(0, displayedUsers);
   }, [filteredAndSortedUsers, displayedUsers]);
+
+  // Log de débogage pour les promotions dans le tableau
+  React.useEffect(() => {
+    if (usersToDisplay.length > 0) {
+      console.log("=== DEBUG PROMOTIONS DANS LE TABLEAU ===");
+      usersToDisplay.forEach((user) => {
+        if (user.student) {
+          console.log(`${user.first_name} ${user.last_name}:`, {
+            promotion_name: user.student.promotion_name,
+            id_promotion: user.student.id_promotion,
+            student_data: user.student,
+          });
+        }
+      });
+      console.log("=== FIN DEBUG ===");
+    }
+  }, [usersToDisplay]);
 
   // Fonction pour afficher plus d'utilisateurs
   const handleShowMore = () => {
@@ -677,7 +781,7 @@ export default function AdminDashboard() {
                   onClick={() => handleSort("promotion")}
                 >
                   <div className="flex items-center gap-2">
-                    Promo/Spé
+                    Promo/Dispo
                     {sortBy === "promotion" && (
                       <span className="text-blue-600 font-bold">
                         {sortOrder === "asc" ? "↑" : "↓"}
@@ -735,18 +839,25 @@ export default function AdminDashboard() {
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="text-xs font-medium text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
-                      {user.student?.promotion || "-"}
+                      {user.roles_user === "student"
+                        ? user.student?.promotion_name ||
+                          "Promotion non définie"
+                        : user.advisor?.major ||
+                          user.student?.major ||
+                          "Spécialité non définie"}
                     </div>
                     {user.roles_user === "student" && user.student?.major && (
                       <div className="text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
                         {user.student.major}
                       </div>
                     )}
-                    {user.roles_user === "advisor" && user.advisor?.major && (
-                      <div className="text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
-                        {user.advisor.major}
-                      </div>
-                    )}
+                    {(user.roles_user === "advisor" ||
+                      user.roles_user === "admin") &&
+                      user.advisor?.availability && (
+                        <div className="text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
+                          {user.advisor.availability}
+                        </div>
+                      )}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div className="space-y-1">
@@ -1029,7 +1140,7 @@ export default function AdminDashboard() {
                               Promotion
                             </p>
                             <p className="text-blue-900">
-                              {selectedUser.student.promotion}
+                              {selectedUser.student.promotion_name}
                             </p>
                           </div>
                         </div>

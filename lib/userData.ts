@@ -241,6 +241,39 @@ export const getUserData = async (userId: string): Promise<UserProfile> => {
     // Étape 2 : Récupérer les données étudiant (avec fallback)
     const studentData = await getStudentData(profileData.id);
     console.log("Données étudiant récupérées:", studentData);
+    console.log("Données étudiant complètes:", studentData);
+    console.log("ID promotion étudiant:", studentData?.id_promotion);
+    console.log("Toutes les propriétés de studentData:", Object.keys(studentData || {}));
+
+    // Étape 3 : Récupérer la promotion si c'est un étudiant
+    let promotionName = "";
+    if (profileData.roles_user === "student" && studentData?.id_promotion) {
+      try {
+        const promotionsRes = await fetch("http://localhost:3004/promotions");
+        if (promotionsRes.ok) {
+          const promotionsData = await promotionsRes.json();
+          console.log("Promotions disponibles dans userData:", promotionsData);
+
+          // Fonction pour récupérer le nom de promotion par ID
+          const getPromotionNameById = (promotionId: string): string => {
+            if (!promotionsData.success || !promotionId) return "";
+            const promotion = promotionsData.data.find(
+              (p: { id: string; name: string }) => p.id === promotionId
+            );
+            console.log("Recherche promotion pour ID:", promotionId, "Résultat:", promotion);
+            return promotion ? promotion.name : "";
+          };
+
+          // Convertir l'ID de promotion en nom
+          const promotionId = studentData?.id_promotion;
+          console.log("ID promotion à convertir:", promotionId);
+          promotionName = getPromotionNameById(promotionId);
+          console.log("Nom de promotion trouvé:", promotionName);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des promotions:", error);
+      }
+    }
 
     const userData: UserProfile = {
       id: profileData.id,
@@ -255,7 +288,7 @@ export const getUserData = async (userId: string): Promise<UserProfile> => {
       stats: profileData.stats || defaultUserData.stats,
       chartData: profileData.chartData || defaultUserData.chartData,
       studentNumber: studentData.student_number || defaultUserData.studentNumber,
-      promotion: studentData.promotion || defaultUserData.promotion,
+      promotion: promotionName || defaultUserData.promotion,
       major: studentData.major || defaultUserData.major,
     };
 
@@ -368,7 +401,7 @@ export async function createCompleteUser(input: NewUserInput) {
         campus: input.campus,
         is_active: input.is_active,
         roles_user: input.roles_user
-        
+
       })
     });
     if (!resProfile.ok) {
@@ -379,7 +412,7 @@ export async function createCompleteUser(input: NewUserInput) {
 
     // 3. Création selon le rôle
     let roleSpecificData = null;
-    
+
     if (input.roles_user === 'student') {
       const resStudent = await fetch('http://localhost:3004/student', {
         method: 'POST',
@@ -397,7 +430,7 @@ export async function createCompleteUser(input: NewUserInput) {
       }
       const { data: studentData } = (await resStudent.json()) as ApiResponse<unknown>;
       roleSpecificData = studentData;
-    } 
+    }
     else if (input.roles_user === 'advisor') {
       const resAdvisor = await fetch('http://localhost:3004/advisor', {
         method: 'POST',
@@ -445,5 +478,3 @@ export async function createCompleteUser(input: NewUserInput) {
     throw error;
   }
 }
-
-
