@@ -183,25 +183,47 @@ const Sidebar = () => {
 
         {/* Liens */}
         <nav className="flex flex-col gap-2 md:gap-4">
-          {links.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
-                ${
-                  pathname === link.href
-                    ? "bg-[#0e357a]/70 font-bold"
-                    : "hover:bg-[#0e357a]/40"
-                }
-              `}
-            >
-              <span>{link.icon}</span>
-              <span className="hidden md:inline">{link.label}</span>
-            </Link>
-          ))}
+          {/* Liens visibles pour tous les utilisateurs sauf advisor/admin */}
+          {userRole !== "admin" && userRole !== "advisor" && (
+            <>
+              {links.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                    ${
+                      pathname === link.href
+                        ? "bg-[#0e357a]/70 font-bold"
+                        : "hover:bg-[#0e357a]/40"
+                    }
+                  `}
+                >
+                  <span>{link.icon}</span>
+                  <span className="hidden md:inline">{link.label}</span>
+                </Link>
+              ))}
 
-          {/* Boutons Admin */}
-          {userRole === "admin" && (
+              {/* Calendrier visible pour les étudiants */}
+              <Link
+                href="/calendar"
+                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                  ${
+                    pathname === "/calendar"
+                      ? "bg-[#0e357a]/70 font-bold"
+                      : "hover:bg-[#0e357a]/40"
+                  }
+                `}
+              >
+                <span>
+                  <Calendar size={24} />
+                </span>
+                <span className="hidden md:inline">Calendrier</span>
+              </Link>
+            </>
+          )}
+
+          {/* Boutons Admin pour admin et advisor */}
+          {(userRole === "admin" || userRole === "advisor") && (
             <>
               <Link
                 href="/admin"
@@ -277,6 +299,23 @@ const Sidebar = () => {
                   <MessageSquare size={24} />
                 </span>
                 <span className="hidden md:inline">Gestion Informations</span>
+              </Link>
+
+              {/* Calendrier visible pour les advisors et admins (en bas) */}
+              <Link
+                href="/calendar"
+                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                  ${
+                    pathname === "/calendar"
+                      ? "bg-[#0e357a]/70 font-bold"
+                      : "hover:bg-[#0e357a]/40"
+                  }
+                `}
+              >
+                <span>
+                  <Calendar size={24} />
+                </span>
+                <span className="hidden md:inline">Calendrier</span>
               </Link>
             </>
           )}
