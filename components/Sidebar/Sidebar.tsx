@@ -47,6 +47,8 @@ const Sidebar = () => {
   const [firstName, setFirstName] = useState("Utilisateur");
   const [lastName, setLastName] = useState("Invité");
   const [userRole, setUserRole] = useState("student");
+  const [userPromotion, setUserPromotion] = useState("");
+  const [userCampus, setUserCampus] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +64,20 @@ const Sidebar = () => {
       return error.message;
     }
     return "Erreur inconnue";
+  };
+
+  // Fonction pour traduire les rôles en français
+  const getRoleLabel = (role: string): string => {
+    switch (role) {
+      case "admin":
+        return "Administrateur";
+      case "advisor":
+        return "Conseiller";
+      case "student":
+        return "Étudiant";
+      default:
+        return role;
+    }
   };
 
   const fetchUserData = async () => {
@@ -96,6 +112,33 @@ const Sidebar = () => {
       setFirstName(user.data.first_name || "Utilisateur");
       setLastName(user.data.last_name || "Invité");
       setUserRole(user.data.roles_user || "student");
+      setUserCampus(user.data.campus || "");
+
+      // Récupérer les données étudiant si c'est un étudiant
+      if (user.data.roles_user === "student") {
+        try {
+          const studentRes = await fetch(
+            `http://localhost:3004/student/profile/${userId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (studentRes.ok) {
+            const studentData = await studentRes.json();
+            setUserPromotion(studentData.data.promotion || "");
+          }
+        } catch (studentError) {
+          console.error(
+            "Erreur lors de la récupération des données étudiant:",
+            studentError
+          );
+        }
+      }
+
       setError(null);
     } catch (err) {
       console.error("Erreur : ", err);
@@ -106,6 +149,8 @@ const Sidebar = () => {
       setFirstName("Utilisateur");
       setLastName("Invité");
       setUserRole("student");
+      setUserPromotion("");
+      setUserCampus("");
 
       // Ne pas rediriger automatiquement vers login en cas d'erreur réseau
       // pour permettre l'utilisation en mode dégradé
@@ -349,10 +394,13 @@ const Sidebar = () => {
           />
           <div className="hidden md:flex flex-col">
             <span className="text-white font-bold leading-tight">
-              {firstName}
+              {firstName} {lastName}
             </span>
             <span className="text-white/80 text-xs leading-tight">
-              {lastName}
+              {userRole === "student"
+                ? userPromotion || "Promotion non définie"
+                : getRoleLabel(userRole) + " " + userCampus ||
+                  "Campus non défini"}
             </span>
             {error && (
               <span className="text-red-200 text-[10px] leading-tight">
