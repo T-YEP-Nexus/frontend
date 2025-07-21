@@ -475,7 +475,7 @@ const AdminProfilePage = () => {
 
       {/* Affichage du profil admin par défaut */}
       {!showOtherUsers && currentUser && (
-        <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-x-8 gap-y-6 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-x-8 gap-y-6 items-start">
           {/* Colonne principale */}
           <div className="flex flex-col gap-6">
             {/* Carte profil principale modernisée */}
@@ -490,7 +490,7 @@ const AdminProfilePage = () => {
               </div>
 
               <div className="p-6">
-                <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
+                <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
                   <div className="relative">
                     <Image
                       src={
@@ -500,99 +500,122 @@ const AdminProfilePage = () => {
                           : "/default-avatar.png"
                       }
                       alt="Photo de profil"
-                      width={100}
-                      height={100}
-                      className="rounded-full border-3 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300"
+                      width={120}
+                      height={120}
+                      className="rounded-full border-4 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300"
                     />
                   </div>
                   <div className="text-center md:text-left">
-                    <h3 className="text-2xl font-bold text-blue-900 mb-2">
+                    <h3 className="text-3xl font-bold text-blue-900 mb-3">
                       {currentUser.firstName} {currentUser.lastName}
                     </h3>
-                    <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                    <div className="flex items-center justify-center md:justify-start gap-3 mb-3">
+                      <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
                         {currentUser.role}
                       </span>
-                      <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                      <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
                         {currentUser.campus}
                       </span>
                     </div>
-                    <p className="text-blue-600 text-sm">{currentUser.email}</p>
+                    <p className="text-blue-600 text-base">
+                      {currentUser.email}
+                    </p>
                   </div>
                 </div>
 
                 {/* Informations de contact modernisées */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-200 rounded-lg">
-                        <GraduationCap size={18} className="text-blue-700" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-blue-200 rounded-lg">
+                        <GraduationCap size={20} className="text-blue-700" />
                       </div>
                       <div>
-                        <p className="text-xs text-blue-600 font-medium mb-1">
+                        <p className="text-sm text-blue-600 font-medium mb-2">
                           Email
                         </p>
-                        <p className="text-blue-900 font-semibold text-sm">
+                        <p className="text-blue-900 font-semibold text-base">
                           {currentUser.email}
                         </p>
                       </div>
                     </div>
                   </div>
-                  <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-200 rounded-lg">
-                        <Users size={18} className="text-green-700" />
+                  <div className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 hover:shadow-md transition-all duration-300">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-green-200 rounded-lg">
+                        <Users size={20} className="text-green-700" />
                       </div>
                       <div>
-                        <p className="text-xs text-green-600 font-medium mb-1">
+                        <p className="text-sm text-green-600 font-medium mb-2">
                           Téléphone
                         </p>
-                        <p className="text-green-900 font-semibold text-sm">
+                        <p className="text-green-900 font-semibold text-base">
                           {currentUser.phone}
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Section supplémentaire pour équilibrer la hauteur */}
+                <div className="mt-8 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <div className="p-2 bg-gray-200 rounded-lg">
+                      <User size={16} className="text-gray-700" />
+                    </div>
+                    Aperçu du profil
+                  </h4>
+                  <p className="text-gray-700 text-sm leading-relaxed">
+                    Bienvenue dans votre espace personnel. Vous pouvez consulter
+                    vos informations, modifier votre profil ou accéder aux
+                    fonctionnalités de gestion selon votre rôle.
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Statistiques rapides */}
-            <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-              <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
-                <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
-                  <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
-                    <TrendingUp className="w-4 h-4 text-blue-700" />
-                  </div>
-                  Statistiques rapides
-                </h2>
-              </div>
-
-              <div className="p-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-lg font-bold text-blue-900">12</div>
-                    <div className="text-xs text-blue-600">Étudiants gérés</div>
-                  </div>
-                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-lg font-bold text-blue-900">8</div>
-                    <div className="text-xs text-blue-600">Projets actifs</div>
-                  </div>
-                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-lg font-bold text-blue-900">3</div>
-                    <div className="text-xs text-blue-600">
-                      Promotions gérées
+            {/* Statistiques rapides - visible seulement pour les advisors */}
+            {userRole === "advisor" && (
+              <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+                  <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
+                    <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
+                      <TrendingUp className="w-4 h-4 text-blue-700" />
                     </div>
-                  </div>
-                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-lg font-bold text-blue-900">24</div>
-                    <div className="text-xs text-blue-600">
-                      Heures cette semaine
+                    Statistiques rapides
+                  </h2>
+                </div>
+
+                <div className="p-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                      <div className="text-lg font-bold text-blue-900">12</div>
+                      <div className="text-xs text-blue-600">
+                        Étudiants gérés
+                      </div>
+                    </div>
+                    <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                      <div className="text-lg font-bold text-blue-900">8</div>
+                      <div className="text-xs text-blue-600">
+                        Projets actifs
+                      </div>
+                    </div>
+                    <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                      <div className="text-lg font-bold text-blue-900">3</div>
+                      <div className="text-xs text-blue-600">
+                        Promotions gérées
+                      </div>
+                    </div>
+                    <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                      <div className="text-lg font-bold text-blue-900">24</div>
+                      <div className="text-xs text-blue-600">
+                        Heures cette semaine
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Colonne droite modernisée */}
