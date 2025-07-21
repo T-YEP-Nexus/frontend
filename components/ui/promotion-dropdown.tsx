@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, GraduationCap } from "lucide-react";
+import { ChevronDown, GraduationCap, Loader2 } from "lucide-react";
 
 interface Promotion {
   id: number;
@@ -82,7 +82,7 @@ const PromotionDropdown: React.FC<PromotionDropdownProps> = ({
           </span>
 
           {loading ? (
-            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
           ) : (
             <ChevronDown
               size={18}

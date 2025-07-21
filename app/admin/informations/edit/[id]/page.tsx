@@ -18,6 +18,7 @@ import {
   updateInformation,
   type Information,
 } from "@/lib/informationsData";
+import AdminLoading from "@/components/admin/AdminLoading";
 
 interface InformationFormData {
   title: string;
@@ -290,8 +291,7 @@ export default function EditInformationPage() {
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
             <div className="p-8 text-center">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-4" />
-              <p className="text-gray-600">Chargement de l'information...</p>
+              <AdminLoading message="Chargement de l'information..." />
             </div>
           </div>
         </div>
