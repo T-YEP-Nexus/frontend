@@ -34,24 +34,26 @@ export default function CreatePromotionPage() {
     setIsSaving(true);
 
     try {
-      const response = await fetch('http://localhost:3004/promotion', {
-        method: 'POST',
+      const response = await fetch("http://localhost:3004/promotion", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
       });
       console.log(response);
       // Vérifier si la réponse est en JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(`API endpoint not found or returned HTML instead of JSON. Status: ${response.status}`);
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(
+          `API endpoint not found or returned HTML instead of JSON. Status: ${response.status}`
+        );
       }
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || 'Failed to create promotion');
+        throw new Error(result.message || "Failed to create promotion");
       }
 
       console.log("Promotion créée avec succès:", result.data);
@@ -62,8 +64,10 @@ export default function CreatePromotionPage() {
       console.error("Erreur lors de la création de la promotion:", error);
 
       if (error instanceof Error) {
-        if (error.message.includes('JSON')) {
-          alert('Erreur: L\'endpoint API /api/promotion n\'est pas accessible. Vérifiez que votre serveur backend est démarré.');
+        if (error.message.includes("JSON")) {
+          alert(
+            "Erreur: L'endpoint API /api/promotion n'est pas accessible. Vérifiez que votre serveur backend est démarré."
+          );
         } else {
           alert(`Erreur: ${error.message}`);
         }
@@ -118,7 +122,7 @@ export default function CreatePromotionPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/admin")}
+                onClick={() => router.back()}
                 className="flex-1 border-gray-300 hover:bg-gray-100 hover:border-gray-400 hover:shadow-md transition-all duration-300 ease-in-out cursor-pointer"
               >
                 Annuler
