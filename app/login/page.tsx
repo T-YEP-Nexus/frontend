@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import LogoAndTitle from "@/components/Login/LogoAndTitle";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError("");
 
     try {
       const response = await fetch(`http://localhost:3001/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email,
@@ -34,22 +34,67 @@ export default function LoginPage() {
       if (data.success) {
         // Stocker le token dans les cookies pour le middleware
         document.cookie = `token=${data.data.token}; path=/; max-age=86400; secure; samesite=strict`;
-        localStorage.setItem('user', JSON.stringify(data.data.user));
+        localStorage.setItem("user", JSON.stringify(data.data.user));
 
-        // Rediriger vers le dashboard
-        router.push('/dashboard');
+        // Debug: afficher les données utilisateur
+        console.log("Données de connexion:", data);
+        console.log("Utilisateur:", data.data.user);
+
+        // Récupérer le profil utilisateur pour obtenir le rôle
+        try {
+          const profileResponse = await fetch(
+            `http://localhost:3004/profile/user/${data.data.user.id}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            console.log("Données du profil:", profileData);
+
+            const userRole = profileData.data.roles_user;
+            console.log("Rôle utilisateur:", userRole);
+
+            // Rediriger selon le rôle de l'utilisateur
+            console.log(
+              `Rôle détecté: ${userRole}, redirection vers:`,
+              userRole === "admin" || userRole === "advisor"
+                ? "/admin"
+                : "/dashboard"
+            );
+
+            if (userRole === "admin" || userRole === "advisor") {
+              router.push("/admin");
+            } else {
+              router.push("/dashboard");
+            }
+          } else {
+            console.error("Erreur lors de la récupération du profil");
+            // Redirection par défaut vers le dashboard étudiant
+            router.push("/dashboard");
+          }
+        } catch (profileError) {
+          console.error(
+            "Erreur lors de la récupération du profil:",
+            profileError
+          );
+          // Redirection par défaut vers le dashboard étudiant
+          router.push("/dashboard");
+        }
       } else {
-        setError(data.message || 'Erreur de connexion');
+        setError(data.message || "Erreur de connexion");
       }
     } catch (err) {
-      console.error('Erreur lors de la connexion:', err);
-      setError('Erreur de connexion. Veuillez réessayer.');
+      console.error("Erreur lors de la connexion:", err);
+      setError("Erreur de connexion. Veuillez réessayer.");
     } finally {
       setIsLoading(false);
     }
   };
-
-
 
   return (
     <main className="h-screen flex items-center justify-center relative overflow-hidden">
@@ -89,7 +134,7 @@ export default function LoginPage() {
               className="button mt-6 cursor-pointer transition-all duration-300 hover:scale-102 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >
-              {isLoading ? 'Connexion...' : 'Connexion'}
+              {isLoading ? "Connexion..." : "Connexion"}
             </button>
           </form>
 

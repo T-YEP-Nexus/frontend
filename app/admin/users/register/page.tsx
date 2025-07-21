@@ -60,7 +60,9 @@ const RegisterPage = () => {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
-  const [promotionSuggestions, setPromotionSuggestions] = useState<Promotion[]>([]);
+  const [promotionSuggestions, setPromotionSuggestions] = useState<Promotion[]>(
+    []
+  );
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   // État du formulaire
@@ -94,14 +96,16 @@ const RegisterPage = () => {
   // Fonction pour récupérer les promotions
   const getPromotionIdByName = async (name: string) => {
     try {
-      const response = await fetch(`http://localhost:3004/promotion/name/${name}`);
+      const response = await fetch(
+        `http://localhost:3004/promotion/name/${name}`
+      );
       if (!response.ok) {
-        throw new Error('Erreur lors de la récupération de la promotions');
+        throw new Error("Erreur lors de la récupération de la promotions");
       }
       const data = await response.json();
       return data.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération de la promotions:', error);
+      console.error("Erreur lors de la récupération de la promotions:", error);
       return null;
     }
   };
@@ -148,14 +152,17 @@ const RegisterPage = () => {
         specialty: formData.specialty,
         room: formData.room,
         major: formData.major,
-        availability: formData.availability
+        availability: formData.availability,
       };
 
       // Ajouter les champs spécifiques selon le rôle
       if (formData.role === "student") {
-        apiData.student_number = generateStudentNumber(formData.last_name, formData.promotion || "");
-      } 
-      
+        apiData.student_number = generateStudentNumber(
+          formData.last_name,
+          formData.promotion || ""
+        );
+      }
+
       console.log("data envoyé", apiData);
       console.log("La prom:", promotionId);
       await createCompleteUser(apiData);
@@ -344,7 +351,7 @@ const RegisterPage = () => {
   };
 
   const handleCancel = () => {
-    router.push("/admin");
+    router.back();
   };
 
   return (
