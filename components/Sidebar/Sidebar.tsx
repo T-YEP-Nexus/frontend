@@ -16,6 +16,7 @@ import {
   Shield,
   BarChart3,
   GraduationCap,
+  UserCheck,
 } from "lucide-react";
 
 import { Russo_One } from "next/font/google";
@@ -30,6 +31,11 @@ const links = [
     label: "Informations",
     icon: <MessageSquare size={24} />,
     href: "/informations",
+  },
+  {
+    label: "Trombinoscope",
+    icon: <UserCheck size={24} />,
+    href: "/trombinoscope",
   },
   //   { label: "Emargement", icon: <Edit size={24} />, href: "/emargement" },
   //   { label: "Absences", icon: <BookOpen size={24} />, href: "/absences" },
@@ -359,6 +365,21 @@ const Sidebar = () => {
                   <Folder size={24} />
                 </span>
                 <span className="hidden md:inline">Gestion Documents</span>
+              </Link>
+              <Link
+                href="/trombinoscope"
+                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                  ${
+                    pathname === "/trombinoscope"
+                      ? "bg-[#0e357a]/70 font-bold"
+                      : "hover:bg-[#0e357a]/40"
+                  }
+                `}
+              >
+                <span>
+                  <UserCheck size={24} />
+                </span>
+                <span className="hidden md:inline">Trombinoscope</span>
               </Link>
             </>
           )}

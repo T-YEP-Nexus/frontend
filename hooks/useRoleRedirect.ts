@@ -24,7 +24,7 @@ export const useRoleRedirect = () => {
         const pathname = window.location.pathname
 
         // Ne pas appliquer la redirection sur calendar ou documents
-        if (pathname.startsWith('/calendar') || pathname.startsWith('/documents')) {
+        if (pathname.startsWith('/calendar') || pathname.startsWith('/documents') || pathname.startsWith('/trombinoscope')) {
           setIsLoading(false)
           return
         }
@@ -44,7 +44,8 @@ export const useRoleRedirect = () => {
           (userRole === 'admin' || userRole === 'advisor') &&
           !pathname.startsWith('/admin') &&
           !pathname.startsWith('/calendar') &&
-          !pathname.startsWith('/documents')
+          !pathname.startsWith('/documents') &&
+          !pathname.startsWith('/trombinoscope')
         ) {
           console.log('Hook - Admin/advisor sur page client, redirection vers /admin' + pathname)
           const adminPath = '/admin' + pathname
