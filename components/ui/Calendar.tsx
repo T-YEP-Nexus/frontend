@@ -28,7 +28,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     checkUserRegistration 
   } = useCalendarData();
   
-  const [userRole, setUserRole] = useState<'admin' | 'student' | null>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'advisor' | 'student' | null>(null);
   const [permissions, setPermissions] = useState({
     canCreateEvents: false,
     canEditEvents: false,
@@ -57,11 +57,11 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
         const role = fullUserData.role || 'student';
         
         // Convertir le rôle en format attendu
-        const userRole = role.toLowerCase() === 'admin' ? 'admin' : 'student';
+        const userRole = ['admin', 'advisor'].includes(role.toLowerCase()) ? (role.toLowerCase() as 'admin' | 'advisor') : 'student';
         setUserRole(userRole);
         
         // Définir les permissions selon le rôle
-        if (role === 'admin') {
+        if (role === 'admin' || role === 'advisor') {
           setPermissions({
             canCreateEvents: true,
             canEditEvents: true,
@@ -126,10 +126,10 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   console.log("userRole", userRole, "permissions", permissions);
   // Forçage temporaire pour test admin
   // Sélecteur de rôle pour test front
-  const [roleSelector, setRoleSelector] = useState<'admin' | 'student'>('admin');
+  const [roleSelector, setRoleSelector] = useState<'admin' | 'advisor' | 'student'>('admin');
   // Si la prop role est fournie, on l'utilise, sinon on prend le sélecteur ou la détection auto
   const effectiveRole = role || roleSelector || userRole;
-  const isAdmin = effectiveRole === 'admin';
+  const isAdmin = effectiveRole === 'admin' || effectiveRole === 'advisor';
   const isStudent = effectiveRole === 'student';
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState<{start: string, end: string} | null>(null);
@@ -338,39 +338,6 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
 
   return (
     <div className="bg-white rounded-lg shadow p-2 relative">
-      {/* Sélecteur de rôle pour test front */}
-      { !role && (
-        <div className="mb-4 flex items-center gap-4">
-          <label className="text-sm font-medium text-gray-700">Rôle de test :</label>
-          <select
-            className="border border-blue-300 rounded-xl px-3 py-1 text-base focus:outline-none focus:border-blue-500 bg-blue-50"
-            value={roleSelector}
-            onChange={e => setRoleSelector(e.target.value as 'admin' | 'student')}
-          >
-            <option value="admin">Administrateur</option>
-            <option value="student">Étudiant</option>
-          </select>
-          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}`}>{isAdmin ? 'Administrateur' : 'Étudiant'}</span>
-        </div>
-      )}
-      {/* Indicateur de rôle utilisateur */}
-      <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-gray-700">Mode :</span>
-            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-              isAdmin 
-                ? 'bg-purple-100 text-purple-800' 
-                : 'bg-green-100 text-green-800'
-            }`}>
-              {isAdmin ? 'Administrateur' : 'Étudiant'}
-            </span>
-          </div>
-          <div className="text-xs text-gray-500">
-            {isAdmin ? 'CRUD complet' : 'Inscription uniquement'}
-          </div>
-        </div>
-      </div>
       
       <FullCalendar
         ref={calendarRef}
@@ -484,11 +451,21 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           min-height: 32px;
           transition: background 0.2s, color 0.2s;
         }
-        .fc .fc-button:hover, .fc .fc-button:focus {
+        .fc .fc-button:hover {
           background: #1971FF;
           color: #fff;
         }
-        .fc .fc-today-button {
+        .fc .fc-button:focus {
+          outline: none;
+          box-shadow: none;
+          background: #e6f0ff;
+          color: #1971FF;
+        }
+        .fc .fc-button:active {
+          background: #1971FF;
+          color: #fff;
+        }
+        .fc .fc-button.fc-today-button {
           margin-right: 1.5rem;
           margin-left: 0.5rem;
           background: #e6f0ff;
@@ -504,11 +481,17 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           align-items: center;
           justify-content: center;
         }
-        .fc .fc-today-button:hover, .fc .fc-today-button:focus {
+        .fc .fc-button.fc-today-button:hover {
           background: #1971FF;
           color: #fff;
         }
-        .fc .fc-today-button:disabled {
+        .fc .fc-button.fc-today-button:focus {
+          outline: none;
+          box-shadow: none;
+          background: #e6f0ff;
+          color: #1971FF;
+        }
+        .fc .fc-button.fc-today-button:disabled {
           background: #e6f0ff !important;
           color: #1971FF !important;
           opacity: 1 !important;

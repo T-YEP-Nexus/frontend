@@ -1,9 +1,12 @@
+"use client";
 import React, { useState, useEffect } from "react";
+import PromotionDropdown from "./promotion-dropdown";
+import usePromotionsData from "@/hooks/usePromotionsData";
 
 interface ModalEventFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: { title: string; start: string; end: string; slotDuration: number }) => void;
+  onSubmit: (data: { title: string; start: string; end: string; slotDuration: number; promotion: string }) => void;
   defaultStart?: string;
   defaultEnd?: string;
 }
@@ -13,7 +16,11 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({ open, onClose, onSubmit
   const [start, setStart] = useState(defaultStart || "");
   const [end, setEnd] = useState(defaultEnd || "");
   const [slotDuration, setSlotDuration] = useState(30);
+  const [promotion, setPromotion] = useState("");
+  const [targetPromotion, setTargetPromotion] = useState(false);
   const [slotsPreview, setSlotsPreview] = useState<{start: string, end: string}[]>([]);
+
+  const { promotions, loading: promotionsLoading, error: promotionsError } = usePromotionsData();
 
   useEffect(() => {
     if (open) {
@@ -21,6 +28,8 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({ open, onClose, onSubmit
       setStart(defaultStart || "");
       setEnd(defaultEnd || "");
       setSlotDuration(30);
+      setPromotion("");
+      setTargetPromotion(false);
     }
   }, [open, defaultStart, defaultEnd]);
 
@@ -54,8 +63,8 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({ open, onClose, onSubmit
         <form
           onSubmit={e => {
             e.preventDefault();
-            if (title && start && end && slotDuration > 0) {
-              onSubmit({ title, start, end, slotDuration });
+            if (title && start && end && slotDuration > 0 && (!targetPromotion || (targetPromotion && promotion))) {
+              onSubmit({ title, start, end, slotDuration, promotion: targetPromotion ? promotion : "" });
             }
           }}
           className="flex flex-col gap-4"
@@ -68,6 +77,26 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({ open, onClose, onSubmit
             onChange={e => setTitle(e.target.value)}
             required
           />
+          <label className="flex items-center gap-2 text-base font-medium">
+            <input
+              type="checkbox"
+              checked={targetPromotion}
+              onChange={e => setTargetPromotion(e.target.checked)}
+              className="form-checkbox h-5 w-5 text-blue-600"
+            />
+            Cibler une promotion spécifique
+          </label>
+          {targetPromotion && (
+            <PromotionDropdown
+              promotions={promotions.map(p => ({ ...p, id: Number(p.id) }))}
+              selectedPromotion={promotion}
+              onPromotionChange={setPromotion}
+              loading={promotionsLoading}
+              error={promotionsError || undefined}
+              placeholder="Sélectionner une promotion"
+              required
+            />
+          )}
           <div className="flex gap-4">
             <div className="flex-1 min-w-0">
               <label className="block text-base font-medium mb-1">Début</label>

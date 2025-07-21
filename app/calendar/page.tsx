@@ -11,13 +11,6 @@ const AgendaPlaceholder = () => (
   </div>
 );
 
-const legend = [
-  { label: "Rappel", color: "bg-blue-400" },
-  { label: "Rendez-vous", color: "bg-orange-400" },
-  { label: "Disponible", color: "bg-purple-300" },
-  { label: "Projet", color: "bg-green-300" },
-];
-
 const CalendarPage = () => {
   const [selected, setSelected] = useState<"calendrier" | "agenda">(
     "calendrier"
@@ -57,19 +50,6 @@ const CalendarPage = () => {
           <div className="w-full max-w-5xl">
             {selected === "calendrier" ? <Calendar /> : <AgendaPlaceholder />}
           </div>
-        </div>
-        {/* Légende */}
-        <div className="flex flex-wrap gap-6 mt-8 justify-center">
-          {legend.map((item) => (
-            <div key={item.label} className="flex items-center gap-2">
-              <span
-                className={`w-6 h-6 rounded ${item.color} block border border-gray-300`}
-              ></span>
-              <span className="text-white font-semibold text-lg">
-                {item.label}
-              </span>
-            </div>
-          ))}
         </div>
       </div>
     </div>
