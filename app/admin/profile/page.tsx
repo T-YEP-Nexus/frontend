@@ -81,6 +81,20 @@ const AdminProfilePage = () => {
   const promotionDropdownRef = useRef<HTMLDivElement>(null);
   const studentDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Fonction pour traduire les rôles
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "admin":
+        return "Administrateur";
+      case "advisor":
+        return "Conseiller";
+      case "student":
+        return "Étudiant";
+      default:
+        return role;
+    }
+  };
+
   // Hook pour récupérer les promotions
   const {
     promotions,
@@ -489,7 +503,7 @@ const AdminProfilePage = () => {
               </div>
 
               <div className="p-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
                     <div className="text-2xl font-bold text-blue-900">12</div>
                     <div className="text-sm text-blue-600">Étudiants gérés</div>
@@ -504,12 +518,12 @@ const AdminProfilePage = () => {
                       Promotions gérées
                     </div>
                   </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                  {/* <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
                     <div className="text-2xl font-bold text-blue-900">24</div>
                     <div className="text-sm text-blue-600">
                       Heures cette semaine
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
@@ -551,7 +565,7 @@ const AdminProfilePage = () => {
                       </h3>
                       <div className="flex items-center justify-center md:justify-start gap-3 mb-3">
                         <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                          {currentUser.role}
+                          {getRoleLabel(currentUser.role)}
                         </span>
                         <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
                           {currentUser.campus}
@@ -639,7 +653,7 @@ const AdminProfilePage = () => {
                           Rôle
                         </h4>
                         <p className="text-blue-700 font-medium text-sm">
-                          {currentUser.role}
+                          {getRoleLabel(currentUser.role)}
                         </p>
                       </div>
                     </div>
