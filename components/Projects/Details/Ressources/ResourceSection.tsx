@@ -1,5 +1,6 @@
 import React from "react";
 import ResourceCard from "@/components/Projects/Details/Ressources/ResourceCard";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 interface Resource {
   name: string;
@@ -22,7 +23,8 @@ export default function ResourceSection({
     <div className="p-5 bg-white rounded-xl border border-dashed border-gray-200 shadow-sm mb-4">
       <h3 className="flex items-center gap-2 text-blue-700 font-semibold text-lg mb-4 py-1">
         <span className="inline-block">{icon}</span>
-        {title}
+        <span>{title}</span>
+        <DevelopmentBadge size="xs" />
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {resources.map((resource, index) => (

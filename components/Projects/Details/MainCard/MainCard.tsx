@@ -1,4 +1,5 @@
 import React from "react";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 interface MainCardProps {
   title: string;
@@ -18,6 +19,7 @@ export default function MainCard({
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-3">
         {icon}
         <span>{title}</span>
+        <DevelopmentBadge size="xs" />
       </h2>
       {children}
     </div>

@@ -18,6 +18,7 @@ import { faMedal } from "@fortawesome/free-solid-svg-icons";
 import ResourceSection from "@/components/Projects/Details/Ressources/ResourceSection";
 import MainCard from "@/components/Projects/Details/MainCard/MainCard";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 export default function ProjectDetails({
   params,
@@ -121,9 +122,12 @@ export default function ProjectDetails({
         {/* Barre de progression principale */}
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-white text-xl font-semibold">
-              Progression globale
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-white text-xl font-semibold">
+                Progression globale
+              </h2>
+              <DevelopmentBadge size="xs" />
+            </div>
             <span className="text-white font-bold text-2xl">
               {project.progress}%
             </span>
