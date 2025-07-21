@@ -22,10 +22,13 @@ import Input from "@/components/ui/input";
 import PasswordInput from "@/components/ui/password-input";
 import { useUserData } from "@/hooks/useUserData";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
+import { getUserIdFromToken } from "@/lib/auth";
 
 const EditProfilePage = () => {
   const router = useRouter();
-  const { userData, loading, error, updateUserData } = useUserData();
+  const currentUserId = getUserIdFromToken();
+  const { userData, loading, error, updateUserData } =
+    useUserData(currentUserId);
   const [isSaving, setIsSaving] = useState(false);
 
   // État du formulaire
