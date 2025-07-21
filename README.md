@@ -14,5 +14,5 @@ Réalisation d'une plateforme web regroupant les outils déployés par les écol
 ## Commande docker
 
 ## Commande lancement local
-Utilisé la commande suivante : ***npm run dev***
+Utilisé la commande suivante : ***npm run dev***  
 Afin de lancer le projet, il est nécessaire tout d'abord de lancer tous les repos services (auth-service, calendar-service,...) afin d'avoir accès via le repos frontend aux différentes pages de Nexus. Quand tous les services sont lancés, on peut faire la même commande dans le repo frontend qui se déploiera en localhost.
