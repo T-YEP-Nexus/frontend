@@ -75,6 +75,20 @@ export default function AdminFilterBar({
   showTitle = true,
   className = "",
 }: AdminFilterBarProps) {
+  // État pour la recherche d'étudiants
+  const [studentSearchTerm, setStudentSearchTerm] = React.useState("");
+
+  // Filtrer les étudiants en temps réel
+  const filteredStudents = React.useMemo(() => {
+    if (secondLabel !== "Étudiant" || !studentSearchTerm) {
+      return seconds;
+    }
+
+    return seconds.filter((item) => {
+      const label = typeof item === "string" ? item : item.label;
+      return label.toLowerCase().includes(studentSearchTerm.toLowerCase());
+    });
+  }, [seconds, studentSearchTerm, secondLabel]);
   // Calculer le nombre de colonnes nécessaires
   const visibleFilters = [
     showSearch,
@@ -233,7 +247,25 @@ export default function AdminFilterBar({
                     {secondPlaceholder}
                   </span>
                 </div>
-                {seconds.map((item) => {
+
+                {/* Barre de recherche pour les étudiants */}
+                {secondLabel === "Étudiant" && (
+                  <div className="px-4 py-3 border-b border-blue-100">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-400" />
+                      <input
+                        type="text"
+                        placeholder="Rechercher un étudiant..."
+                        value={studentSearchTerm}
+                        className="w-full pl-10 pr-4 py-2 text-sm border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => setStudentSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {filteredStudents.map((item) => {
                   const value = typeof item === "string" ? item : item.value;
                   const label = typeof item === "string" ? item : item.label;
 
@@ -243,6 +275,7 @@ export default function AdminFilterBar({
                       onClick={() => {
                         setSelectedSecond(value);
                         setSecondDropdownOpen(false);
+                        setStudentSearchTerm(""); // Réinitialiser la recherche
                       }}
                       className="px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors duration-200 border-b border-blue-100 last:border-b-0 last:rounded-b-xl"
                     >

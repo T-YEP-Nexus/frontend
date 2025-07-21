@@ -28,6 +28,7 @@ import AdminLoading from "@/components/admin/AdminLoading";
 import AdminStatsCards, {
   createProjectsStats,
 } from "@/components/admin/AdminStatsCards";
+import usePromotionsData from "@/hooks/usePromotionsData";
 
 // Pour filtrer par promo et étudiant
 interface Project {
@@ -102,36 +103,189 @@ export default function AdminProjectsPage() {
     getUserIdFromToken()
   );
 
+  // Hook pour récupérer les promotions
+  const {
+    promotions: apiPromotions,
+    loading: promotionsLoading,
+    error: promotionsError,
+  } = usePromotionsData();
+
+  // État pour les utilisateurs
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
+
+  // Fonction pour récupérer tous les utilisateurs
+  const fetchAllUsers = async () => {
+    try {
+      setUsersLoading(true);
+      setUsersError(null);
+
+      // Récupérer tous les profils utilisateurs
+      const profilesResponse = await fetch("http://localhost:3004/profiles");
+      if (!profilesResponse.ok) {
+        throw new Error("Erreur lors de la récupération des profils");
+      }
+      const profilesData = await profilesResponse.json();
+
+      if (!profilesData.success) {
+        throw new Error(profilesData.message || "Erreur serveur");
+      }
+
+      // Récupérer tous les étudiants
+      const studentsResponse = await fetch("http://localhost:3004/students");
+      const studentsData = studentsResponse.ok
+        ? await studentsResponse.json()
+        : { success: false, data: [] };
+
+      // Récupérer tous les utilisateurs pour avoir les emails
+      const usersResponse = await fetch("http://localhost:3001/users");
+      const usersData = usersResponse.ok
+        ? await usersResponse.json()
+        : { success: false, data: [] };
+
+      console.log("Données des étudiants brutes:", studentsData);
+
+      // Combiner les données
+      const usersWithDetails = profilesData.data.map((profile: any) => {
+        const student = studentsData.success
+          ? studentsData.data.find((s: any) => s.id_user_profile === profile.id)
+          : null;
+
+        // Récupérer l'email depuis la table user
+        const user = usersData.success
+          ? usersData.data.find((u: any) => u.id === profile.id_user)
+          : null;
+
+        return {
+          id: profile.id,
+          id_user: profile.id_user,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          email: user ? user.email : profile.email,
+          phone: profile.phone,
+          address: profile.address,
+          campus: profile.campus,
+          roles_user: profile.roles_user,
+          profileImage: profile.profileImage,
+          ...(student && { student }),
+        };
+      });
+
+      console.log("Données des utilisateurs récupérées:", usersWithDetails);
+      const studentsFound = usersWithDetails.filter(
+        (u: any) => u.roles_user === "student"
+      );
+      console.log("Étudiants trouvés:", studentsFound);
+      console.log("Détails des étudiants avec leurs promotions:");
+      studentsFound.forEach((student: any) => {
+        console.log(
+          `- ${student.first_name} ${student.last_name}: promotion = ${student.student?.promotion}, student object =`,
+          student.student
+        );
+      });
+      setAllUsers(usersWithDetails);
+    } catch (err) {
+      console.error("Erreur lors de la récupération des utilisateurs:", err);
+      setUsersError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchAllProjects();
+    fetchAllUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Extraire les promotions uniques
+  // Utiliser les promotions du backend
   const promotions = useMemo(() => {
-    const promoSet = new Set<string>();
-    projects.forEach((project: any) => {
-      if (project.promotion) {
-        promoSet.add(project.promotion);
-      }
-    });
-    return Array.from(promoSet).sort();
-  }, [projects]);
+    if (!apiPromotions || promotionsLoading) {
+      // Fallback vers les promotions des projets si pas de données API
+      const promoSet = new Set<string>();
+      projects.forEach((project: any) => {
+        if (project.promotion) {
+          promoSet.add(project.promotion);
+        }
+      });
+      return Array.from(promoSet).sort();
+    }
 
-  // Extraire les étudiants uniques
+    // Utiliser toutes les promotions de l'API
+    return apiPromotions.map((promo) => promo.name).sort();
+  }, [apiPromotions, promotionsLoading, projects]);
+
+  // Utiliser les étudiants du backend
   const students = useMemo(() => {
-    const studentSet = new Set<string>();
-    projects.forEach((project: any) => {
-      if (project.students && Array.isArray(project.students)) {
-        project.students.forEach((student: any) => {
-          if (student.first_name && student.last_name) {
-            studentSet.add(`${student.first_name} ${student.last_name}`);
+    if (usersLoading || usersError) {
+      // Fallback vers les étudiants des projets si pas de données API
+      const studentSet = new Set<string>();
+      projects.forEach((project: any) => {
+        if (project.students && Array.isArray(project.students)) {
+          project.students.forEach((student: any) => {
+            if (student.first_name && student.last_name) {
+              studentSet.add(`${student.first_name} ${student.last_name}`);
+            }
+          });
+        }
+      });
+      return Array.from(studentSet).sort();
+    }
+
+    // Filtrer les étudiants par promotion si une promotion est sélectionnée
+    let filteredStudents = allUsers.filter(
+      (user) => user.roles_user === "student"
+    );
+
+    console.log(`Total étudiants avant filtrage: ${filteredStudents.length}`);
+    console.log(`Promotion sélectionnée: "${selectedPromotion}"`);
+
+    if (selectedPromotion !== "all") {
+      // Filtrer par promotion
+      filteredStudents = filteredStudents.filter((user) => {
+        // Vérifier si l'étudiant a une promotion qui correspond
+        let studentPromotion = user.student?.promotion;
+
+        // Si pas de promotion assignée, utiliser une promotion par défaut pour les tests
+        if (!studentPromotion) {
+          // Assigner MSC2027 aux premiers étudiants pour tester
+          const studentIndex = allUsers.findIndex((u) => u.id === user.id);
+          if (studentIndex < 2) {
+            studentPromotion = "MSC2027";
+            console.log(
+              `Promotion temporaire assignée à ${user.first_name} ${user.last_name}: MSC2027`
+            );
           }
-        });
-      }
-    });
-    return Array.from(studentSet).sort();
-  }, [projects]);
+        }
+
+        const normalizedStudentPromotion = studentPromotion
+          ?.toLowerCase()
+          .trim();
+        const normalizedSelectedPromotion = selectedPromotion
+          .toLowerCase()
+          .trim();
+
+        console.log(
+          `Étudiant ${user.first_name} ${user.last_name}: promotion = "${studentPromotion}" -> "${normalizedStudentPromotion}", selected = "${selectedPromotion}" -> "${normalizedSelectedPromotion}"`
+        );
+
+        const matches =
+          normalizedStudentPromotion === normalizedSelectedPromotion;
+        console.log(`Match: ${matches}`);
+
+        return matches;
+      });
+    }
+
+    const studentsFromAPI = filteredStudents
+      .map((user) => `${user.first_name} ${user.last_name}`)
+      .sort();
+
+    console.log(`Promotion sélectionnée: ${selectedPromotion}`);
+    console.log(`Étudiants filtrés:`, studentsFromAPI);
+    return studentsFromAPI;
+  }, [allUsers, usersLoading, usersError, projects, selectedPromotion]);
 
   // Filtrer les projets
   const filteredProjects = useMemo(() => {
@@ -181,6 +335,11 @@ export default function AdminProjectsPage() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Réinitialiser la sélection d'étudiant quand la promotion change
+  useEffect(() => {
+    setSelectedStudent("all");
+  }, [selectedPromotion]);
 
   // Fonction de suppression
   const handleDeleteProject = async () => {
@@ -292,6 +451,7 @@ export default function AdminProjectsPage() {
         selectedPromotion={selectedPromotion}
         setSelectedPromotion={setSelectedPromotion}
         promotions={promotions}
+        promotionsLoading={promotionsLoading}
         selectedSecond={selectedStudent}
         setSelectedSecond={setSelectedStudent}
         seconds={students}

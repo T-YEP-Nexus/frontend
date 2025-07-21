@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMedal } from "@fortawesome/free-solid-svg-icons";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 interface CardsProps {
   projectName: string;
@@ -265,9 +266,12 @@ function Cards({
             {/* Header de la carte étendue */}
             <div className="flex justify-between items-start mb-6">
               <div className="flex-1">
-                <h3 className="font-bold text-gray-800 mb-2 text-2xl lg:group-hover:text-[#0E58D8] transition-colors duration-300">
-                  {projectName}
-                </h3>
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="font-bold text-gray-800 text-2xl lg:group-hover:text-[#0E58D8] transition-colors duration-300">
+                    {projectName}
+                  </h3>
+                  <DevelopmentBadge size="sm" />
+                </div>
                 <p className="text-gray-600 text-lg">{description}</p>
               </div>
               <button

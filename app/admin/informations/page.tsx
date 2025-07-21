@@ -190,13 +190,13 @@ export default function AdminInformations() {
       </div>
 
       {/* Statistiques */}
-      <AdminStatsCards
+      {/* <AdminStatsCards
         stats={createInformationsStats(
           informations.length,
           informations.length,
           0
         )}
-      />
+      /> */}
 
       {/* Filtres et recherche */}
       <AdminFilterBar

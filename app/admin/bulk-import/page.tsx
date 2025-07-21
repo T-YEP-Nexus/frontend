@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 interface ImportData {
   firstName: string;
@@ -147,18 +148,21 @@ Pierre,Durand,pierre.durand@epitech.eu,+33111222333,Campus Epitech Marseille,adv
         {/* Zone d'upload */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-8">
           <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-6 text-white">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <Upload size={24} />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Upload size={24} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">
+                    Import en masse d'utilisateurs
+                  </h2>
+                  <p className="text-blue-100 text-sm">
+                    Importez plusieurs utilisateurs à partir d'un fichier CSV
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-xl font-bold">
-                  Import en masse d'utilisateurs
-                </h2>
-                <p className="text-blue-100 text-sm">
-                  Importez plusieurs utilisateurs à partir d'un fichier CSV
-                </p>
-              </div>
+              <DevelopmentBadge size="sm" />
             </div>
           </div>
 
