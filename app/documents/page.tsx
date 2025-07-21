@@ -5,6 +5,7 @@ import BackgroundBubbles from "@/components/Background/BackgroundBubbles";
 import { Search } from "lucide-react";
 import Header from "@/components/Header/Header";
 import SearchBar from "@/components/SearchBar/SearchBar";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 // Structure dynamique des documents
 const initialDocs = {
@@ -125,6 +126,7 @@ const ModalAddDocument = ({
             className="bg-[#1971FF] text-white rounded px-4 py-2 font-semibold hover:bg-[#1450b8]"
           >
             Ajouter
+            <DevelopmentBadge size="xxs" />
           </button>
         </form>
       </div>
@@ -200,6 +202,7 @@ const ModalAllDocuments = ({
                   <path d="M12 5v14M5 12l7 7 7-7" />
                 </svg>
                 Télécharger
+                <DevelopmentBadge size="xxs" />
               </button>
             </div>
           ))}
@@ -255,18 +258,20 @@ const DocumentsPage = () => {
               className="justify-start"
             />
             <button
-              className="bg-[#3b82f6] text-white px-8 py-2 rounded-xl font-bold text-lg shadow hover:bg-[#1971FF] hover:scale-105 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#1971FF]"
+              className="bg-[#3b82f6] text-white px-8 py-2 rounded-xl font-bold text-lg shadow hover:bg-[#1971FF] hover:scale-105 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#1971FF] flex items-center gap-1"
               style={{ boxShadow: "0 2px 8px #1971ff22" }}
               onClick={() => setModalOpen(true)}
             >
               Ajouter
+              <DevelopmentBadge size="xs" />
             </button>
           </div>
           <div className="flex-1 flex flex-col gap-10 overflow-y-auto">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-2xl font-bold text-white">
-                  Ressources académique
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  Ressources académiques
+                  <DevelopmentBadge size="sm" />
                 </h2>
                 <button
                   className="text-[#b3cfff] hover:bg-[#3b82f6]/40 hover:text-white transition-colors text-sm rounded px-3 py-1 font-semibold"
@@ -323,6 +328,7 @@ const DocumentsPage = () => {
                         <path d="M12 5v14M5 12l7 7 7-7" />
                       </svg>
                       Télécharger
+                      <DevelopmentBadge size="xxs" />
                     </button>
                   </div>
                 ))}
@@ -330,8 +336,9 @@ const DocumentsPage = () => {
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-2xl font-bold text-white">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                   Documents liés à l'entreprise
+                  <DevelopmentBadge size="sm" />
                 </h2>
                 <button
                   className="text-[#b3cfff] hover:bg-[#3b82f6]/40 hover:text-white transition-colors text-sm rounded px-3 py-1 font-semibold"
@@ -388,6 +395,7 @@ const DocumentsPage = () => {
                         <path d="M12 5v14M5 12l7 7 7-7" />
                       </svg>
                       Télécharger
+                      <DevelopmentBadge size="xxs" />
                     </button>
                   </div>
                 ))}
@@ -399,8 +407,9 @@ const DocumentsPage = () => {
         {selectedDoc && (
           <div className="w-[420px] bg-[#2563eb] flex flex-col items-center pt-10 pl-6">
             <div className="w-full flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                 Prévisualisation
+                <DevelopmentBadge size="sm" />
               </h2>
               <button
                 className="text-[#1971FF] bg-white rounded-full p-1 shadow hover:bg-[#e6f0ff] transition-colors"

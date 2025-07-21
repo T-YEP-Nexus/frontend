@@ -31,12 +31,27 @@ import { useUserData } from "@/hooks/useUserData";
 import { getUserIdFromToken, isTokenExpired } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import AdminLoading from "@/components/admin/AdminLoading";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 const ProfilePage = () => {
   const router = useRouter();
   // État pour le modal d'image
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+
+  // Fonction pour traduire les rôles
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "student":
+        return "Étudiant";
+      case "advisor":
+        return "Conseiller";
+      case "admin":
+        return "Administrateur";
+      default:
+        return role;
+    }
+  };
 
   // Hook pour les données utilisateur
   const { userData, loading, error, updateProfileImageUrl } = useUserData(
@@ -243,7 +258,7 @@ const ProfilePage = () => {
                   </h3>
                   <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                      {userData.role}
+                      {getRoleLabel(userData.role)}
                     </span>
                     <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
                       {userData.promotion}
@@ -290,7 +305,11 @@ const ProfilePage = () => {
           </div>
 
           {/* Statistiques principales avec anneaux de progression */}
-          <ProfileSection title="Statistiques principales" icon={TrendingUp}>
+          <ProfileSection
+            title="Statistiques principales"
+            icon={TrendingUp}
+            showDevelopmentBadge={true}
+          >
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
               <div className="flex flex-col items-center">
                 <ProgressRing
@@ -340,7 +359,11 @@ const ProfilePage = () => {
           </ProfileSection>
 
           {/* Compétences avec radar chart */}
-          <ProfileSection title="Compétences techniques" icon={Target}>
+          <ProfileSection
+            title="Compétences techniques"
+            icon={Target}
+            showDevelopmentBadge={true}
+          >
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
               <div className="space-y-4">
                 {stats.skills.length > 0 ? (
@@ -370,7 +393,11 @@ const ProfilePage = () => {
         {/* Colonne droite */}
         <div className="flex flex-col gap-6">
           {/* Projets récents */}
-          <ProfileSection title="Projets récents" icon={BookOpen}>
+          <ProfileSection
+            title="Projets récents"
+            icon={BookOpen}
+            showDevelopmentBadge={true}
+          >
             <div className="space-y-3">
               {stats.recentProjects.length > 0 ? (
                 stats.recentProjects.map((project, index) => (
@@ -395,6 +422,7 @@ const ProfilePage = () => {
               stats.badges.length
             })`}
             icon={Badge}
+            showDevelopmentBadge={true}
           >
             <div className="grid grid-cols-2 gap-4">
               {stats.badges.length > 0 ? (
@@ -464,6 +492,7 @@ const ProfilePage = () => {
                 >
                   <BookOpen className="w-4 h-4 mr-2 text-white" />
                   Exporter mes données
+                  <DevelopmentBadge size="xs" className="ml-2" />
                 </Button>
                 <Button
                   onClick={handleLogout}
