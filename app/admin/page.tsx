@@ -395,7 +395,7 @@ export default function AdminDashboard() {
               </div>
               {action.showDevelopmentBadge && (
                 <div className="absolute bottom-2 right-2">
-                  <DevelopmentBadge size="xs" />
+                  <DevelopmentBadge size="sm" />
                 </div>
               )}
             </div>
