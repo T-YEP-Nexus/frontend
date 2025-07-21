@@ -146,6 +146,18 @@ export default function AdminDashboard() {
         ? await advisorsResponse.json()
         : { success: false, data: [] };
 
+      // Récupérer les projets
+      const projectsResponse = await fetch("http://localhost:3003/projects");
+      const projectsData = projectsResponse.ok
+        ? await projectsResponse.json()
+        : { success: false, data: [] };
+
+      // Récupérer les promotions
+      const promotionsResponse = await fetch("http://localhost:3004/promotions");
+      const promotionsData = promotionsResponse.ok
+        ? await promotionsResponse.json()
+        : { success: false, data: [] };
+
       // Calculer les statistiques
       const totalUsers = profilesData.success ? profilesData.data.length : 0;
       const students = studentsData.success ? studentsData.data.length : 0;
@@ -155,11 +167,15 @@ export default function AdminDashboard() {
             .length
         : 0;
 
-      // Simuler d'autres statistiques (à remplacer par de vraies API)
-      const totalProjects = Math.floor(Math.random() * 50) + 20;
-      const activeProjects = Math.floor(totalProjects * 0.7);
-      const totalPromotions = Math.floor(Math.random() * 10) + 5;
-      const recentActivity = Math.floor(Math.random() * 20) + 10;
+      // Statistiques des projets
+      const totalProjects = projectsData.success ? projectsData.data.length : 0;
+      const activeProjects = projectsData.success
+        ? projectsData.data.filter((project: any) => project.is_active).length
+        : 0;
+
+      // Statistiques des promotions
+      const totalPromotions = promotionsData.success ? promotionsData.data.length : 0;
+      const recentActivity = Math.floor(Math.random() * 20) + 10; // Garder temporairement
 
       setStats({
         totalUsers,
