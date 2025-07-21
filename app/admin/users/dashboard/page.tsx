@@ -39,6 +39,7 @@ import AdminStatsCards, {
 } from "@/components/admin/AdminStatsCards";
 import AdminFilterBar from "@/components/admin/AdminFilterBar";
 import AdminLoading from "@/components/admin/AdminLoading";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 // Interface pour les promotions
 interface Promotion {
@@ -596,17 +597,9 @@ export default function AdminDashboard() {
         <AdminButton onClick={() => router.push("/admin/bulk-import")}>
           <FileText size={20} />
           Import en masse
+          <DevelopmentBadge size="xs" />
         </AdminButton>
       </div>
-
-      {/* Statistiques */}
-      <AdminStatsCards
-        stats={createUsersStats(
-          stats.totalUsers,
-          stats.students + stats.advisors + stats.admins, // Utilisateurs actifs (tous sauf inactifs)
-          stats.totalUsers - (stats.students + stats.advisors + stats.admins) // Utilisateurs inactifs
-        )}
-      />
 
       {/* Filtres et recherche */}
       <div className="mb-6">
@@ -888,7 +881,7 @@ export default function AdminDashboard() {
           <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
           <span className="text-blue-800 font-semibold text-sm">
             {usersToDisplay.length} utilisateur(s) affiché(s) sur{" "}
-            {filteredAndSortedUsers.length} trouvé(s) ({allUsers.length} total)
+            {filteredAndSortedUsers.length} trouvé(s)
           </span>
         </div>
       </div>

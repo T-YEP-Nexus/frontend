@@ -206,11 +206,7 @@ export const createInformationsStats = (
   },
 ];
 
-export const createUsersStats = (
-  total: number,
-  active: number,
-  inactive: number
-) => [
+export const createUsersStats = (total: number, active: number) => [
   {
     title: "Total Utilisateurs",
     value: total,
@@ -228,15 +224,6 @@ export const createUsersStats = (
     gradient: "from-green-600 to-green-800",
     bgGradient: "from-green-100 to-green-200",
     iconColor: "text-green-600",
-  },
-  {
-    title: "Utilisateurs Inactifs",
-    value: inactive,
-    icon: <UserX size={32} className="text-red-600" />,
-    color: "red" as const,
-    gradient: "from-red-600 to-red-800",
-    bgGradient: "from-red-100 to-red-200",
-    iconColor: "text-red-600",
   },
 ];
 

@@ -3,7 +3,7 @@ import { Wrench } from "lucide-react";
 
 interface DevelopmentBadgeProps {
   className?: string;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xxs" | "xs" | "sm" | "md" | "lg";
   variant?: "default" | "outline" | "ghost";
 }
 
@@ -13,6 +13,7 @@ const DevelopmentBadge: React.FC<DevelopmentBadgeProps> = ({
   variant = "default",
 }) => {
   const sizeClasses = {
+    xxs: "px-1 py-0.5 text-xs",
     xs: "px-1.5 py-1 text-xs",
     sm: "px-2 py-1 text-xs",
     md: "px-3 py-1.5 text-sm",
@@ -26,6 +27,7 @@ const DevelopmentBadge: React.FC<DevelopmentBadgeProps> = ({
   };
 
   const iconSizes = {
+    xxs: 8,
     xs: 10,
     sm: 12,
     md: 14,
@@ -43,11 +45,7 @@ const DevelopmentBadge: React.FC<DevelopmentBadgeProps> = ({
       `}
     >
       <Wrench size={iconSizes[size]} className="flex-shrink-0" />
-      {size !== "xs" ? (
-        <span>En développement</span>
-      ) : (
-        <span className="text-[10px]">En développement</span>
-      )}
+      {size !== "xxs" && size !== "xs" && <span>En développement</span>}
     </div>
   );
 };
