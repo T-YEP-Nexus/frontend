@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -23,6 +23,7 @@ import PasswordInput from "@/components/ui/password-input";
 import { useUserData } from "@/hooks/useUserData";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 import { getUserIdFromToken } from "@/lib/auth";
+import AdminLoading from "@/components/admin/AdminLoading";
 
 const EditProfilePage = () => {
   const router = useRouter();
@@ -148,10 +149,7 @@ const EditProfilePage = () => {
     return (
       <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
         <div className="flex items-center justify-center h-64">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-gray-600">Chargement du profil...</p>
-          </div>
+          <AdminLoading message="Chargement du profil..." />
         </div>
       </div>
     );

@@ -924,10 +924,7 @@ const AdminProfilePage = () => {
       {/* Affichage du profil de l'étudiant */}
       {loadingStudent && (
         <div className="flex items-center justify-center h-64">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-gray-600">Chargement du profil étudiant...</p>
-          </div>
+          <AdminLoading message="Chargement du profil étudiant..." />
         </div>
       )}
 

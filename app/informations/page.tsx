@@ -78,10 +78,7 @@ export default function Informations() {
       <div className="min-h-screen px-3 sm:px-4 lg:px-16 py-4 sm:py-6 lg:py-8">
         <Header title="Informations Générales" />
         <div className="max-w-6xl mx-auto flex items-center justify-center mt-6 sm:mt-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Chargement des informations...</p>
-          </div>
+          <AdminLoading message="Chargement des informations..." />
         </div>
       </div>
     );
