@@ -202,23 +202,6 @@ const Sidebar = () => {
                   <span className="hidden md:inline">{link.label}</span>
                 </Link>
               ))}
-
-              {/* Calendrier visible pour les étudiants */}
-              <Link
-                href="/calendar"
-                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
-                  ${
-                    pathname === "/calendar"
-                      ? "bg-[#0e357a]/70 font-bold"
-                      : "hover:bg-[#0e357a]/40"
-                  }
-                `}
-              >
-                <span>
-                  <Calendar size={24} />
-                </span>
-                <span className="hidden md:inline">Calendrier</span>
-              </Link>
             </>
           )}
 
