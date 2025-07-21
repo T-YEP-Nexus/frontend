@@ -163,7 +163,7 @@ const Sidebar = () => {
   }, [pathname]);
 
   return (
-    <div className="fixed top-0 left-0 h-screen w-20 md:w-68 z-30 flex flex-col justify-between bg-gradient-to-b from-[#1971FF] to-[#1971FF]/80 px-2 md:px-4 py-6 transition-all duration-300 overflow-hidden">
+    <div className="fixed top-0 left-0 h-screen w-20 md:w-72 z-30 flex flex-col justify-between bg-gradient-to-b from-[#1971FF] to-[#1971FF]/80 px-2 md:px-4 py-6 transition-all duration-300 overflow-hidden">
       {/* Logo + nom */}
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col items-center md:flex-row md:items-center gap-2 mb-6 md:mb-10">

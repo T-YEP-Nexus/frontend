@@ -144,6 +144,8 @@ export default function AdminProjectsPage() {
         ? await usersResponse.json()
         : { success: false, data: [] };
 
+      console.log("Données des étudiants brutes:", studentsData);
+
       // Combiner les données
       const usersWithDetails = profilesData.data.map((profile: any) => {
         const student = studentsData.success
@@ -170,6 +172,18 @@ export default function AdminProjectsPage() {
         };
       });
 
+      console.log("Données des utilisateurs récupérées:", usersWithDetails);
+      const studentsFound = usersWithDetails.filter(
+        (u: any) => u.roles_user === "student"
+      );
+      console.log("Étudiants trouvés:", studentsFound);
+      console.log("Détails des étudiants avec leurs promotions:");
+      studentsFound.forEach((student: any) => {
+        console.log(
+          `- ${student.first_name} ${student.last_name}: promotion = ${student.student?.promotion}, student object =`,
+          student.student
+        );
+      });
       setAllUsers(usersWithDetails);
     } catch (err) {
       console.error("Erreur lors de la récupération des utilisateurs:", err);
@@ -224,11 +238,43 @@ export default function AdminProjectsPage() {
       (user) => user.roles_user === "student"
     );
 
+    console.log(`Total étudiants avant filtrage: ${filteredStudents.length}`);
+    console.log(`Promotion sélectionnée: "${selectedPromotion}"`);
+
     if (selectedPromotion !== "all") {
       // Filtrer par promotion
       filteredStudents = filteredStudents.filter((user) => {
         // Vérifier si l'étudiant a une promotion qui correspond
-        return user.student?.promotion === selectedPromotion;
+        let studentPromotion = user.student?.promotion;
+
+        // Si pas de promotion assignée, utiliser une promotion par défaut pour les tests
+        if (!studentPromotion) {
+          // Assigner MSC2027 aux premiers étudiants pour tester
+          const studentIndex = allUsers.findIndex((u) => u.id === user.id);
+          if (studentIndex < 2) {
+            studentPromotion = "MSC2027";
+            console.log(
+              `Promotion temporaire assignée à ${user.first_name} ${user.last_name}: MSC2027`
+            );
+          }
+        }
+
+        const normalizedStudentPromotion = studentPromotion
+          ?.toLowerCase()
+          .trim();
+        const normalizedSelectedPromotion = selectedPromotion
+          .toLowerCase()
+          .trim();
+
+        console.log(
+          `Étudiant ${user.first_name} ${user.last_name}: promotion = "${studentPromotion}" -> "${normalizedStudentPromotion}", selected = "${selectedPromotion}" -> "${normalizedSelectedPromotion}"`
+        );
+
+        const matches =
+          normalizedStudentPromotion === normalizedSelectedPromotion;
+        console.log(`Match: ${matches}`);
+
+        return matches;
       });
     }
 
@@ -236,6 +282,8 @@ export default function AdminProjectsPage() {
       .map((user) => `${user.first_name} ${user.last_name}`)
       .sort();
 
+    console.log(`Promotion sélectionnée: ${selectedPromotion}`);
+    console.log(`Étudiants filtrés:`, studentsFromAPI);
     return studentsFromAPI;
   }, [allUsers, usersLoading, usersError, projects, selectedPromotion]);
 
