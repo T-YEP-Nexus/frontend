@@ -222,9 +222,9 @@ export default function AdminPromotionsPage() {
       </div>
 
       {/* Statistiques */}
-      <AdminStatsCards
+      {/* <AdminStatsCards
         stats={createPromotionsStats(promotions.length, promotions.length, 0)}
-      />
+      /> */}
 
       {/* Filtres et recherche */}
       <AdminFilterBar
