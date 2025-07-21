@@ -1,6 +1,10 @@
+"use client";
+
 import Sidebar from "@/components/Sidebar/Sidebar";
 import { ReactNode } from "react";
 import Header from "@/components/Header/Header";
+import { useRoleRedirect } from "@/hooks/useRoleRedirect";
+import AdminLoading from "@/components/admin/AdminLoading";
 
 function DashboardCard({
   title,
@@ -27,6 +31,13 @@ function DashboardCard({
 }
 
 export default function Dashboard() {
+  const { isLoading } = useRoleRedirect();
+
+  // Afficher un loader pendant la vérification
+  if (isLoading) {
+    return <AdminLoading message="Vérification des droits d'accès..." />;
+  }
+
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
       {/* Header */}

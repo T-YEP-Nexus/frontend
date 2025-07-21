@@ -298,7 +298,22 @@ const Sidebar = () => {
                 <span>
                   <Calendar size={24} />
                 </span>
-                <span className="hidden md:inline">Calendrier</span>
+                <span className="hidden md:inline">Gestion Calendrier</span>
+              </Link>
+              <Link
+                href="/documents"
+                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                  ${
+                    pathname === "/documents"
+                      ? "bg-[#0e357a]/70 font-bold"
+                      : "hover:bg-[#0e357a]/40"
+                  }
+                `}
+              >
+                <span>
+                  <Folder size={24} />
+                </span>
+                <span className="hidden md:inline">Gestion Documents</span>
               </Link>
             </>
           )}

@@ -1,11 +1,13 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar/Sidebar";
 import BackgroundBubbles from "@/components/Background/BackgroundBubbles";
 import { Search } from "lucide-react";
 import Header from "@/components/Header/Header";
 import SearchBar from "@/components/SearchBar/SearchBar";
 import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
+import { getUserIdFromToken } from "@/lib/auth";
+import { getUserProfileData } from "@/lib/userData";
 
 // Structure dynamique des documents
 const initialDocs = {
@@ -220,6 +222,36 @@ const DocumentsPage = () => {
   const [modalAllOpen, setModalAllOpen] = useState<
     null | "academique" | "entreprise"
   >(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Vérifier le rôle de l'utilisateur
+  useEffect(() => {
+    const checkUserRole = async () => {
+      try {
+        const userId = getUserIdFromToken();
+        if (!userId) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Récupérer le profil utilisateur pour obtenir le rôle
+        const profileData = await getUserProfileData(userId);
+        setUserRole(profileData.roles_user);
+      } catch (error) {
+        console.error("Erreur lors de la vérification du rôle:", error);
+        // En cas d'erreur, on considère comme étudiant par défaut
+        setUserRole("student");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkUserRole();
+  }, []);
+
+  // Vérifier si l'utilisateur peut ajouter des documents
+  const canAddDocuments = userRole === "admin" || userRole === "advisor";
 
   // Filtrage simple (à améliorer selon besoins)
   const filteredAcademique = docs.academique.filter((d) =>
@@ -257,14 +289,16 @@ const DocumentsPage = () => {
               noMargin
               className="justify-start"
             />
-            <button
-              className="bg-[#3b82f6] text-white px-8 py-2 rounded-xl font-bold text-lg shadow hover:bg-[#1971FF] hover:scale-105 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#1971FF] flex items-center gap-1"
-              style={{ boxShadow: "0 2px 8px #1971ff22" }}
-              onClick={() => setModalOpen(true)}
-            >
-              Ajouter
-              <DevelopmentBadge size="xs" />
-            </button>
+            {canAddDocuments && (
+              <button
+                className="bg-[#3b82f6] text-white px-8 py-2 rounded-xl font-bold text-lg shadow hover:bg-[#1971FF] hover:scale-105 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#1971FF] flex items-center gap-1"
+                style={{ boxShadow: "0 2px 8px #1971ff22" }}
+                onClick={() => setModalOpen(true)}
+              >
+                Ajouter
+                <DevelopmentBadge size="xs" />
+              </button>
+            )}
           </div>
           <div className="flex-1 flex flex-col gap-10 overflow-y-auto">
             <div>

@@ -153,7 +153,9 @@ export default function AdminDashboard() {
         : { success: false, data: [] };
 
       // Récupérer les promotions
-      const promotionsResponse = await fetch("http://localhost:3004/promotions");
+      const promotionsResponse = await fetch(
+        "http://localhost:3004/promotions"
+      );
       const promotionsData = promotionsResponse.ok
         ? await promotionsResponse.json()
         : { success: false, data: [] };
@@ -174,7 +176,9 @@ export default function AdminDashboard() {
         : 0;
 
       // Statistiques des promotions
-      const totalPromotions = promotionsData.success ? promotionsData.data.length : 0;
+      const totalPromotions = promotionsData.success
+        ? promotionsData.data.length
+        : 0;
       const recentActivity = Math.floor(Math.random() * 20) + 10; // Garder temporairement
 
       setStats({
