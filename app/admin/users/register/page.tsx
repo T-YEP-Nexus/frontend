@@ -49,7 +49,6 @@ interface RegisterFormData {
 interface Promotion {
   id: number;
   name: string;
-  year: number;
 }
 
 type UserRole = "student" | "advisor" | "admin";

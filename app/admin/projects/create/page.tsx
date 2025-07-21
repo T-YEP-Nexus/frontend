@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useUserData } from "@/hooks/useUserData";
 import { getUserIdFromToken } from "@/lib/auth";
 import usePromotionsData from "@/hooks/usePromotionsData";
+
 import {
   Loader2,
   AlertCircle,
@@ -44,16 +45,16 @@ interface CreateFormData {
   name: string;
   description: string;
   promotion: string;
-  startDate: string;
-  endDate: string;
-  teamSize: string;
-  kickOffDate: string;
-  followUpDate: string;
-  keynoteDate: string;
-  medals: Medal[];
+  // startDate: string;
+  // endDate: string;
+  // teamSize: string;
+  // kickOffDate: string;
+  // followUpDate: string;
+  // keynoteDate: string;
+  // medals: Medal[];
   resources: Resource[];
-  hotTopics: string;
-  skills: string;
+  // hotTopics: string;
+  // skills: string;
   is_active: boolean;
 }
 
@@ -63,13 +64,13 @@ export default function CreateProjectPage() {
     name: "",
     description: "",
     promotion: "",
-    startDate: "",
-    endDate: "",
-    teamSize: "",
-    kickOffDate: "",
-    followUpDate: "",
-    keynoteDate: "",
-    medals: [{ name: "", description: "" }],
+    // startDate: "",
+    // endDate: "",
+    // teamSize: "",
+    // kickOffDate: "",
+    // followUpDate: "",
+    // keynoteDate: "",
+    // medals: [{ name: "", description: "" }],
     resources: [
       {
         name: "",
@@ -78,8 +79,8 @@ export default function CreateProjectPage() {
         category: "project",
       },
     ],
-    hotTopics: "",
-    skills: "",
+    // hotTopics: "",
+    // skills: "",
     is_active: true,
   });
   const [saving, setSaving] = useState(false);
@@ -171,49 +172,49 @@ export default function CreateProjectPage() {
   }, []);
 
   // Gestion des médailles
-  const addMedal = () => {
-    setFormData((prev) => ({
-      ...prev,
-      medals: [...prev.medals, { name: "", description: "" }],
-    }));
+  // const addMedal = () => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     medals: [...prev.medals, { name: "", description: "" }],
+  //   }));
 
-    // Scroll vers la nouvelle médaille après un court délai
-    setTimeout(() => {
-      if (medalsContainerRef.current) {
-        medalsContainerRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-        // Scroll supplémentaire pour aller plus bas
-        setTimeout(() => {
-          window.scrollBy({
-            top: 100,
-            behavior: "smooth",
-          });
-        }, 300);
-      }
-    }, 100);
-  };
+  //   // Scroll vers la nouvelle médaille après un court délai
+  //   setTimeout(() => {
+  //     if (medalsContainerRef.current) {
+  //       medalsContainerRef.current.scrollIntoView({
+  //         behavior: "smooth",
+  //         block: "center",
+  //       });
+  //       // Scroll supplémentaire pour aller plus bas
+  //       setTimeout(() => {
+  //         window.scrollBy({
+  //           top: 100,
+  //           behavior: "smooth",
+  //         });
+  //       }, 300);
+  //     }
+  //   }, 100);
+  // };
 
-  const removeMedal = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      medals: prev.medals.filter((_, i) => i !== index),
-    }));
-  };
+  // const removeMedal = (index: number) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     medals: prev.medals.filter((_, i) => i !== index),
+  //   }));
+  // };
 
-  const updateMedal = (
-    index: number,
-    field: "name" | "description",
-    value: string
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      medals: prev.medals.map((medal, i) =>
-        i === index ? { ...medal, [field]: value } : medal
-      ),
-    }));
-  };
+  // const updateMedal = (
+  //   index: number,
+  //   field: "name" | "description",
+  //   value: string
+  // ) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     medals: prev.medals.map((medal, i) =>
+  //       i === index ? { ...medal, [field]: value } : medal
+  //     ),
+  //   }));
+  // };
 
   // Gestion des ressources
   const addResource = (category: "kickoff" | "bootstrap" | "project") => {
@@ -269,31 +270,38 @@ export default function CreateProjectPage() {
       setError("La promotion est requise");
       return false;
     }
-    if (!formData.startDate) {
-      setError("La date de début est requise");
-      return false;
-    }
-    if (!formData.endDate) {
-      setError("La date de fin est requise");
-      return false;
-    }
-    if (new Date(formData.startDate) >= new Date(formData.endDate)) {
-      setError("La date de fin doit être postérieure à la date de début");
-      return false;
-    }
-    if (!formData.teamSize.trim()) {
-      setError("La taille de l'équipe est requise");
-      return false;
-    }
-    if (
-      formData.medals.some(
-        (medal) => !medal.name.trim() || !medal.description.trim()
-      )
-    ) {
-      setError("Toutes les médailles doivent avoir un nom et une description");
-      return false;
-    }
+    // if (!formData.startDate) {
+    //   setError("La date de début est requise");
+    //   return false;
+    // }
+    // if (!formData.endDate) {
+    //   setError("La date de fin est requise");
+    //   return false;
+    // }
+    // if (new Date(formData.startDate) >= new Date(formData.endDate)) {
+    //   setError("La date de fin doit être postérieure à la date de début");
+    //   return false;
+    // }
+    // if (!formData.teamSize.trim()) {
+    //   setError("La taille de l'équipe est requise");
+    //   return false;
+    // }
+    // if (
+    //   formData.medals.some(
+    //     (medal) => !medal.name.trim() || !medal.description.trim()
+    //   )
+    // ) {
+    //   setError("Toutes les médailles doivent avoir un nom et une description");
+    //   return false;
+    // }
     return true;
+  };
+
+  // Fonction utilitaire pour trouver l'ID de la promotion à partir de son nom
+  const getPromotionIdByName = (name: string) => {
+    if (!promotions) return null;
+    const promo = promotions.find((p) => p.name === name);
+    return promo ? String(promo.id) : null;
   };
 
   // Sauvegarde du projet
@@ -307,35 +315,33 @@ export default function CreateProjectPage() {
       setError(null);
       setSuccess(null);
 
-      // TODO: Implémenter l'appel API pour créer le projet
-      console.log("Données du projet à créer:", {
+      const promotionId = getPromotionIdByName(formData.promotion);
+      if (!promotionId) {
+        setError("Promotion invalide ou non trouvée.");
+        setSaving(false);
+        return;
+      }
+
+      // Appel à la fonction utilitaire pour créer le projet
+      // @ts-ignore
+      const { createProject } = await import("@/lib/projectData");
+      await createProject({
         name: formData.name,
         description: formData.description,
-        promotion: formData.promotion,
-        details: {
-          startDate: formData.startDate,
-          endDate: formData.endDate,
-          team: formData.teamSize,
-        },
-        deadline: {
-          kickOff: formData.kickOffDate,
-          followUp: formData.followUpDate,
-          keynote: formData.keynoteDate,
-        },
-        medals: formData.medals.filter(
-          (medal) => medal.name.trim() && medal.description.trim()
-        ),
-        resources: formData.resources,
-        hotTopics: formData.hotTopics,
-        skills: formData.skills,
+        ressources: formData.resources.map((r) => ({
+          filename: r.name,
+          url: r.url,
+          uploaded_at: new Date().toISOString(),
+        })),
         is_active: formData.is_active,
+        id_creator: getUserIdFromToken(),
+        id_promotion: promotionId,
       });
-
-      setSuccess("Projet créé avec succès ! (API à implémenter)");
-
+      setSuccess("Projet créé avec succès !");
+      console.log("PROJECTZEBI", formData);
       // Rediriger après 2 secondes
       setTimeout(() => {
-        router.push("/admin/projects");
+        // router.push("/admin/projects");
       }, 2000);
     } catch (err) {
       console.error("Erreur lors de la création:", err);
