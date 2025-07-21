@@ -36,6 +36,7 @@ import { getUserIdFromToken } from "@/lib/auth";
 import Header from "@/components/Header/Header";
 import AdminLoading from "@/components/admin/AdminLoading";
 import AdminStatsCards from "@/components/admin/AdminStatsCards";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 // Interfaces pour les données
 interface DashboardStats {
@@ -63,6 +64,7 @@ interface QuickAction {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   href: string;
   color: string;
+  showDevelopmentBadge?: boolean;
 }
 
 export default function AdminDashboard() {
@@ -112,6 +114,7 @@ export default function AdminDashboard() {
       icon: FileText,
       href: "/admin/bulk-import",
       color: "from-purple-600 to-purple-700",
+      showDevelopmentBadge: true,
     },
     {
       title: "Gérer les projets",
@@ -349,6 +352,7 @@ export default function AdminDashboard() {
             gradient: "from-orange-600 to-orange-800",
             bgGradient: "from-orange-100 to-orange-200",
             iconColor: "text-orange-600",
+            showDevelopmentBadge: true,
           },
         ]}
       />
@@ -366,7 +370,7 @@ export default function AdminDashboard() {
             <div
               key={index}
               onClick={() => router.push(action.href)}
-              className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer"
+              className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer relative"
             >
               <div className="flex items-center justify-between mb-4">
                 <div
@@ -379,12 +383,21 @@ export default function AdminDashboard() {
                   className="text-blue-400 group-hover:text-blue-600 transition-colors duration-300"
                 />
               </div>
-              <h3 className="text-lg font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300">
-                {action.title}
-              </h3>
-              <p className="text-blue-600 text-sm group-hover:text-blue-500 transition-colors duration-300">
-                {action.description}
-              </p>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300">
+                    {action.title}
+                  </h3>
+                  <p className="text-blue-600 text-sm group-hover:text-blue-500 transition-colors duration-300">
+                    {action.description}
+                  </p>
+                </div>
+              </div>
+              {action.showDevelopmentBadge && (
+                <div className="absolute bottom-2 right-2">
+                  <DevelopmentBadge size="xs" />
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -507,12 +520,15 @@ export default function AdminDashboard() {
 
         {/* Activité récente */}
         <div className="bg-white rounded-2xl shadow-lg p-8 border border-blue-200/50">
-          <h2 className="font-bold text-2xl text-blue-900 mb-6 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
-              <Clock className="w-6 h-6 text-blue-600" />
-            </div>
-            Activité récente
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-bold text-2xl text-blue-900 flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
+                <Clock className="w-6 h-6 text-blue-600" />
+              </div>
+              Activité récente
+            </h2>
+            <DevelopmentBadge size="sm" />
+          </div>
           <div className="space-y-4">
             {recentActivities.map((activity) => (
               <div
@@ -555,7 +571,7 @@ export default function AdminDashboard() {
         <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full">
           <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
           <span className="text-blue-800 font-semibold">
-            Dashboard administrateur - T-YEP Platform
+            Dashboard administrateur - Nexus
           </span>
         </div>
       </div>

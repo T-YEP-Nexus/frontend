@@ -13,6 +13,7 @@ import {
   FileText,
   Clock,
 } from "lucide-react";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 interface StatCard {
   title: string;
@@ -22,6 +23,7 @@ interface StatCard {
   gradient: string;
   bgGradient: string;
   iconColor: string;
+  showDevelopmentBadge?: boolean;
 }
 
 interface AdminStatsCardsProps {
@@ -142,11 +144,14 @@ export default function AdminStatsCards({
           >
             <div className="flex items-center justify-between">
               <div>
-                <p
-                  className={`${sizeClasses.title} ${colorClasses.iconColor} font-medium mb-1`}
-                >
-                  {stat.title}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p
+                    className={`${sizeClasses.title} ${colorClasses.iconColor} font-medium mb-1`}
+                  >
+                    {stat.title}
+                  </p>
+                  {stat.showDevelopmentBadge && <DevelopmentBadge size="xs" />}
+                </div>
                 <p
                   className={`${sizeClasses.value} font-bold bg-gradient-to-r ${colorClasses.gradient} bg-clip-text text-transparent`}
                 >
