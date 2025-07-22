@@ -13,16 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
-
-interface InformationFormData {
-  title: string;
-  content: string;
-  author: string;
-  authorRole: "admin" | "advisor" | "external";
-}
+import { createInformation } from "@/lib/informationsData";
 
 interface User {
-  id: string;
+  id: number;
   first_name: string;
   last_name: string;
   roles_user: string;
@@ -30,207 +24,97 @@ interface User {
 
 export default function CreateInformationPage() {
   const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [authorDropdownOpen, setAuthorDropdownOpen] = useState(false);
-  const [authorSearchTerm, setAuthorSearchTerm] = useState("");
-  const [dropdownPosition, setDropdownPosition] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-  });
-  const authorDropdownRef = useRef<HTMLDivElement | null>(null);
-
-  const [formData, setFormData] = useState<InformationFormData>({
+  const [formData, setFormData] = useState({
     title: "",
     content: "",
-    author: "",
-    authorRole: "admin",
+    author: null as User | null,
   });
-  const [showExternalAuthorInput, setShowExternalAuthorInput] = useState(false);
-  const [externalAuthorName, setExternalAuthorName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successTitle, setSuccessTitle] = useState<string | null>(null);
+  const [authorDropdownOpen, setAuthorDropdownOpen] = useState(false);
+  const [authorSearchTerm, setAuthorSearchTerm] = useState("");
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const authorDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
 
-  // Charger les utilisateurs au montage du composant
+  // Fetch users for dropdown
   useEffect(() => {
+    const fetchUsers = async () => {
+      setUsersLoading(true);
+      try {
+        const res = await fetch("http://localhost:3004/profiles");
+        const data = await res.json();
+        const filtered = (data.data || []).filter((user: User) => user.roles_user === 'admin' || user.roles_user === 'advisor');
+        setUsers(filtered);
+      } catch (e) {
+        setUsers([]);
+      }
+      setUsersLoading(false);
+    };
     fetchUsers();
   }, []);
 
-  // Gestionnaire de clic à l'extérieur pour fermer le dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        authorDropdownRef.current &&
-        !authorDropdownRef.current.contains(event.target as Node)
-      ) {
-        setAuthorDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  // Fonction pour charger les utilisateurs
-  const fetchUsers = async () => {
-    try {
-      setUsersLoading(true);
-
-      // Récupérer tous les profils utilisateurs
-      const profilesResponse = await fetch("http://localhost:3004/profiles");
-      if (!profilesResponse.ok) {
-        throw new Error("Erreur lors de la récupération des profils");
-      }
-      const profilesData = await profilesResponse.json();
-
-      if (!profilesData.success) {
-        throw new Error(profilesData.message || "Erreur serveur");
-      }
-
-      // Récupérer tous les conseillers
-      const advisorsResponse = await fetch("http://localhost:3004/advisors");
-      const advisorsData = advisorsResponse.ok
-        ? await advisorsResponse.json()
-        : { success: false, data: [] };
-
-      // Récupérer tous les administrateurs
-      const adminsResponse = await fetch("http://localhost:3004/admins");
-      const adminsData = adminsResponse.ok
-        ? await adminsResponse.json()
-        : { success: false, data: [] };
-
-      // Combiner les données pour obtenir les advisors et admins avec leurs profils
-      const advisorsWithProfiles = advisorsData.success
-        ? advisorsData.data
-            .map((advisor: any) => {
-              const profile = profilesData.data.find(
-                (p: any) => p.id === advisor.id_user_profile
-              );
-              return profile
-                ? {
-                    id: profile.id,
-                    first_name: profile.first_name,
-                    last_name: profile.last_name,
-                    roles_user: "advisor",
-                  }
-                : null;
-            })
-            .filter(Boolean)
-        : [];
-
-      const adminsWithProfiles = adminsData.success
-        ? adminsData.data
-            .map((admin: any) => {
-              const profile = profilesData.data.find(
-                (p: any) => p.id === admin.id_user_profile
-              );
-              return profile
-                ? {
-                    id: profile.id,
-                    first_name: profile.first_name,
-                    last_name: profile.last_name,
-                    roles_user: "admin",
-                  }
-                : null;
-            })
-            .filter(Boolean)
-        : [];
-
-      const allUsers = [...advisorsWithProfiles, ...adminsWithProfiles];
-      setUsers(allUsers);
-    } catch (error) {
-      console.error("Erreur lors du chargement des utilisateurs:", error);
-    } finally {
-      setUsersLoading(false);
-    }
+  // Handlers
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value, type } = e.target;
+  const selectAuthor = (user: User) => {
     setFormData((prev) => ({
       ...prev,
-      [name]:
-        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+      author: user,
     }));
+    setAuthorDropdownOpen(false);
   };
 
-  // Fonction pour filtrer les utilisateurs selon la recherche
-  const filteredUsers = users.filter((user) =>
-    `${user.first_name} ${user.last_name}`
-      .toLowerCase()
-      .includes(authorSearchTerm.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.first_name.toLowerCase().includes(authorSearchTerm.toLowerCase()) ||
+      user.last_name.toLowerCase().includes(authorSearchTerm.toLowerCase())
   );
 
-  // Fonction pour sélectionner un auteur
-  const selectAuthor = (user: User | null) => {
-    if (user) {
-      setFormData((prev) => ({
-        ...prev,
-        author: `${user.first_name} ${user.last_name}`,
-        authorRole: user.roles_user as "admin" | "advisor" | "external",
-      }));
-      setShowExternalAuthorInput(false);
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        author: "Autre (utilisateur externe)",
-        authorRole: "external",
-      }));
-      setShowExternalAuthorInput(true);
-    }
-    setAuthorDropdownOpen(false);
-    setAuthorSearchTerm("");
-  };
-
-  // Fonction pour gérer le changement dans le champ texte externe
-  const handleExternalAuthorChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setExternalAuthorName(e.target.value);
-  };
-
-  // Fonction pour obtenir le label du rôle
   const getRoleLabel = (role: string) => {
     switch (role) {
       case "admin":
-        return "Administrateur";
+        return "Admin";
       case "advisor":
         return "Conseiller";
       default:
-        return role;
+        return "Externe";
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-
+    setError(null);
     try {
-      // Si c'est un auteur externe, utiliser le nom saisi
-      const finalFormData = {
-        ...formData,
-        author:
-          formData.authorRole === "external"
-            ? externalAuthorName
-            : formData.author,
+      if (!formData.title || !formData.content) {
+        setError("Veuillez remplir tous les champs obligatoires.");
+        setIsSaving(false);
+        return;
+      }
+      if (!formData.author) {
+        setError("Veuillez sélectionner un auteur.");
+        setIsSaving(false);
+        return;
+      }
+      // Prepare payload
+      const infoPayload = {
+        title: formData.title,
+        message: formData.content,
+        id_creator: formData.author ? formData.author.id : 0, // 0 for external
       };
-
-      // TODO: Implémenter l'API pour créer une information
-      console.log("Données de l'information:", finalFormData);
-
-      // Simulation d'une requête API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Redirection vers la page des informations
-      router.push("/admin/informations?success=information-created");
-    } catch (error) {
-      console.error("Erreur lors de la création de l'information:", error);
+      await createInformation(infoPayload);
+      setSuccessTitle(formData.title);
+      setTimeout(() => {
+        router.push("/admin/informations");
+      }, 2000); // Show for 2 seconds
+    } catch (err: any) {
+      setError(err.message || "Erreur lors de la création.");
     } finally {
       setIsSaving(false);
     }
@@ -239,7 +123,6 @@ export default function CreateInformationPage() {
   return (
     <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
       <ProjectHeader backIcon={<ArrowLeft />} />
-
       <div className="max-w-4xl mx-auto">
         {/* Formulaire */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -256,8 +139,17 @@ export default function CreateInformationPage() {
               </div>
             </div>
           </div>
-
+          {successTitle && (
+            <div className="bg-green-100 text-green-700 px-4 py-2 rounded mb-4">
+              Information « <strong>{successTitle}</strong> » publiée avec succès !
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {error && (
+              <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4">
+                {error}
+              </div>
+            )}
             {/* Titre de l'information */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -273,7 +165,6 @@ export default function CreateInformationPage() {
                 required
               />
             </div>
-
             {/* Contenu */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -289,20 +180,17 @@ export default function CreateInformationPage() {
                 required
               />
             </div>
-
             {/* Auteur de l'information */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Auteur de l'information
               </label>
-
               {/* Dropdown pour sélectionner l'auteur */}
               <div className="relative" ref={authorDropdownRef}>
                 <div
                   onClick={() => {
                     if (!authorDropdownOpen && authorDropdownRef.current) {
-                      const rect =
-                        authorDropdownRef.current.getBoundingClientRect();
+                      const rect = authorDropdownRef.current.getBoundingClientRect();
                       setDropdownPosition({
                         top: rect.bottom + 5,
                         left: rect.left,
@@ -320,7 +208,9 @@ export default function CreateInformationPage() {
                         : "text-gray-400"
                     }
                   >
-                    {formData.author || "Sélectionner un auteur"}
+                    {formData.author
+                      ? `${formData.author.first_name} ${formData.author.last_name}`
+                      : "Sélectionner un auteur"}
                   </span>
                   <ChevronDown
                     size={18}
@@ -329,7 +219,6 @@ export default function CreateInformationPage() {
                     }`}
                   />
                 </div>
-
                 {authorDropdownOpen && (
                   <div
                     className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-xl max-h-[300px] overflow-hidden"
@@ -356,36 +245,12 @@ export default function CreateInformationPage() {
                         />
                       </div>
                     </div>
-
-                    {/* Liste des utilisateurs */}
+                    {/* Utilisateurs de la base de données */}
                     <div className="max-h-[220px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                      {/* Option "Autre" */}
-                      <div
-                        onClick={() => selectAuthor(null)}
-                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors duration-200 border-b border-gray-100"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 rounded-lg">
-                            <Users className="text-gray-600" size={16} />
-                          </div>
-                          <div>
-                            <span className="text-gray-900 font-medium">
-                              Autre (utilisateur externe)
-                            </span>
-                            <p className="text-xs text-gray-600">
-                              Utilisateur non enregistré
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Utilisateurs de la base de données */}
                       {usersLoading ? (
                         <div className="px-4 py-3 text-center">
                           <Loader2 className="w-4 h-4 animate-spin mx-auto text-blue-600" />
-                          <p className="text-sm text-gray-600 mt-1">
-                            Chargement...
-                          </p>
+                          <p className="text-sm text-gray-600 mt-1">Chargement...</p>
                         </div>
                       ) : filteredUsers.length === 0 ? (
                         <div className="px-4 py-3 text-center text-sm text-gray-600">
@@ -419,24 +284,6 @@ export default function CreateInformationPage() {
                 )}
               </div>
             </div>
-
-            {/* Champ texte pour auteur externe */}
-            {showExternalAuthorInput && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom de l'auteur externe *
-                </label>
-                <input
-                  type="text"
-                  value={externalAuthorName}
-                  onChange={handleExternalAuthorChange}
-                  placeholder="Entrez le nom de l'auteur externe"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-            )}
-
             {/* Boutons d'action */}
             <div className="flex gap-4 pt-6 border-t border-gray-200">
               <Button

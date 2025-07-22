@@ -4,7 +4,7 @@ import { ChevronDown, User, Clock, Calendar, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   getActiveInformations,
-  type Information,
+  type InformationWithCreator,
 } from "@/lib/informationsData";
 import { useRoleRedirect } from "@/hooks/useRoleRedirect";
 import AdminLoading from "@/components/admin/AdminLoading";
@@ -37,18 +37,18 @@ const INITIAL_DISPLAY_COUNT = 6;
 export default function Informations() {
   const { isLoading: roleLoading } = useRoleRedirect();
   const [openIdx, setOpenIdx] = useState<number | null>(null);
-  const [informations, setInformations] = useState<Information[]>([]);
+  const [informations, setInformations] = useState<InformationWithCreator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [displayedCount, setDisplayedCount] = useState(INITIAL_DISPLAY_COUNT);
 
   useEffect(() => {
-    const loadInformations = () => {
+    const loadInformations = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const activeInformations = getActiveInformations();
+        const activeInformations = await getActiveInformations();
         setInformations(activeInformations);
       } catch (err) {
         console.error("Erreur lors du chargement des informations:", err);
@@ -131,12 +131,12 @@ export default function Informations() {
                     <div className="flex-1 flex flex-col min-w-0 h-full">
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
                         <span className="font-bold text-blue-900 text-base sm:text-xl leading-tight break-words">
-                          {info.author}
+                          {info.creator_full_name || "Inconnu"}
                         </span>
                         <div className="flex items-center gap-2 text-sm text-blue-600">
                           <Clock size={14} />
                           <span className="whitespace-nowrap">
-                            {timeAgo(info.createdAt)}
+                            {timeAgo(info.created_at)}
                           </span>
                         </div>
                       </div>
@@ -151,7 +151,7 @@ export default function Informations() {
                             isOpen ? "" : "line-clamp-3"
                           }`}
                         >
-                          {info.content}
+                          {info.message}
                         </span>
                       </div>
 
@@ -159,11 +159,11 @@ export default function Informations() {
                         <div className="flex items-center gap-2 text-sm text-blue-600">
                           <Calendar size={14} />
                           <span className="whitespace-nowrap">
-                            {formatDateTime(info.createdAt)}
+                            {formatDateTime(info.created_at)}
                           </span>
                         </div>
 
-                        {info.content.length > MIN_LENGTH_FOR_PLUS && (
+                        {info.message.length > MIN_LENGTH_FOR_PLUS && (
                           <button
                             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl px-4 sm:px-6 py-2 transition-all duration-300 text-sm flex items-center gap-2 hover:scale-105 shadow-lg hover:shadow-xl self-start sm:self-auto"
                             onClick={() => setOpenIdx(isOpen ? null : idx)}

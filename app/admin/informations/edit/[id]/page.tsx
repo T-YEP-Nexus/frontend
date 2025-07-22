@@ -23,8 +23,6 @@ import AdminLoading from "@/components/admin/AdminLoading";
 interface InformationFormData {
   title: string;
   content: string;
-  author: string;
-  authorRole: "admin" | "advisor" | "external";
 }
 
 interface User {
@@ -56,11 +54,7 @@ export default function EditInformationPage() {
   const [formData, setFormData] = useState<InformationFormData>({
     title: "",
     content: "",
-    author: "",
-    authorRole: "admin",
   });
-  const [showExternalAuthorInput, setShowExternalAuthorInput] = useState(false);
-  const [externalAuthorName, setExternalAuthorName] = useState("");
 
   // Charger l'information et les utilisateurs au montage du composant
   useEffect(() => {
@@ -86,27 +80,20 @@ export default function EditInformationPage() {
   }, []);
 
   // Fonction pour charger l'information
-  const loadInformation = () => {
+  const loadInformation = async () => {
     try {
       setIsLoading(true);
-      const informations = getInformations();
+      const informations = await getInformations();
       const foundInformation = informations.find(
-        (info) => info.id === informationId
+        (info) => info.id === Number(informationId)
       );
 
       if (foundInformation) {
         setInformation(foundInformation);
         setFormData({
           title: foundInformation.title,
-          content: foundInformation.content,
-          author: foundInformation.author,
-          authorRole: foundInformation.authorRole,
+          content: foundInformation.message,
         });
-        // Si c'est un auteur externe, afficher le champ de saisie
-        if (foundInformation.authorRole === "external") {
-          setShowExternalAuthorInput(true);
-          setExternalAuthorName(foundInformation.author);
-        }
       } else {
         // Rediriger si l'information n'existe pas
         router.push("/admin/informations?error=information-not-found");
@@ -216,19 +203,9 @@ export default function EditInformationPage() {
   // Fonction pour sélectionner un auteur
   const selectAuthor = (user: User | null) => {
     if (user) {
-      setFormData((prev) => ({
-        ...prev,
-        author: `${user.first_name} ${user.last_name}`,
-        authorRole: user.roles_user as "admin" | "advisor" | "external",
-      }));
-      setShowExternalAuthorInput(false);
+      // This function is no longer needed as author/authorRole are removed
     } else {
-      setFormData((prev) => ({
-        ...prev,
-        author: "Autre (utilisateur externe)",
-        authorRole: "external",
-      }));
-      setShowExternalAuthorInput(true);
+      // This function is no longer needed as author/authorRole are removed
     }
     setAuthorDropdownOpen(false);
     setAuthorSearchTerm("");
@@ -238,7 +215,7 @@ export default function EditInformationPage() {
   const handleExternalAuthorChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    setExternalAuthorName(e.target.value);
+    // This function is no longer needed as author/authorRole are removed
   };
 
   // Fonction pour obtenir le label du rôle
@@ -259,23 +236,13 @@ export default function EditInformationPage() {
 
     try {
       if (information) {
-        // Si c'est un auteur externe, utiliser le nom saisi
         const finalFormData = {
-          ...formData,
-          author:
-            formData.authorRole === "external"
-              ? externalAuthorName
-              : formData.author,
+          title: formData.title,
+          message: formData.content,
         };
 
-        // Mettre à jour l'information
-        const updated = updateInformation(information.id, finalFormData);
-        if (updated) {
-          // Redirection vers la page des informations avec message de succès
-          router.push("/admin/informations?success=information-updated");
-        } else {
-          throw new Error("Erreur lors de la mise à jour");
-        }
+        await updateInformation(String(information.id), finalFormData);
+        router.push("/admin/informations?success=information-updated");
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour de l'information:", error);
@@ -380,153 +347,6 @@ export default function EditInformationPage() {
                 required
               />
             </div>
-
-            {/* Auteur de l'information */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Auteur de l'information
-              </label>
-
-              {/* Dropdown pour sélectionner l'auteur */}
-              <div className="relative" ref={authorDropdownRef}>
-                <div
-                  onClick={() => {
-                    if (!authorDropdownOpen && authorDropdownRef.current) {
-                      const rect =
-                        authorDropdownRef.current.getBoundingClientRect();
-                      setDropdownPosition({
-                        top: rect.bottom + 5,
-                        left: rect.left,
-                        width: rect.width,
-                      });
-                    }
-                    setAuthorDropdownOpen(!authorDropdownOpen);
-                  }}
-                  className="flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg bg-white cursor-pointer transition-all duration-300 hover:border-blue-300 hover:shadow-lg hover:scale-[1.02]"
-                >
-                  <span
-                    className={
-                      formData.author
-                        ? "text-gray-900 font-medium"
-                        : "text-gray-400"
-                    }
-                  >
-                    {formData.author || "Sélectionner un auteur"}
-                  </span>
-                  <ChevronDown
-                    size={18}
-                    className={`text-gray-400 transition-transform duration-300 ${
-                      authorDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </div>
-
-                {authorDropdownOpen && (
-                  <div
-                    className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-xl max-h-[300px] overflow-hidden"
-                    style={{
-                      top: `${dropdownPosition.top}px`,
-                      left: `${dropdownPosition.left}px`,
-                      width: `${dropdownPosition.width}px`,
-                    }}
-                  >
-                    {/* Barre de recherche */}
-                    <div className="p-4 border-b border-gray-100">
-                      <div className="relative">
-                        <Search
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                          size={16}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Rechercher un utilisateur..."
-                          value={authorSearchTerm}
-                          onChange={(e) => setAuthorSearchTerm(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Liste des utilisateurs */}
-                    <div className="max-h-[220px] overflow-y-auto">
-                      {/* Option "Autre" */}
-                      <div
-                        onClick={() => selectAuthor(null)}
-                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors duration-200 border-b border-gray-100"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gray-100 rounded-lg">
-                            <Users className="text-gray-600" size={16} />
-                          </div>
-                          <div>
-                            <span className="text-gray-900 font-medium">
-                              Autre (utilisateur externe)
-                            </span>
-                            <p className="text-xs text-gray-600">
-                              Utilisateur non enregistré
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Utilisateurs de la base de données */}
-                      {usersLoading ? (
-                        <div className="px-4 py-3 text-center">
-                          <Loader2 className="w-4 h-4 animate-spin mx-auto text-blue-600" />
-                          <p className="text-sm text-gray-600 mt-1">
-                            Chargement...
-                          </p>
-                        </div>
-                      ) : filteredUsers.length === 0 ? (
-                        <div className="px-4 py-3 text-center text-sm text-gray-600">
-                          Aucun utilisateur trouvé
-                        </div>
-                      ) : (
-                        filteredUsers.map((user) => (
-                          <div
-                            key={user.id}
-                            onClick={() => selectAuthor(user)}
-                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-blue-100 rounded-lg">
-                                <Users className="text-blue-600" size={16} />
-                              </div>
-                              <div className="flex-1">
-                                <span className="text-gray-900 font-medium">
-                                  {user.first_name} {user.last_name}
-                                </span>
-                                <p className="text-xs text-gray-600">
-                                  {getRoleLabel(user.roles_user)}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Champ texte pour auteur externe */}
-            {showExternalAuthorInput && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom de l'auteur externe *
-                </label>
-                <input
-                  type="text"
-                  value={externalAuthorName}
-                  onChange={handleExternalAuthorChange}
-                  placeholder="Entrez le nom de l'auteur externe"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-            )}
 
             {/* Boutons d'action */}
             <div className="flex gap-4 pt-6 border-t border-gray-200">
