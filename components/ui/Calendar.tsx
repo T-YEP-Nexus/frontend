@@ -16,7 +16,7 @@ import AdminLoading from "@/components/admin/AdminLoading";
 
 // Ajout de la prop role
 interface CalendarProps {
-  role?: "admin" | "student";
+  role?: "admin" | "advisor" | "student";
 }
 
 type CalendarEventInput = EventInput & {
@@ -55,80 +55,34 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   const [roleLoading, setRoleLoading] = useState(true);
   const [events, setEvents] = useState<any[]>([]);
 
-  // Charger le rôle utilisateur
+  // Charger le rôle utilisateur et les permissions
   useEffect(() => {
-    const loadUserRole = async () => {
-      try {
-        const userId = getUserIdFromToken();
-        if (!userId) {
-          setRoleLoading(false);
-          return;
+    const setupPermissionsAndLoadData = async () => {
+      let finalRole: "admin" | "advisor" | "student" = role || "student"; // Priorité à la prop, fallback à student
+      let userId = getUserIdFromToken();
+
+      if (!role) {
+        // Si pas de prop, détecter le rôle de l'utilisateur connecté
+        try {
+          if (!userId) {
+            setRoleLoading(false);
+            return;
+          }
+          const fullUserData = await getUserData(userId);
+          const detectedRole = fullUserData.role || "student";
+          finalRole = ["admin", "advisor"].includes(detectedRole.toLowerCase())
+            ? (detectedRole.toLowerCase() as "admin" | "advisor")
+            : "student";
+        } catch (error) {
+          console.error("Erreur lors du chargement du rôle:", error);
+          finalRole = "student"; // Fallback en cas d'erreur
         }
-
-        // On n'a besoin que de getUserData, qui gère déjà l'agrégation des données
-        const fullUserData = await getUserData(userId);
-        const role = fullUserData.role || "student";
-
-        // Convertir le rôle en format attendu
-        const userRole = ["admin", "advisor"].includes(role.toLowerCase())
-          ? (role.toLowerCase() as "admin" | "advisor")
-          : "student";
-        setUserRole(userRole);
-
-        // Définir les permissions selon le rôle
-        if (role === "admin" || role === "advisor") {
-          setPermissions({
-            canCreateEvents: true,
-            canEditEvents: true,
-            canDeleteEvents: true,
-            canRegisterToEvents: true,
-            canUnregisterFromEvents: true,
-          });
-        } else {
-          setPermissions({
-            canCreateEvents: false,
-            canEditEvents: false,
-            canDeleteEvents: false,
-            canRegisterToEvents: true,
-            canUnregisterFromEvents: true,
-          });
-        }
-      } catch (error) {
-        console.error("Erreur lors du chargement du rôle:", error);
-        // Par défaut, considérer comme étudiant
-        setUserRole("student");
-        setPermissions({
-          canCreateEvents: false,
-          canEditEvents: false,
-          canDeleteEvents: false,
-          canRegisterToEvents: true,
-          canUnregisterFromEvents: true,
-        });
-      } finally {
-        setRoleLoading(false);
       }
-    };
 
-    loadUserRole();
-  }, []);
+      setUserRole(finalRole);
 
-  // Charger les données du calendrier en fonction du rôle
-  useEffect(() => {
-    if (!roleLoading && userRole) {
-      const userId = getUserIdFromToken();
-      if (userRole === 'student' && userId) {
-        fetchStudentAgenda(userId);
-      } else if (userRole !== 'student') {
-        fetchAllEvents();
-      }
-    }
-  }, [userRole, roleLoading, fetchStudentAgenda, fetchAllEvents]);
-
-  // On adapte les permissions si la prop role est fournie
-  useEffect(() => {
-    if (role) {
-      setUserRole(role);
-      if (role === "admin") {
+      // Définir les permissions en fonction du rôle final
+      if (finalRole === "admin" || finalRole === "advisor") {
         setPermissions({
           canCreateEvents: true,
           canEditEvents: true,
@@ -136,18 +90,24 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           canRegisterToEvents: true,
           canUnregisterFromEvents: true,
         });
+        fetchAllEvents(); // Les admins/advisors voient tous les événements
       } else {
         setPermissions({
-          canCreateEvents: false, // Toujours false pour student
+          canCreateEvents: false,
           canEditEvents: false,
           canDeleteEvents: false,
           canRegisterToEvents: true,
           canUnregisterFromEvents: true,
         });
+        if (userId) {
+          fetchStudentAgenda(userId); // Les étudiants voient leur agenda
+        }
       }
       setRoleLoading(false);
-    }
-  }, [role]);
+    };
+
+    setupPermissionsAndLoadData();
+  }, [role, fetchAllEvents, fetchStudentAgenda]);
 
   // DEBUG : log du rôle et des permissions
   console.log("userRole", userRole, "permissions", permissions);
@@ -302,37 +262,18 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     const eventId = Number(clickInfo.event.id);
     const event = backendEvents.find(e => e.id === eventId);
 
-    if (isAdmin) {
-      // On cherche l'événement complet pour récupérer les slots
-      const event = events.find((e) => String(e.id) === String(eventId));
-      setEventToDelete({
-        id: clickInfo.event.id,
-        title: clickInfo.event.title,
-        start: clickInfo.event.start ?? undefined,
-        end: clickInfo.event.end ?? undefined,
-        slots:
-          event && event.extendedProps && event.extendedProps.slots
-            ? event.extendedProps.slots
-            : [],
-      });
-      setDeleteModalOpen(true);
-      return;
-    }
-    // Pour les étudiants, on cherche dans backendEvents
-    // En mode test front, on cherche dans events (événements front + back)
     if (!event) {
       console.error("Aucun événement trouvé pour cet id", eventId);
       return;
     }
 
     if (isAdmin) {
+      // Les admins et advisors ouvrent la modale d'édition
       setEventToEdit(event);
       setModalOpen(true);
-      return;
-    }
-    
-    if (isStudent) {
-      const isRegistered = await checkUserRegistration(Number(eventId));
+    } else if (isStudent) {
+      // Les étudiants ouvrent la modale d'inscription
+      const isRegistered = await checkUserRegistration(eventId);
       setSelectedEvent({
         id: clickInfo.event.id,
         title: clickInfo.event.title,
