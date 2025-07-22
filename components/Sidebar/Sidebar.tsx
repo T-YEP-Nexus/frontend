@@ -16,6 +16,7 @@ import {
   Shield,
   BarChart3,
   GraduationCap,
+  UserCheck,
 } from "lucide-react";
 
 import { Russo_One } from "next/font/google";
@@ -30,6 +31,11 @@ const links = [
     label: "Informations",
     icon: <MessageSquare size={24} />,
     href: "/informations",
+  },
+  {
+    label: "Trombinoscope",
+    icon: <UserCheck size={24} />,
+    href: "/trombinoscope",
   },
   //   { label: "Emargement", icon: <Edit size={24} />, href: "/emargement" },
   //   { label: "Absences", icon: <BookOpen size={24} />, href: "/absences" },
@@ -47,6 +53,8 @@ const Sidebar = () => {
   const [firstName, setFirstName] = useState("Utilisateur");
   const [lastName, setLastName] = useState("Invité");
   const [userRole, setUserRole] = useState("student");
+  const [userPromotion, setUserPromotion] = useState("");
+  const [userCampus, setUserCampus] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +70,20 @@ const Sidebar = () => {
       return error.message;
     }
     return "Erreur inconnue";
+  };
+
+  // Fonction pour traduire les rôles en français
+  const getRoleLabel = (role: string): string => {
+    switch (role) {
+      case "admin":
+        return "Administrateur";
+      case "advisor":
+        return "Conseiller";
+      case "student":
+        return "Étudiant";
+      default:
+        return role;
+    }
   };
 
   const fetchUserData = async () => {
@@ -96,6 +118,76 @@ const Sidebar = () => {
       setFirstName(user.data.first_name || "Utilisateur");
       setLastName(user.data.last_name || "Invité");
       setUserRole(user.data.roles_user || "student");
+      setUserCampus(user.data.campus || "");
+
+      // Récupérer les données étudiant si c'est un étudiant
+      if (user.data.roles_user === "student") {
+        try {
+          const studentRes = await fetch(
+            `http://localhost:3004/student/profile/${user.data.id}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (studentRes.ok) {
+            const studentData = await studentRes.json();
+            console.log("Données étudiant dans sidebar:", studentData);
+            console.log("Données étudiant complètes:", studentData.data);
+            console.log(
+              "ID promotion étudiant:",
+              studentData.data?.id_promotion
+            );
+            console.log(
+              "Toutes les propriétés de studentData.data:",
+              Object.keys(studentData.data || {})
+            );
+
+            // Récupérer toutes les promotions pour convertir l'ID en nom
+            const promotionsRes = await fetch(
+              "http://localhost:3004/promotions"
+            );
+            if (promotionsRes.ok) {
+              const promotionsData = await promotionsRes.json();
+              console.log(
+                "Promotions disponibles dans sidebar:",
+                promotionsData
+              );
+
+              // Fonction pour récupérer le nom de promotion par ID
+              const getPromotionNameById = (promotionId: string): string => {
+                if (!promotionsData.success || !promotionId) return "";
+                const promotion = promotionsData.data.find(
+                  (p: { id: string; name: string }) => p.id === promotionId
+                );
+                console.log(
+                  "Recherche promotion pour ID:",
+                  promotionId,
+                  "Résultat:",
+                  promotion
+                );
+                return promotion ? promotion.name : "";
+              };
+
+              // Convertir l'ID de promotion en nom
+              const promotionId = studentData.data?.id_promotion;
+              console.log("ID promotion à convertir:", promotionId);
+              const promotionName = getPromotionNameById(promotionId);
+              console.log("Nom de promotion trouvé:", promotionName);
+              setUserPromotion(promotionName);
+            }
+          }
+        } catch (studentError) {
+          console.error(
+            "Erreur lors de la récupération des données étudiant:",
+            studentError
+          );
+        }
+      }
+
       setError(null);
     } catch (err) {
       console.error("Erreur : ", err);
@@ -106,6 +198,8 @@ const Sidebar = () => {
       setFirstName("Utilisateur");
       setLastName("Invité");
       setUserRole("student");
+      setUserPromotion("");
+      setUserCampus("");
 
       // Ne pas rediriger automatiquement vers login en cas d'erreur réseau
       // pour permettre l'utilisation en mode dégradé
@@ -163,7 +257,7 @@ const Sidebar = () => {
   }, [pathname]);
 
   return (
-    <div className="fixed top-0 left-0 h-screen w-20 md:w-68 z-30 flex flex-col justify-between bg-gradient-to-b from-[#1971FF] to-[#1971FF]/80 px-2 md:px-4 py-6 transition-all duration-300 overflow-hidden">
+    <div className="fixed top-0 left-0 h-screen w-20 md:w-72 z-30 flex flex-col justify-between bg-gradient-to-b from-[#1971FF] to-[#1971FF]/80 px-2 md:px-4 py-6 transition-all duration-300 overflow-hidden">
       {/* Logo + nom */}
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col items-center md:flex-row md:items-center gap-2 mb-6 md:mb-10">
@@ -183,25 +277,30 @@ const Sidebar = () => {
 
         {/* Liens */}
         <nav className="flex flex-col gap-2 md:gap-4">
-          {links.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
-                ${
-                  pathname === link.href
-                    ? "bg-[#0e357a]/70 font-bold"
-                    : "hover:bg-[#0e357a]/40"
-                }
-              `}
-            >
-              <span>{link.icon}</span>
-              <span className="hidden md:inline">{link.label}</span>
-            </Link>
-          ))}
+          {/* Liens visibles pour tous les utilisateurs sauf advisor/admin */}
+          {userRole !== "admin" && userRole !== "advisor" && (
+            <>
+              {links.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                    ${
+                      pathname === link.href
+                        ? "bg-[#0e357a]/70 font-bold"
+                        : "hover:bg-[#0e357a]/40"
+                    }
+                  `}
+                >
+                  <span>{link.icon}</span>
+                  <span className="hidden md:inline">{link.label}</span>
+                </Link>
+              ))}
+            </>
+          )}
 
-          {/* Boutons Admin */}
-          {userRole === "admin" && (
+          {/* Boutons Admin pour admin et advisor */}
+          {(userRole === "admin" || userRole === "advisor") && (
             <>
               <Link
                 href="/admin"
@@ -278,6 +377,53 @@ const Sidebar = () => {
                 </span>
                 <span className="hidden md:inline">Gestion Informations</span>
               </Link>
+
+              {/* Calendrier visible pour les advisors et admins (en bas) */}
+              <Link
+                href="/calendar"
+                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                  ${
+                    pathname === "/calendar"
+                      ? "bg-[#0e357a]/70 font-bold"
+                      : "hover:bg-[#0e357a]/40"
+                  }
+                `}
+              >
+                <span>
+                  <Calendar size={24} />
+                </span>
+                <span className="hidden md:inline">Gestion Calendrier</span>
+              </Link>
+              <Link
+                href="/documents"
+                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                  ${
+                    pathname === "/documents"
+                      ? "bg-[#0e357a]/70 font-bold"
+                      : "hover:bg-[#0e357a]/40"
+                  }
+                `}
+              >
+                <span>
+                  <Folder size={24} />
+                </span>
+                <span className="hidden md:inline">Gestion Documents</span>
+              </Link>
+              <Link
+                href="/trombinoscope"
+                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+                  ${
+                    pathname === "/trombinoscope"
+                      ? "bg-[#0e357a]/70 font-bold"
+                      : "hover:bg-[#0e357a]/40"
+                  }
+                `}
+              >
+                <span>
+                  <UserCheck size={24} />
+                </span>
+                <span className="hidden md:inline">Trombinoscope</span>
+              </Link>
             </>
           )}
         </nav>
@@ -312,10 +458,13 @@ const Sidebar = () => {
           />
           <div className="hidden md:flex flex-col">
             <span className="text-white font-bold leading-tight">
-              {firstName}
+              {firstName} {lastName}
             </span>
             <span className="text-white/80 text-xs leading-tight">
-              {lastName}
+              {userRole === "student"
+                ? userPromotion || "Promotion non définie"
+                : getRoleLabel(userRole) + " " + userCampus ||
+                  "Campus non défini"}
             </span>
             {error && (
               <span className="text-red-200 text-[10px] leading-tight">

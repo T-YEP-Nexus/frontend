@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 interface Slot {
   start: string;
@@ -36,13 +37,13 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
 
   const formatDate = (date: Date | string) => {
     const d = new Date(date);
-    return d.toLocaleString('fr-FR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return d.toLocaleString("fr-FR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -71,8 +72,18 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl leading-none rounded-xl p-1 transition-all duration-200 hover:bg-gray-200"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -85,28 +96,63 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
             </div>
             {event.start && (
               <div className="flex items-center gap-2 text-blue-800 text-base mb-1">
-                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <rect x="3" y="4" width="18" height="18" rx="4" fill="#e0e7ff" />
-                  <path stroke="#1971FF" strokeWidth="2" d="M8 2v4M16 2v4M3 10h18" />
+                <svg
+                  className="w-5 h-5 text-blue-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <rect
+                    x="3"
+                    y="4"
+                    width="18"
+                    height="18"
+                    rx="4"
+                    fill="#e0e7ff"
+                  />
+                  <path
+                    stroke="#1971FF"
+                    strokeWidth="2"
+                    d="M8 2v4M16 2v4M3 10h18"
+                  />
                 </svg>
                 <span>{formatDate(event.start)}</span>
               </div>
             )}
             {event.description && (
-              <p className="text-base text-blue-900/80 mt-1">{event.description}</p>
+              <p className="text-base text-blue-900/80 mt-1">
+                {event.description}
+              </p>
             )}
           </div>
 
           {/* Liste des créneaux disponibles */}
           {Array.isArray(event.slots) && event.slots.length > 0 && (
             <div className="mt-2 bg-blue-50 border border-blue-200 rounded-xl p-3">
-              <div className="font-semibold text-blue-900 mb-2">Créneaux disponibles :</div>
+              <div className="font-semibold text-blue-900 mb-2">
+                Créneaux disponibles :
+              </div>
               <ul className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-2">
                 {event.slots.map((slot, idx) => (
-                  <li key={idx} className="flex items-center gap-2 text-blue-800 text-sm bg-white rounded-xl px-3 py-2">
-                    <span className="flex-1">{new Date(slot.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(slot.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <li
+                    key={idx}
+                    className="flex items-center gap-2 text-blue-800 text-sm bg-white rounded-xl px-3 py-2"
+                  >
+                    <span className="flex-1">
+                      {new Date(slot.start).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}{" "}
+                      -{" "}
+                      {new Date(slot.end).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                     {slot.user ? (
-                      <span className="text-xs text-blue-700 font-semibold">{slot.user}</span>
+                      <span className="text-xs text-blue-700 font-semibold">
+                        {slot.user}
+                      </span>
                     ) : (
                       <button
                         className="px-4 py-1 bg-blue-400 text-white rounded-xl font-semibold shadow-sm hover:bg-blue-500 hover:shadow-lg transition-all duration-200 text-sm"
@@ -114,7 +160,10 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
                         disabled={loading === idx}
                       >
                         {loading === idx ? (
-                          <span className="flex items-center"><span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>Inscription...</span>
+                          <span className="flex items-center">
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            Inscription...
+                          </span>
                         ) : (
                           "S'inscrire"
                         )}
@@ -149,4 +198,4 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
   );
 };
 
-export default ModalEventRegistration; 
+export default ModalEventRegistration;

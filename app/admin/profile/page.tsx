@@ -31,6 +31,7 @@ import usePromotionsData from "@/hooks/usePromotionsData";
 import { useRouter } from "next/navigation";
 import AdminButton from "@/components/admin/buttons/AdminButton";
 import AdminLoading from "@/components/admin/AdminLoading";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 interface Student {
   id: string;
@@ -80,6 +81,41 @@ const AdminProfilePage = () => {
 
   const promotionDropdownRef = useRef<HTMLDivElement>(null);
   const studentDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fonction pour nettoyer les paramètres URL
+  const cleanUrlParams = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("studentId");
+    url.searchParams.delete("showOtherUsers");
+    window.history.replaceState({}, "", url.toString());
+  };
+
+  // Gestion des paramètres URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const studentId = urlParams.get("studentId");
+    const showOtherUsersParam = urlParams.get("showOtherUsers");
+
+    if (studentId && showOtherUsersParam === "true") {
+      setShowOtherUsers(true);
+      // Charger automatiquement le profil de l'étudiant
+      loadStudentDirectly(studentId);
+    }
+  }, []);
+
+  // Fonction pour traduire les rôles
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "admin":
+        return "Administrateur";
+      case "advisor":
+        return "Conseiller";
+      case "student":
+        return "Étudiant";
+      default:
+        return role;
+    }
+  };
 
   // Hook pour récupérer les promotions
   const {
@@ -135,6 +171,7 @@ const AdminProfilePage = () => {
     setSelectedStudent("");
     setStudentData(null);
     setPromotionDropdownOpen(false);
+    cleanUrlParams(); // Nettoyer les paramètres URL
   };
 
   // Gestion du bouton pour voir les autres utilisateurs
@@ -143,6 +180,7 @@ const AdminProfilePage = () => {
     setSelectedPromotion("");
     setSelectedStudent("");
     setStudentData(null);
+    cleanUrlParams(); // Nettoyer les paramètres URL
   };
 
   // Gestion du retour au profil admin
@@ -151,6 +189,7 @@ const AdminProfilePage = () => {
     setSelectedPromotion("");
     setSelectedStudent("");
     setStudentData(null);
+    cleanUrlParams(); // Nettoyer les paramètres URL
   };
 
   // Gestion de la déconnexion
@@ -343,6 +382,7 @@ const AdminProfilePage = () => {
     setStudentDropdownOpen(false);
     setLoadingStudent(true);
     setError(null);
+    cleanUrlParams(); // Nettoyer les paramètres URL
 
     try {
       // Récupérer les données de l'étudiant depuis la BDD
@@ -444,6 +484,157 @@ const AdminProfilePage = () => {
     }
   };
 
+  // Nouvelle fonction pour charger un étudiant directement depuis l'API
+  const loadStudentDirectly = async (studentId: string) => {
+    setSelectedStudent(studentId);
+    setLoadingStudent(true);
+    setError(null);
+
+    try {
+      // Récupérer les données complètes du profil étudiant
+      const profileResponse = await fetch(
+        `http://localhost:3004/profile/${studentId}`
+      );
+      if (!profileResponse.ok) {
+        throw new Error("Erreur lors de la récupération du profil");
+      }
+      const profileData = await profileResponse.json();
+
+      if (!profileData.success) {
+        throw new Error(profileData.message || "Erreur serveur");
+      }
+
+      // Récupérer les données étudiant spécifiques
+      const studentResponse = await fetch(
+        `http://localhost:3004/student/profile/${studentId}`
+      );
+      const studentData = studentResponse.ok
+        ? await studentResponse.json()
+        : { success: false, data: null };
+
+      // Récupérer les données utilisateur pour l'email
+      const userResponse = await fetch(
+        `http://localhost:3001/users/${profileData.data.id_user}`
+      );
+      const userData = userResponse.ok
+        ? await userResponse.json()
+        : { success: false, data: null };
+
+      // Récupérer la promotion depuis l'API des promotions
+      let promotionName = "Non spécifiée";
+      if (studentData.success && studentData.data.id_promotion) {
+        try {
+          // Récupérer toutes les promotions
+          const promotionsResponse = await fetch(
+            "http://localhost:3004/promotions"
+          );
+          if (promotionsResponse.ok) {
+            const promotionsData = await promotionsResponse.json();
+
+            if (promotionsData.success) {
+              // Fonction pour récupérer le nom de promotion par ID
+              const getPromotionNameById = (promotionId: string): string => {
+                if (!promotionsData.success || !promotionId) return "";
+                const promotion = promotionsData.data.find(
+                  (p: { id: string; name: string }) => p.id === promotionId
+                );
+                console.log(
+                  "Recherche promotion pour ID:",
+                  promotionId,
+                  "Résultat:",
+                  promotion
+                );
+                return promotion ? promotion.name : "";
+              };
+
+              // Convertir l'ID de promotion en nom
+              const promotionId = studentData.data.id_promotion;
+              console.log("ID promotion à convertir:", promotionId);
+              promotionName = getPromotionNameById(promotionId);
+              console.log("Nom de promotion trouvé:", promotionName);
+            }
+          }
+        } catch (error) {
+          console.error(
+            "Erreur lors de la récupération de la promotion:",
+            error
+          );
+        }
+      }
+
+      // Construire l'objet Student avec les vraies données
+      const studentProfile: Student = {
+        id: profileData.data.id,
+        firstName: profileData.data.first_name,
+        lastName: profileData.data.last_name,
+        email: userData.success
+          ? userData.data.email
+          : profileData.data.email || "",
+        phone: profileData.data.phone || "",
+        role: "student",
+        promotion: promotionName,
+        campus: profileData.data.campus || "Non spécifié",
+        profileImage: profileData.data.profileImage || "/default-avatar.png",
+        stats: {
+          totalHours: Math.floor(Math.random() * 2000) + 500, // Données simulées
+          projectsCompleted: Math.floor(Math.random() * 20) + 5,
+          ectsCredits: Math.floor(Math.random() * 180) + 60,
+          attendanceRate: Math.floor(Math.random() * 30) + 70,
+          skills: [
+            { name: "React", level: Math.floor(Math.random() * 40) + 60 },
+            { name: "Node.js", level: Math.floor(Math.random() * 40) + 60 },
+            { name: "Python", level: Math.floor(Math.random() * 40) + 60 },
+            { name: "Docker", level: Math.floor(Math.random() * 40) + 60 },
+            { name: "TypeScript", level: Math.floor(Math.random() * 40) + 60 },
+          ],
+          recentProjects: [
+            {
+              name: "Projet Web",
+              grade: Math.floor(Math.random() * 30) + 70,
+              status: "completed",
+            },
+            {
+              name: "API REST",
+              grade: Math.floor(Math.random() * 30) + 70,
+              status: "completed",
+            },
+            {
+              name: "Application Mobile",
+              grade: Math.floor(Math.random() * 30) + 70,
+              status: "in-progress",
+            },
+          ],
+          badges: [
+            { name: "Premier commit", icon: "faMedal", obtained: true },
+            { name: "Architecture validée", icon: "faCrown", obtained: true },
+            {
+              name: "Projet terminé",
+              icon: "faFire",
+              obtained: Math.random() > 0.5,
+            },
+            { name: "Mentor", icon: "faMedal", obtained: Math.random() > 0.5 },
+          ],
+        },
+        chartData: {
+          skillsRadar: [
+            { label: "React", value: Math.floor(Math.random() * 40) + 60 },
+            { label: "Node.js", value: Math.floor(Math.random() * 40) + 60 },
+            { label: "Python", value: Math.floor(Math.random() * 40) + 60 },
+            { label: "Docker", value: Math.floor(Math.random() * 40) + 60 },
+            { label: "TypeScript", value: Math.floor(Math.random() * 40) + 60 },
+          ],
+        },
+      };
+
+      setStudentData(studentProfile);
+    } catch (err) {
+      console.error("Erreur lors de la récupération de l'étudiant:", err);
+      setError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setLoadingStudent(false);
+    }
+  };
+
   // Affichage du loading utilisateur
   if (userLoading) {
     return <AdminLoading message="Vérification des droits d'accès..." />;
@@ -475,90 +666,10 @@ const AdminProfilePage = () => {
 
       {/* Affichage du profil admin par défaut */}
       {!showOtherUsers && currentUser && (
-        <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-x-8 gap-y-6 items-start">
-          {/* Colonne principale */}
-          <div className="flex flex-col gap-6">
-            {/* Carte profil principale modernisée */}
-            <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-              <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
-                <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
-                  <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
-                    <Users className="w-4 h-4 text-blue-700" />
-                  </div>
-                  Informations personnelles
-                </h2>
-              </div>
-
-              <div className="p-6">
-                <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
-                  <div className="relative">
-                    <Image
-                      src={
-                        currentUser.profileImage &&
-                        currentUser.profileImage.trim() !== ""
-                          ? currentUser.profileImage
-                          : "/default-avatar.png"
-                      }
-                      alt="Photo de profil"
-                      width={100}
-                      height={100}
-                      className="rounded-full border-3 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300"
-                    />
-                  </div>
-                  <div className="text-center md:text-left">
-                    <h3 className="text-2xl font-bold text-blue-900 mb-2">
-                      {currentUser.firstName} {currentUser.lastName}
-                    </h3>
-                    <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                        {currentUser.role}
-                      </span>
-                      <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                        {currentUser.campus}
-                      </span>
-                    </div>
-                    <p className="text-blue-600 text-sm">{currentUser.email}</p>
-                  </div>
-                </div>
-
-                {/* Informations de contact modernisées */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-200 rounded-lg">
-                        <GraduationCap size={18} className="text-blue-700" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-blue-600 font-medium mb-1">
-                          Email
-                        </p>
-                        <p className="text-blue-900 font-semibold text-sm">
-                          {currentUser.email}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-200 rounded-lg">
-                        <Users size={18} className="text-green-700" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-green-600 font-medium mb-1">
-                          Téléphone
-                        </p>
-                        <p className="text-green-900 font-semibold text-sm">
-                          {currentUser.phone}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Statistiques rapides */}
-            <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+        <>
+          {/* Statistiques rapides - visible seulement pour les advisors (pleine largeur) */}
+          {userRole === "advisor" && (
+            <div className="mb-6 bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
               <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
                 <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
                   <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
@@ -568,121 +679,222 @@ const AdminProfilePage = () => {
                 </h2>
               </div>
 
-              <div className="p-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-lg font-bold text-blue-900">12</div>
-                    <div className="text-xs text-blue-600">Étudiants gérés</div>
+              <div className="p-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <div className="text-2xl font-bold text-blue-900">12</div>
+                    <div className="text-sm text-blue-600">Étudiants gérés</div>
                   </div>
-                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-lg font-bold text-blue-900">8</div>
-                    <div className="text-xs text-blue-600">Projets actifs</div>
+                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <div className="text-2xl font-bold text-blue-900">8</div>
+                    <div className="text-sm text-blue-600">Projets actifs</div>
                   </div>
-                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-lg font-bold text-blue-900">3</div>
-                    <div className="text-xs text-blue-600">
+                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <div className="text-2xl font-bold text-blue-900">3</div>
+                    <div className="text-sm text-blue-600">
                       Promotions gérées
                     </div>
                   </div>
-                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-lg font-bold text-blue-900">24</div>
-                    <div className="text-xs text-blue-600">
+                  {/* <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                    <div className="text-2xl font-bold text-blue-900">24</div>
+                    <div className="text-sm text-blue-600">
                       Heures cette semaine
                     </div>
+                  </div> */}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-x-8 gap-y-6 items-start">
+            {/* Colonne principale */}
+            <div className="flex flex-col gap-6">
+              {/* Carte profil principale modernisée */}
+              <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+                  <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
+                    <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
+                      <Users className="w-4 h-4 text-blue-700" />
+                    </div>
+                    Informations personnelles
+                  </h2>
+                </div>
+
+                <div className="p-6">
+                  <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
+                    <div className="relative">
+                      <Image
+                        src={
+                          currentUser.profileImage &&
+                          currentUser.profileImage.trim() !== ""
+                            ? currentUser.profileImage
+                            : "/default-avatar.png"
+                        }
+                        alt="Photo de profil"
+                        width={120}
+                        height={120}
+                        className="rounded-full border-4 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300"
+                      />
+                    </div>
+                    <div className="text-center md:text-left">
+                      <h3 className="text-3xl font-bold text-blue-900 mb-3">
+                        {currentUser.firstName} {currentUser.lastName}
+                      </h3>
+                      <div className="flex items-center justify-center md:justify-start gap-3 mb-3">
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                          {getRoleLabel(currentUser.role)}
+                        </span>
+                        <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                          {currentUser.campus}
+                        </span>
+                      </div>
+                      <p className="text-blue-600 text-base">
+                        {currentUser.email}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Informations de contact modernisées */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-blue-200 rounded-lg">
+                          <GraduationCap size={20} className="text-blue-700" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-blue-600 font-medium mb-2">
+                            Email
+                          </p>
+                          <p className="text-blue-900 font-semibold text-base">
+                            {currentUser.email}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 hover:shadow-md transition-all duration-300">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-green-200 rounded-lg">
+                          <Users size={20} className="text-green-700" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-green-600 font-medium mb-2">
+                            Téléphone
+                          </p>
+                          <p className="text-green-900 font-semibold text-base">
+                            {currentUser.phone}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section supplémentaire pour équilibrer la hauteur */}
+                  <div className="mt-8 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <div className="p-2 bg-gray-200 rounded-lg">
+                        <User size={16} className="text-gray-700" />
+                      </div>
+                      Aperçu du profil
+                    </h4>
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      Bienvenue dans votre espace personnel. Vous pouvez
+                      consulter vos informations, modifier votre profil ou
+                      accéder aux fonctionnalités de gestion selon votre rôle.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Colonne droite modernisée */}
+            <div className="flex flex-col gap-4">
+              {/* Informations système modernisées */}
+              <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+                  <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
+                    <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
+                      <User className="w-4 h-4 text-blue-700" />
+                    </div>
+                    Informations système
+                  </h2>
+                </div>
+
+                <div className="p-4 space-y-3">
+                  <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-200 rounded-lg">
+                        <User size={16} className="text-blue-700" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-blue-900 mb-1 text-sm">
+                          Rôle
+                        </h4>
+                        <p className="text-blue-700 font-medium text-sm">
+                          {getRoleLabel(currentUser.role)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-200 rounded-lg">
+                        <GraduationCap size={16} className="text-blue-700" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-blue-900 mb-1 text-sm">
+                          Campus
+                        </h4>
+                        <p className="text-blue-700 font-medium text-sm">
+                          {currentUser.campus}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions rapides modernisées et compactes */}
+              <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+                <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+                  <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
+                    <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
+                      <Target className="w-4 h-4 text-blue-700" />
+                    </div>
+                    Actions rapides
+                  </h2>
+                </div>
+
+                <div className="p-4">
+                  <div className="grid grid-cols-1 gap-3">
+                    <AdminButton
+                      onClick={handleShowOtherUsers}
+                      className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Consulter les profils étudiants
+                    </AdminButton>
+                    <Button
+                      onClick={() => router.push("/profile/edit")}
+                      className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm text-white cursor-pointer"
+                      variant="default"
+                    >
+                      <User className="w-4 h-4 mr-2 text-white" />
+                      Modifier mon profil
+                    </Button>
+                    <Button
+                      onClick={handleLogout}
+                      className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm text-white cursor-pointer"
+                      variant="default"
+                    >
+                      <LogOut className="w-4 h-4 mr-2 text-white" />
+                      Se déconnecter
+                    </Button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Colonne droite modernisée */}
-          <div className="flex flex-col gap-4">
-            {/* Informations système modernisées */}
-            <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-              <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
-                <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
-                  <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
-                    <User className="w-4 h-4 text-blue-700" />
-                  </div>
-                  Informations système
-                </h2>
-              </div>
-
-              <div className="p-4 space-y-3">
-                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-200 rounded-lg">
-                      <User size={16} className="text-blue-700" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-blue-900 mb-1 text-sm">
-                        Rôle
-                      </h4>
-                      <p className="text-blue-700 font-medium text-sm">
-                        {currentUser.role}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-200 rounded-lg">
-                      <GraduationCap size={16} className="text-blue-700" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-blue-900 mb-1 text-sm">
-                        Campus
-                      </h4>
-                      <p className="text-blue-700 font-medium text-sm">
-                        {currentUser.campus}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions rapides modernisées et compactes */}
-            <div className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-              <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
-                <h2 className="font-semibold text-lg text-blue-900 flex items-center gap-2">
-                  <div className="p-1.5 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg">
-                    <Target className="w-4 h-4 text-blue-700" />
-                  </div>
-                  Actions rapides
-                </h2>
-              </div>
-
-              <div className="p-4">
-                <div className="grid grid-cols-1 gap-3">
-                  <AdminButton
-                    onClick={handleShowOtherUsers}
-                    className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm"
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    Consulter les profils étudiants
-                  </AdminButton>
-                  <Button
-                    onClick={() => router.push("/profile/edit")}
-                    className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-sm text-white cursor-pointer"
-                    variant="default"
-                  >
-                    <User className="w-4 h-4 mr-2 text-white" />
-                    Modifier mon profil
-                  </Button>
-                  <Button
-                    onClick={handleLogout}
-                    className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm text-white cursor-pointer"
-                    variant="default"
-                  >
-                    <LogOut className="w-4 h-4 mr-2 text-white" />
-                    Se déconnecter
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        </>
       )}
 
       {/* Sélecteurs de promotion et étudiant */}
@@ -889,10 +1101,7 @@ const AdminProfilePage = () => {
       {/* Affichage du profil de l'étudiant */}
       {loadingStudent && (
         <div className="flex items-center justify-center h-64">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <p className="text-gray-600">Chargement du profil étudiant...</p>
-          </div>
+          <AdminLoading message="Chargement du profil étudiant..." />
         </div>
       )}
 
@@ -904,25 +1113,19 @@ const AdminProfilePage = () => {
             <ProfileSection title="Informations personnelles" icon={Users}>
               <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
                 <div className="relative">
-                  <Image
-                    src={
-                      studentData.profileImage &&
-                      studentData.profileImage.trim() !== ""
-                        ? studentData.profileImage
-                        : "/default-avatar.png"
-                    }
-                    alt="Photo de profil"
-                    width={120}
-                    height={120}
-                    className="rounded-full border-4 border-blue-200 shadow-lg"
-                  />
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white text-3xl font-bold">
+                      {studentData.firstName.charAt(0).toUpperCase()}
+                      {studentData.lastName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
                 </div>
                 <div className="text-center md:text-left">
                   <h2 className="text-2xl font-bold text-blue-900 mb-2">
                     {studentData.firstName} {studentData.lastName}
                   </h2>
                   <p className="text-blue-800/80 mb-1">
-                    {studentData.role} - {studentData.promotion}
+                    Étudiant - {studentData.promotion}
                   </p>
                   <p className="text-blue-700/70 text-sm">
                     {studentData.campus}
@@ -930,35 +1133,84 @@ const AdminProfilePage = () => {
                 </div>
               </div>
 
-              {/* Informations de contact */}
-              <div className="flex w-full justify-around">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <GraduationCap size={20} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-blue-800/60">Email</p>
-                    <p className="text-blue-900 font-medium">
-                      {studentData.email}
-                    </p>
+              {/* Informations complètes de l'étudiant */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                {/* Email */}
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-200 rounded-lg">
+                      <GraduationCap size={18} className="text-blue-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-600 font-medium mb-1">
+                        Email
+                      </p>
+                      <p className="text-blue-900 font-semibold text-sm">
+                        {studentData.email}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Users size={20} className="text-blue-600" />
+
+                {/* Téléphone */}
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-200 rounded-lg">
+                      <Users size={18} className="text-blue-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-600 font-medium mb-1">
+                        Téléphone
+                      </p>
+                      <p className="text-blue-900 font-semibold text-sm">
+                        {studentData.phone}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-blue-800/60">Téléphone</p>
-                    <p className="text-blue-900 font-medium">
-                      {studentData.phone}
-                    </p>
+                </div>
+
+                {/* Promotion */}
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-200 rounded-lg">
+                      <GraduationCap size={18} className="text-blue-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-600 font-medium mb-1">
+                        Promotion
+                      </p>
+                      <p className="text-blue-900 font-semibold text-sm">
+                        {studentData.promotion}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ID */}
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-200 rounded-lg">
+                      <Users size={18} className="text-blue-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-600 font-medium mb-1">
+                        ID
+                      </p>
+                      <p className="text-blue-900 font-semibold text-sm">
+                        {studentData.id}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </ProfileSection>
 
             {/* Statistiques principales avec anneaux de progression */}
-            <ProfileSection title="Statistiques principales" icon={TrendingUp}>
+            <ProfileSection
+              title="Statistiques principales"
+              icon={TrendingUp}
+              showDevelopmentBadge={true}
+            >
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
                 <div className="flex flex-col items-center">
                   <ProgressRing
@@ -1014,7 +1266,11 @@ const AdminProfilePage = () => {
             </ProfileSection>
 
             {/* Compétences avec radar chart */}
-            <ProfileSection title="Compétences techniques" icon={Target}>
+            <ProfileSection
+              title="Compétences techniques"
+              icon={Target}
+              showDevelopmentBadge={true}
+            >
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                 <div className="space-y-4">
                   {studentData.stats!.skills.length > 0 ? (
@@ -1047,7 +1303,11 @@ const AdminProfilePage = () => {
           {/* Colonne droite */}
           <div className="flex flex-col gap-6">
             {/* Projets récents */}
-            <ProfileSection title="Projets récents" icon={BookOpen}>
+            <ProfileSection
+              title="Projets récents"
+              icon={BookOpen}
+              showDevelopmentBadge={true}
+            >
               <div className="space-y-3">
                 {studentData.stats!.recentProjects.length > 0 ? (
                   studentData.stats!.recentProjects.map((project, index) => (
@@ -1072,6 +1332,7 @@ const AdminProfilePage = () => {
                 studentData.stats!.badges.filter((m) => m.obtained).length
               }/${studentData.stats!.badges.length})`}
               icon={Badge}
+              showDevelopmentBadge={true}
             >
               <div className="grid grid-cols-2 gap-4">
                 {studentData.stats!.badges.length > 0 ? (
@@ -1120,16 +1381,18 @@ const AdminProfilePage = () => {
                   Modifier le profil
                 </AdminButton>
                 <Button
-                  className="w-full !border-blue-600 !text-blue-600 hover:!bg-blue-50 hover:!text-blue-700 cursor-pointer"
+                  className="w-full !border-blue-600 !text-blue-600 hover:!bg-blue-50 hover:!text-blue-700 cursor-pointer flex items-center gap-2"
                   variant="outline"
                 >
                   Exporter les données
+                  <DevelopmentBadge size="xs" />
                 </Button>
                 <Button
-                  className="w-full !border-green-600 !text-green-600 hover:!bg-green-50 hover:!text-green-700 cursor-pointer"
+                  className="w-full !border-green-600 !text-green-600 hover:!bg-green-50 hover:!text-green-700 cursor-pointer flex items-center gap-2"
                   variant="outline"
                 >
                   Voir les projets
+                  <DevelopmentBadge size="xs" />
                 </Button>
               </div>
             </ProfileSection>

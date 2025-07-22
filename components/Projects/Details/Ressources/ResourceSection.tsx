@@ -22,7 +22,7 @@ export default function ResourceSection({
     <div className="p-5 bg-white rounded-xl border border-dashed border-gray-200 shadow-sm mb-4">
       <h3 className="flex items-center gap-2 text-blue-700 font-semibold text-lg mb-4 py-1">
         <span className="inline-block">{icon}</span>
-        {title}
+        <span>{title}</span>
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {resources.map((resource, index) => (

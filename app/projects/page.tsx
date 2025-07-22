@@ -7,8 +7,11 @@ import Header from "@/components/Header/Header";
 import ShowMoreLessButtons from "@/components/ShowMoreLessButtons/ShowMoreLessButtons";
 import { useProjectsData } from "@/hooks/useProjectsData";
 import { Button } from "@/components/ui/button";
+import { useRoleRedirect } from "@/hooks/useRoleRedirect";
+import AdminLoading from "@/components/admin/AdminLoading";
 
 export default function Page() {
+  const { isLoading } = useRoleRedirect();
   const [searchTerm, setSearchTerm] = useState("");
   const [displayCount, setDisplayCount] = useState(8);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
@@ -159,6 +162,11 @@ export default function Page() {
   useEffect(() => {
     setExpandedCard(null);
   }, [searchTerm]);
+
+  // Afficher un loader pendant la vérification
+  if (isLoading) {
+    return <AdminLoading message="Vérification des droits d'accès..." />;
+  }
 
   // Gestion du loading et de l'erreur
   if (loading) {

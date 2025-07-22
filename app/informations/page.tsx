@@ -6,6 +6,8 @@ import {
   getActiveInformations,
   type Information,
 } from "@/lib/informationsData";
+import { useRoleRedirect } from "@/hooks/useRoleRedirect";
+import AdminLoading from "@/components/admin/AdminLoading";
 
 function timeAgo(dateString: string) {
   const now = new Date();
@@ -33,6 +35,7 @@ const MIN_LENGTH_FOR_PLUS = 120;
 const INITIAL_DISPLAY_COUNT = 6;
 
 export default function Informations() {
+  const { isLoading: roleLoading } = useRoleRedirect();
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const [informations, setInformations] = useState<Information[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,15 +68,17 @@ export default function Informations() {
   const displayedInformations = informations.slice(0, displayedCount);
   const hasMore = displayedCount < informations.length;
 
+  // Afficher un loader pendant la vérification du rôle
+  if (roleLoading) {
+    return <AdminLoading message="Vérification des droits d'accès..." />;
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen px-3 sm:px-4 lg:px-16 py-4 sm:py-6 lg:py-8">
         <Header title="Informations Générales" />
         <div className="max-w-6xl mx-auto flex items-center justify-center mt-6 sm:mt-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Chargement des informations...</p>
-          </div>
+          <AdminLoading message="Chargement des informations..." />
         </div>
       </div>
     );
@@ -111,19 +116,19 @@ export default function Informations() {
         ) : (
           <>
             {displayedInformations.map((info, idx) => {
-          const isOpen = openIdx === idx;
-          return (
-            <div
+              const isOpen = openIdx === idx;
+              return (
+                <div
                   key={info.id}
                   className={`group bg-white rounded-2xl shadow-lg border border-blue-200/50 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 overflow-hidden ${
                     isOpen ? "" : ""
                   }`}
-            >
+                >
                   <div className="flex flex-col sm:flex-row items-start px-4 sm:px-8 py-4 sm:py-6 gap-4 sm:gap-6 w-full">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-200 to-blue-300 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
                       <User className="text-blue-700" size={20} />
                     </div>
-              <div className="flex-1 flex flex-col min-w-0 h-full">
+                    <div className="flex-1 flex flex-col min-w-0 h-full">
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
                         <span className="font-bold text-blue-900 text-base sm:text-xl leading-tight break-words">
                           {info.author}
@@ -132,7 +137,7 @@ export default function Informations() {
                           <Clock size={14} />
                           <span className="whitespace-nowrap">
                             {timeAgo(info.createdAt)}
-                </span>
+                          </span>
                         </div>
                       </div>
 
@@ -147,7 +152,7 @@ export default function Informations() {
                           }`}
                         >
                           {info.content}
-                </span>
+                        </span>
                       </div>
 
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
@@ -155,15 +160,15 @@ export default function Informations() {
                           <Calendar size={14} />
                           <span className="whitespace-nowrap">
                             {formatDateTime(info.createdAt)}
-                </span>
+                          </span>
                         </div>
 
                         {info.content.length > MIN_LENGTH_FOR_PLUS && (
-                  <button
+                          <button
                             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl px-4 sm:px-6 py-2 transition-all duration-300 text-sm flex items-center gap-2 hover:scale-105 shadow-lg hover:shadow-xl self-start sm:self-auto"
-                    onClick={() => setOpenIdx(isOpen ? null : idx)}
-                    aria-expanded={isOpen}
-                  >
+                            onClick={() => setOpenIdx(isOpen ? null : idx)}
+                            aria-expanded={isOpen}
+                          >
                             {isOpen ? "Voir moins" : "Voir plus"}
                             <ChevronDown
                               size={16}
@@ -171,14 +176,14 @@ export default function Informations() {
                                 isOpen ? "rotate-180" : ""
                               }`}
                             />
-                  </button>
-                )}
+                          </button>
+                        )}
                       </div>
                     </div>
-              </div>
-            </div>
-          );
-        })}
+                  </div>
+                </div>
+              );
+            })}
 
             {hasMore && (
               <div className="flex justify-center mt-6 sm:mt-8">

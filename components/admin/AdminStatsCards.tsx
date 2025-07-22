@@ -13,6 +13,7 @@ import {
   FileText,
   Clock,
 } from "lucide-react";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 interface StatCard {
   title: string;
@@ -22,6 +23,7 @@ interface StatCard {
   gradient: string;
   bgGradient: string;
   iconColor: string;
+  showDevelopmentBadge?: boolean;
 }
 
 interface AdminStatsCardsProps {
@@ -142,11 +144,14 @@ export default function AdminStatsCards({
           >
             <div className="flex items-center justify-between">
               <div>
-                <p
-                  className={`${sizeClasses.title} ${colorClasses.iconColor} font-medium mb-1`}
-                >
-                  {stat.title}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p
+                    className={`${sizeClasses.title} ${colorClasses.iconColor} font-medium mb-1`}
+                  >
+                    {stat.title}
+                  </p>
+                  {stat.showDevelopmentBadge && <DevelopmentBadge size="xs" />}
+                </div>
                 <p
                   className={`${sizeClasses.value} font-bold bg-gradient-to-r ${colorClasses.gradient} bg-clip-text text-transparent`}
                 >
@@ -201,11 +206,7 @@ export const createInformationsStats = (
   },
 ];
 
-export const createUsersStats = (
-  total: number,
-  active: number,
-  inactive: number
-) => [
+export const createUsersStats = (total: number, active: number) => [
   {
     title: "Total Utilisateurs",
     value: total,
@@ -223,15 +224,6 @@ export const createUsersStats = (
     gradient: "from-green-600 to-green-800",
     bgGradient: "from-green-100 to-green-200",
     iconColor: "text-green-600",
-  },
-  {
-    title: "Utilisateurs Inactifs",
-    value: inactive,
-    icon: <UserX size={32} className="text-red-600" />,
-    color: "red" as const,
-    gradient: "from-red-600 to-red-800",
-    bgGradient: "from-red-100 to-red-200",
-    iconColor: "text-red-600",
   },
 ];
 

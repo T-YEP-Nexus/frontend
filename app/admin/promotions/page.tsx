@@ -24,6 +24,8 @@ import AdminStatsCards, {
 } from "@/components/admin/AdminStatsCards";
 import AdminFilterBar from "@/components/admin/AdminFilterBar";
 import usePromotionsData from "@/hooks/usePromotionsData";
+import { useUserData } from "@/hooks/useUserData";
+import { getUserIdFromToken } from "@/lib/auth";
 
 interface Promotion {
   id: string;
@@ -45,6 +47,12 @@ export default function AdminPromotionsPage() {
   const statusDropdownRef = React.useRef<HTMLDivElement | null>(null);
   const secondDropdownRef = React.useRef<HTMLDivElement | null>(null);
 
+  // Utiliser le hook pour récupérer l'utilisateur connecté
+  const { userData: currentUser } = useUserData(getUserIdFromToken());
+
+  // Vérifier si l'utilisateur peut créer/supprimer des promotions
+  const canManagePromotions = currentUser?.role === "admin";
+
   // Hook pour récupérer les promotions
   const {
     promotions: hookPromotions,
@@ -57,6 +65,18 @@ export default function AdminPromotionsPage() {
   const [studentsCount, setStudentsCount] = useState<{ [key: string]: number }>(
     {}
   );
+
+  // État pour gérer la suppression
+  const [deletingPromotion, setDeletingPromotion] = useState<string | null>(
+    null
+  );
+
+  // État pour la popup de confirmation
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [promotionToDelete, setPromotionToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   // Utiliser les données du hook usePromotionsData
   useEffect(() => {
@@ -191,6 +211,76 @@ export default function AdminPromotionsPage() {
     refetchPromotions();
   };
 
+  // Fonction pour supprimer une promotion
+  const handleDeletePromotion = (
+    promotionId: string,
+    promotionName: string
+  ) => {
+    setPromotionToDelete({ id: promotionId, name: promotionName });
+    setShowDeleteConfirm(true);
+  };
+
+  // Fonction pour confirmer la suppression
+  const confirmDelete = async () => {
+    if (!promotionToDelete) return;
+
+    setDeletingPromotion(promotionToDelete.id);
+    setShowDeleteConfirm(false);
+
+    try {
+      const response = await fetch(
+        `http://localhost:3004/promotion/${promotionToDelete.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Supprimer la promotion de la liste locale
+        setPromotions((prev) =>
+          prev.filter((p) => p.id !== promotionToDelete.id)
+        );
+        setFilteredPromotions((prev) =>
+          prev.filter((p) => p.id !== promotionToDelete.id)
+        );
+
+        // Rafraîchir les données
+        refetchPromotions();
+
+        // Afficher un message de succès (optionnel)
+        alert(`Promotion "${promotionToDelete.name}" supprimée avec succès.`);
+      } else {
+        // Gérer les erreurs spécifiques
+        let errorMessage = data.message || "Erreur lors de la suppression";
+
+        if (response.status === 409) {
+          errorMessage = `Impossible de supprimer la promotion "${promotionToDelete.name}" : elle est actuellement utilisée par des étudiants.`;
+        } else if (response.status === 404) {
+          errorMessage = `Promotion "${promotionToDelete.name}" introuvable.`;
+        }
+
+        alert(`Erreur : ${errorMessage}`);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suppression de la promotion:", error);
+      alert("Erreur de connexion lors de la suppression de la promotion.");
+    } finally {
+      setDeletingPromotion(null);
+      setPromotionToDelete(null);
+    }
+  };
+
+  // Fonction pour annuler la suppression
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setPromotionToDelete(null);
+  };
+
   const displayedPromotions = filteredPromotions.slice(0, displayedCount);
   const hasMore = displayedCount < filteredPromotions.length;
 
@@ -214,17 +304,19 @@ export default function AdminPromotionsPage() {
       />
 
       {/* Boutons d'action */}
-      <div className="flex flex-wrap gap-4 mb-10">
-        <AdminButton onClick={() => router.push("/admin/promotions/create")}>
-          <Plus size={20} />
-          Nouvelle Promotion
-        </AdminButton>
-      </div>
+      {canManagePromotions && (
+        <div className="flex flex-wrap gap-4 mb-10">
+          <AdminButton onClick={() => router.push("/admin/promotions/create")}>
+            <Plus size={20} />
+            Nouvelle Promotion
+          </AdminButton>
+        </div>
+      )}
 
       {/* Statistiques */}
-      <AdminStatsCards
+      {/* <AdminStatsCards
         stats={createPromotionsStats(promotions.length, promotions.length, 0)}
-      />
+      /> */}
 
       {/* Filtres et recherche */}
       <AdminFilterBar
@@ -313,18 +405,28 @@ export default function AdminPromotionsPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          onClick={() => {
-                            /* TODO: Implémenter la suppression */
-                          }}
-                          variant="outline"
-                          size="sm"
-                          className="group/btn border border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
+                      {canManagePromotions && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={() =>
+                              handleDeletePromotion(
+                                promotion.id,
+                                promotion.name
+                              )
+                            }
+                            disabled={deletingPromotion === promotion.id}
+                            variant="outline"
+                            size="sm"
+                            className="group/btn border border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {deletingPromotion === promotion.id ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={16} />
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -342,6 +444,65 @@ export default function AdminPromotionsPage() {
           )}
         </div>
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      {showDeleteConfirm && promotionToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-md border border-gray-200 animate-in zoom-in-95 duration-200">
+            <div className="text-center">
+              {/* Icône d'avertissement */}
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8 text-red-600" />
+              </div>
+
+              {/* Titre */}
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                Supprimer la promotion
+              </h3>
+
+              {/* Message */}
+              <p className="text-gray-600 mb-6">
+                Êtes-vous sûr de vouloir supprimer la promotion{" "}
+                <span className="font-semibold text-gray-800">
+                  "{promotionToDelete.name}"
+                </span>
+                ?
+              </p>
+
+              <p className="text-sm text-red-600 mb-6 bg-red-50 px-4 py-3 rounded-xl border border-red-200">
+                ⚠️ Cette action est irréversible et ne peut pas être annulée.
+              </p>
+
+              {/* Boutons d'action */}
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={cancelDelete}
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all duration-200"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deletingPromotion === promotionToDelete.id}
+                  className="px-6 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {deletingPromotion === promotionToDelete.id ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Suppression...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Supprimer
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

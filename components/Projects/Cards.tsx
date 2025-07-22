@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMedal } from "@fortawesome/free-solid-svg-icons";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 interface CardsProps {
   projectName: string;
@@ -54,6 +55,7 @@ function Cards({
 }: CardsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hoveredTrophy, setHoveredTrophy] = useState<number | null>(null);
+  const expandedCardRef = useRef<HTMLDivElement>(null);
 
   // S'assurer que la progression est entre 0 et 100
   const clampedProgress = Math.min(Math.max(progress, 0), 100);
@@ -74,6 +76,27 @@ function Cards({
     if (progress <= 80) return "Finalisation";
     return "Terminé";
   };
+
+  // Gérer les clics en dehors de la carte étendue
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isExpanded &&
+        expandedCardRef.current &&
+        !expandedCardRef.current.contains(event.target as Node)
+      ) {
+        onToggle?.();
+      }
+    };
+
+    if (isExpanded) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isExpanded, onToggle]);
 
   const handleCardClick = () => {
     // Sur mobile, ouvrir la modale
@@ -106,10 +129,12 @@ function Cards({
             {/* Header de la modale */}
             <div className="flex justify-between items-start p-6 border-b border-gray-200">
               <div className="flex-1">
-                <h3 className="font-bold text-gray-800 text-xl">
+                <h3 className="font-bold text-gray-800 text-xl break-words overflow-hidden">
                   {projectName}
                 </h3>
-                <p className="text-gray-600 mt-2">{description}</p>
+                <p className="text-gray-600 mt-2 break-words overflow-hidden">
+                  {description}
+                </p>
               </div>
               <button
                 onClick={closeModal}
@@ -259,34 +284,44 @@ function Cards({
   // Carte étendue pour desktop
   if (isExpanded) {
     return (
-      <div className="col-span-2 row-span-2 w-full group relative z-20 hidden lg:block">
-        <div className="bg-white rounded-2xl p-8 w-full h-full shadow-2xl lg:hover:shadow-3xl transition-all duration-300 ease-out border border-gray-100 lg:hover:border-[#0E58D8]/30">
+      <div
+        className="col-span-2 row-span-2 w-full group relative z-20 hidden lg:block"
+        ref={expandedCardRef}
+      >
+        <div className="bg-white rounded-2xl p-6 w-full h-full shadow-2xl lg:hover:shadow-3xl transition-all duration-300 ease-out border border-gray-100 lg:hover:border-[#0E58D8]/30 overflow-hidden">
           <div className="flex flex-col h-full">
             {/* Header de la carte étendue */}
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex-1">
-                <h3 className="font-bold text-gray-800 mb-2 text-2xl lg:group-hover:text-[#0E58D8] transition-colors duration-300">
-                  {projectName}
-                </h3>
-                <p className="text-gray-600 text-lg">{description}</p>
+            <div className="flex justify-between items-start mb-4 flex-shrink-0">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-center mb-2">
+                  <DevelopmentBadge size="sm" />
+                </div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="font-bold text-gray-800 text-xl lg:group-hover:text-[#0E58D8] transition-colors duration-300 break-words overflow-hidden">
+                    {projectName}
+                  </h3>
+                </div>
+                <p className="text-gray-600 text-base break-words overflow-hidden">
+                  {description}
+                </p>
               </div>
               <button
                 onClick={onToggle}
-                className="p-2 lg:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                className="p-2 lg:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer flex-shrink-0"
               >
                 ✕
               </button>
             </div>
 
             {/* Contenu étendu */}
-            <div className="flex-1 grid grid-cols-2 gap-6">
+            <div className="flex-1 grid grid-cols-2 gap-4 overflow-hidden min-h-0">
               {/* Colonne gauche */}
-              <div className="space-y-6">
+              <div className="space-y-4 overflow-y-auto">
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">
+                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
                     Détails du projet
                   </h4>
-                  <div className="space-y-2 text-sm text-gray-600">
+                  <div className="space-y-1 text-xs text-gray-600">
                     <p>• Date de début: {details.startDate}</p>
                     <p>• Date de fin prévue: {details.endDate}</p>
                     <p>• Équipe: {details.team}</p>
@@ -294,8 +329,10 @@ function Cards({
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">Deadline</h4>
-                  <div className="space-y-2 text-sm text-gray-600">
+                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
+                    Deadline
+                  </h4>
+                  <div className="space-y-1 text-xs text-gray-600">
                     <p>• Kick off: {deadline.kickOff}</p>
                     <p>• Follow up: {deadline.followUp}</p>
                     <p>• Keynote: {deadline.keynote}</p>
@@ -304,11 +341,11 @@ function Cards({
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">
+                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
                     Documentation
                   </h4>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <div className="space-y-1 text-xs text-gray-600">
+                    <div className="p-2 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                       <p className="text-center text-gray-500">
                         📄 {documentation.pdfName}
                       </p>
@@ -320,10 +357,10 @@ function Cards({
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">
+                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
                     Tâches récentes
                   </h4>
-                  <div className="space-y-2 text-sm text-gray-600">
+                  <div className="space-y-1 text-xs text-gray-600">
                     {tasks.map((task, index) => (
                       <p key={index}>• {task}</p>
                     ))}
@@ -332,21 +369,21 @@ function Cards({
               </div>
 
               {/* Colonne droite */}
-              <div className="space-y-6">
+              <div className="space-y-4 overflow-y-auto">
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">
+                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
                     Statistiques
                   </h4>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-xs font-medium text-gray-700">
                         Progression globale
                       </span>
-                      <span className="text-sm font-bold text-gray-800">
+                      <span className="text-xs font-bold text-gray-800">
                         {clampedProgress}%
                       </span>
                     </div>
-                    <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ease-out ${getProgressColor(
                           clampedProgress
@@ -358,15 +395,15 @@ function Cards({
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">
+                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
                     Statut actuel
                   </h4>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-xs font-medium text-gray-700">
                       {getStatusText(clampedProgress)}
                     </span>
                     <div
-                      className={`w-3 h-3 rounded-full ${getProgressColor(
+                      className={`w-2 h-2 rounded-full ${getProgressColor(
                         clampedProgress
                       )}`}
                     ></div>
@@ -376,20 +413,20 @@ function Cards({
                 {/* Aperçu des médailles */}
                 {trophies.length > 0 && (
                   <div>
-                    <h4 className="font-semibold text-gray-800 mb-3">
+                    <h4 className="font-semibold text-gray-800 mb-2 text-sm">
                       Médailles du projet
                     </h4>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-xs font-medium text-gray-700">
                           Progression des trophées
                         </span>
-                        <span className="text-sm font-bold text-gray-800">
+                        <span className="text-xs font-bold text-gray-800">
                           {trophies.filter((t) => t.obtained).length}/
                           {trophies.length}
                         </span>
                       </div>
-                      <div className="grid grid-cols-6 gap-2">
+                      <div className="grid grid-cols-6 gap-1">
                         {trophies.slice(0, 12).map((trophy, index) => (
                           <div
                             key={index}
@@ -398,7 +435,7 @@ function Cards({
                             <div className="relative">
                               <FontAwesomeIcon
                                 icon={faMedal}
-                                size="lg"
+                                size="sm"
                                 className={`${
                                   trophy.obtained
                                     ? "text-yellow-400"
@@ -409,7 +446,7 @@ function Cards({
                               />
                               {/* Tooltip */}
                               {hoveredTrophy === index && (
-                                <span className="absolute z-10 bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-gray-900 text-white text-xs pointer-events-none whitespace-nowrap shadow-lg">
+                                <span className="absolute z-10 bottom-6 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-gray-900 text-white text-xs pointer-events-none whitespace-nowrap shadow-lg">
                                   {trophy.description}
                                 </span>
                               )}
@@ -427,15 +464,17 @@ function Cards({
                 )}
 
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">Actions</h4>
-                  <div className="flex flex-col gap-2">
+                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
+                    Actions
+                  </h4>
+                  <div className="flex flex-col gap-1">
                     <Link href={`/projects/${projectId}/details`}>
-                      <button className="w-full px-4 py-2 bg-[#0E58D8] text-white rounded-lg lg:hover:bg-[#0E58D8]/80 transition-colors text-sm cursor-pointer">
+                      <button className="w-full px-3 py-1.5 bg-[#0E58D8] text-white rounded-lg lg:hover:bg-[#0E58D8]/80 transition-colors text-xs cursor-pointer">
                         Voir les détails
                       </button>
                     </Link>
                     <Link href={`/projects/${projectId}/teamBuilder`}>
-                      <button className="w-full px-4 py-2 bg-green-600 text-white rounded-lg lg:hover:bg-green-700 transition-colors text-sm cursor-pointer">
+                      <button className="w-full px-3 py-1.5 bg-green-600 text-white rounded-lg lg:hover:bg-green-700 transition-colors text-xs cursor-pointer">
                         Mon équipe
                       </button>
                     </Link>
@@ -443,13 +482,13 @@ function Cards({
                       <>
                         <button
                           onClick={onEdit}
-                          className="w-full px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm cursor-pointer"
+                          className="w-full px-3 py-1.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-xs cursor-pointer"
                         >
                           Modifier
                         </button>
                         <button
                           onClick={onDelete}
-                          className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm cursor-pointer"
+                          className="w-full px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer"
                         >
                           Supprimer
                         </button>
@@ -473,20 +512,22 @@ function Cards({
       }`}
     >
       <div
-        className="bg-white rounded-2xl p-8 w-full h-76 shadow-sm lg:hover:shadow-xl cursor-pointer lg:hover:scale-105 transition-all duration-300 ease-out border border-gray-100 lg:hover:border-[#0E58D8]/30 relative"
+        className="bg-white rounded-2xl p-6 w-full h-full shadow-sm lg:hover:shadow-xl cursor-pointer lg:hover:scale-105 transition-all duration-300 ease-out border border-gray-100 lg:hover:border-[#0E58D8]/30 relative"
         onClick={handleCardClick}
       >
         <div className="flex flex-col h-full">
           {/* Header de la carte */}
-          <div className="flex-1">
-            <h3 className="font-bold text-gray-800 mb-4 text-xl lg:group-hover:text-[#0E58D8] transition-colors duration-300">
+          <div className="flex-1 min-h-0">
+            <h3 className="font-bold text-gray-800 mb-3 text-xl lg:group-hover:text-[#0E58D8] transition-colors duration-300 break-words overflow-hidden">
               {projectName}
             </h3>
-            <p className="text-gray-600 mb-8 leading-relaxed">{description}</p>
+            <p className="text-gray-600 mb-4 leading-relaxed break-words overflow-hidden">
+              {description}
+            </p>
           </div>
 
           {/* Section progression */}
-          <div className="space-y-4">
+          <div className="space-y-3 mt-auto">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-gray-700">
                 {getStatusText(clampedProgress)}

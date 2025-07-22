@@ -10,6 +10,8 @@ import {
   CheckCircle,
   Circle,
   AlertCircle,
+  ArrowDownToLine,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import { getProjectById } from "@/lib/projectsData";
@@ -18,6 +20,7 @@ import { faMedal } from "@fortawesome/free-solid-svg-icons";
 import ResourceSection from "@/components/Projects/Details/Ressources/ResourceSection";
 import MainCard from "@/components/Projects/Details/MainCard/MainCard";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 export default function ProjectDetails({
   params,
@@ -121,9 +124,12 @@ export default function ProjectDetails({
         {/* Barre de progression principale */}
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-white text-xl font-semibold">
-              Progression globale
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-white text-xl font-semibold">
+                Progression globale
+              </h2>
+              <DevelopmentBadge size="xs" />
+            </div>
             <span className="text-white font-bold text-2xl">
               {project.progress}%
             </span>
@@ -152,28 +158,59 @@ export default function ProjectDetails({
               </p>
             </MainCard>
 
-            {/* Ressources - déplacé et agrandi */}
+            {/* ===================== RESSOURCES ===================== */}
+            {/* Pour passer en dynamique, il suffira de remplacer le tableau ci-dessous par les données de l'API */}
             <MainCard
               title="Ressources"
-              icon={<FileText className="w-6 h-6 text-blue-400" />}
+              icon={<Download className="w-6 h-6 text-blue-400" />}
             >
-              <div className="space-y-4">
-                <ResourceSection
-                  title="Kick Off"
-                  icon={<FileText className="w-5 h-5 text-blue-400" />}
-                  resources={project.resources?.kickOff || []}
-                />
-                <ResourceSection
-                  title="Bootstrap"
-                  icon={<FileText className="w-5 h-5 text-blue-400" />}
-                  resources={project.resources?.bootstrap || []}
-                />
-                <ResourceSection
-                  title="Projet"
-                  icon={<FileText className="w-5 h-5 text-blue-400" />}
-                  resources={project.resources?.projet || []}
-                />
-              </div>
+              {/* Tableau statique pour les ressources, à remplacer par un fetch plus tard */}
+              {/**
+               * Pour passer en dynamique :
+               * 1. Remplacer le tableau 'ressources' par les données de l'API
+               * 2. Adapter les propriétés (nom, description, couleur, url, etc.)
+               */}
+              {(() => {
+                // Toutes les ressources sont bleues (icône et bouton)
+                const ressources = [
+                  {
+                    nom: "Guide de démarrage",
+                    description: "Documentation complète du projet",
+                  },
+                  {
+                    nom: "Template de présentation",
+                    description: "Modèle PowerPoint pour la soutenance",
+                  },
+                  {
+                    nom: "Cahier des charges",
+                    description: "Spécifications détaillées du projet",
+                  },
+                ];
+                // Pour changer la couleur, modifier ici :
+                const iconClass = "text-blue-500";
+                const buttonClass = "bg-blue-500 hover:bg-blue-600";
+                return ressources.map((res, idx) => (
+                  <div
+                    key={res.nom}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 mb-2"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Download className={`w-5 h-5 ${iconClass}`} />
+                      <div>
+                        <h4 className="font-semibold text-gray-800">
+                          {res.nom}
+                        </h4>
+                      </div>
+                    </div>
+                    <button
+                      className={`px-4 py-2 text-white rounded-lg transition-colors font-medium flex items-center gap-2 cursor-pointer ${buttonClass}`}
+                    >
+                      <ArrowDownToLine className="w-4 h-4" />
+                      Télécharger
+                    </button>
+                  </div>
+                ));
+              })()}
             </MainCard>
 
             {/* Médailles */}

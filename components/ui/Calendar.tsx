@@ -12,13 +12,20 @@ import ModalEventRegistration from "./ModalEventRegistration";
 import { useCalendarData } from "@/hooks/useCalendarData";
 import { getUserData } from "@/lib/userData";
 import { getUserIdFromToken } from "@/lib/auth";
+import AdminLoading from "@/components/admin/AdminLoading";
 
 // Ajout de la prop role
 interface CalendarProps {
-  role?: 'admin' | 'student';
+  role?: "admin" | "student";
 }
 
-type CalendarEventInput = EventInput & { id: string; extendedProps: { slots?: { start: string; end: string; user: string | null }[]; [key: string]: any } };
+type CalendarEventInput = EventInput & {
+  id: string;
+  extendedProps: {
+    slots?: { start: string; end: string; user: string | null }[];
+    [key: string]: any;
+  };
+};
 
 const Calendar: React.FC<CalendarProps> = ({ role }) => {
   const { 
@@ -34,8 +41,10 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     unregisterFromEvent, 
     checkUserRegistration 
   } = useCalendarData();
-  
-  const [userRole, setUserRole] = useState<'admin' | 'advisor' | 'student' | null>(null);
+
+  const [userRole, setUserRole] = useState<
+    "admin" | "advisor" | "student" | null
+  >(null);
   const [permissions, setPermissions] = useState({
     canCreateEvents: false,
     canEditEvents: false,
@@ -58,14 +67,16 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
 
         // On n'a besoin que de getUserData, qui gère déjà l'agrégation des données
         const fullUserData = await getUserData(userId);
-        const role = fullUserData.role || 'student';
-        
+        const role = fullUserData.role || "student";
+
         // Convertir le rôle en format attendu
-        const userRole = ['admin', 'advisor'].includes(role.toLowerCase()) ? (role.toLowerCase() as 'admin' | 'advisor') : 'student';
+        const userRole = ["admin", "advisor"].includes(role.toLowerCase())
+          ? (role.toLowerCase() as "admin" | "advisor")
+          : "student";
         setUserRole(userRole);
-        
+
         // Définir les permissions selon le rôle
-        if (role === 'admin' || role === 'advisor') {
+        if (role === "admin" || role === "advisor") {
           setPermissions({
             canCreateEvents: true,
             canEditEvents: true,
@@ -83,9 +94,9 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           });
         }
       } catch (error) {
-        console.error('Erreur lors du chargement du rôle:', error);
+        console.error("Erreur lors du chargement du rôle:", error);
         // Par défaut, considérer comme étudiant
-        setUserRole('student');
+        setUserRole("student");
         setPermissions({
           canCreateEvents: false,
           canEditEvents: false,
@@ -117,7 +128,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   useEffect(() => {
     if (role) {
       setUserRole(role);
-      if (role === 'admin') {
+      if (role === "admin") {
         setPermissions({
           canCreateEvents: true,
           canEditEvents: true,
@@ -142,13 +153,18 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   console.log("userRole", userRole, "permissions", permissions);
   // Forçage temporaire pour test admin
   // Sélecteur de rôle pour test front
-  const [roleSelector, setRoleSelector] = useState<'admin' | 'advisor' | 'student'>('admin');
+  const [roleSelector, setRoleSelector] = useState<
+    "admin" | "advisor" | "student"
+  >("admin");
   // Si la prop role est fournie, on l'utilise, sinon on prend le sélecteur ou la détection auto
   const effectiveRole = role || roleSelector || userRole;
-  const isAdmin = effectiveRole === 'admin' || effectiveRole === 'advisor';
-  const isStudent = effectiveRole === 'student';
+  const isAdmin = effectiveRole === "admin" || effectiveRole === "advisor";
+  const isStudent = effectiveRole === "student";
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalData, setModalData] = useState<{start: string, end: string} | null>(null);
+  const [modalData, setModalData] = useState<{
+    start: string;
+    end: string;
+  } | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<any | null>(null);
   const [eventToDelete, setEventToDelete] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string } | null>(null);
@@ -163,7 +179,10 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
       let calendarEvents = backendEvents.map((event: any) => {
         // Par défaut, on affiche l'événement sur toute la plage
         let start = new Date(event.event_datetime);
-        let end = new Date(new Date(event.event_datetime).getTime() + event.duration_minutes * 60000);
+        let end = new Date(
+          new Date(event.event_datetime).getTime() +
+            event.duration_minutes * 60000
+        );
         // Si étudiant et inscrit à un slot, on rétrécit l'affichage
         if (isStudent && event.slots && Array.isArray(event.slots)) {
           const userId = getUserIdFromToken();
@@ -193,26 +212,29 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   // Fonction pour obtenir la couleur selon le type d'événement
   const getEventColor = (eventType: string) => {
     switch (eventType) {
-      case 'follow-up':
-        return '#4ade80'; // vert
-      case 'kick-off':
-        return '#f59e0b'; // orange
-      case 'keynote':
-        return '#8b5cf6'; // violet
-      case 'hub-talk':
-        return '#06b6d4'; // cyan
-      case 'other':
-        return '#60a5fa'; // bleu
+      case "follow-up":
+        return "#4ade80"; // vert
+      case "kick-off":
+        return "#f59e0b"; // orange
+      case "keynote":
+        return "#8b5cf6"; // violet
+      case "hub-talk":
+        return "#06b6d4"; // cyan
+      case "other":
+        return "#60a5fa"; // bleu
       default:
-        return '#6b7280'; // gris
+        return "#6b7280"; // gris
     }
   };
 
   // Ouvre la modale pour créer un événement
   const openModal = (start: Date, end: Date) => {
     // Format pour input type="datetime-local" en heure locale
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    const toInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const toInput = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+        d.getHours()
+      )}:${pad(d.getMinutes())}`;
     setModalData({ start: toInput(start), end: toInput(end) });
     setModalOpen(true);
   };
@@ -232,7 +254,17 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   };
 
   // Génération de créneaux lors de la création d'un événement (créneaux de 30 min par défaut)
-  const handleModalSubmit = ({ title, start, end, slotDuration }: { title: string; start: string; end: string; slotDuration: number }) => {
+  const handleModalSubmit = ({
+    title,
+    start,
+    end,
+    slotDuration,
+  }: {
+    title: string;
+    start: string;
+    end: string;
+    slotDuration: number;
+  }) => {
     // Générer les créneaux selon la durée choisie
     const slots: { start: string; end: string; user: string | null }[] = [];
     const startDate = new Date(start);
@@ -242,7 +274,11 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
       const slotStart = new Date(current);
       const slotEnd = new Date(current.getTime() + slotDuration * 60000);
       if (slotEnd > endDate) break;
-      slots.push({ start: slotStart.toISOString(), end: slotEnd.toISOString(), user: null });
+      slots.push({
+        start: slotStart.toISOString(),
+        end: slotEnd.toISOString(),
+        user: null,
+      });
       current = slotEnd;
     }
     setEvents((prev) => [
@@ -266,6 +302,24 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     const eventId = Number(clickInfo.event.id);
     const event = backendEvents.find(e => e.id === eventId);
 
+    if (isAdmin) {
+      // On cherche l'événement complet pour récupérer les slots
+      const event = events.find((e) => String(e.id) === String(eventId));
+      setEventToDelete({
+        id: clickInfo.event.id,
+        title: clickInfo.event.title,
+        start: clickInfo.event.start ?? undefined,
+        end: clickInfo.event.end ?? undefined,
+        slots:
+          event && event.extendedProps && event.extendedProps.slots
+            ? event.extendedProps.slots
+            : [],
+      });
+      setDeleteModalOpen(true);
+      return;
+    }
+    // Pour les étudiants, on cherche dans backendEvents
+    // En mode test front, on cherche dans events (événements front + back)
     if (!event) {
       console.error("Aucun événement trouvé pour cet id", eventId);
       return;
@@ -325,6 +379,18 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
       alert("La mise à jour de l'événement a échoué. L'événement va être replacé à sa position d'origine.");
       dropInfo.revert(); // Annuler le changement visuel en cas d'erreur
     }
+
+    setEvents((prev) =>
+      prev.map((e) =>
+        e.id === dropInfo.event.id
+          ? {
+              ...e,
+              start: dropInfo.event.start,
+              end: dropInfo.event.end,
+            }
+          : e
+      )
+    );
   };
 
   // Afficher un message de chargement ou d'erreur
@@ -332,10 +398,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     return (
       <div className="bg-white rounded-lg shadow p-2 relative">
         <div className="flex items-center justify-center h-[500px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Chargement des événements...</p>
-          </div>
+          <AdminLoading message="Chargement des événements..." />
         </div>
       </div>
     );
@@ -356,13 +419,12 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
 
   return (
     <div className="bg-white rounded-lg shadow p-2 relative">
-      
       <FullCalendar
         ref={calendarRef}
         plugins={[timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
         locale={frLocale}
-        headerToolbar={{ left: 'prev today', center: 'title', right: 'next' }}
+        headerToolbar={{ left: "prev today", center: "title", right: "next" }}
         customButtons={{}}
         height={500}
         slotMinTime="07:00:00"
@@ -370,9 +432,9 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
         allDaySlot={false}
         events={events}
         nowIndicator={true}
-        dayHeaderFormat={{ weekday: 'short', day: 'numeric', month: 'short' }}
-        slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-        eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+        dayHeaderFormat={{ weekday: "short", day: "numeric", month: "short" }}
+        slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+        eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
         expandRows={true}
         selectable={permissions.canCreateEvents}
         editable={permissions.canEditEvents}
@@ -414,6 +476,85 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           onRegister={registerToEvent}
           onUnregister={unregisterFromEvent}
         />
+
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center ${
+            deleteModalOpen ? "" : "hidden"
+          }`}
+          style={{ background: "rgba(0,0,0,0.3)" }}
+        >
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md sm:w-[700px] max-w-[98vw] shadow-lg relative overflow-x-hidden flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-2xl font-bold">Détail de l'événement</h2>
+              <button
+                className="text-gray-400 hover:text-gray-700 text-2xl leading-none rounded-xl p-1 transition-all duration-200 hover:bg-gray-200"
+                onClick={() => setDeleteModalOpen(false)}
+              >
+                &times;
+              </button>
+            </div>
+            <p className="mb-1">
+              Titre :{" "}
+              <span className="font-semibold">{eventToDelete.title}</span>
+            </p>
+            <p className="mb-4 text-base text-gray-500">
+              {eventToDelete.start && eventToDelete.end
+                ? `${new Date(
+                    eventToDelete.start
+                  ).toLocaleString()} - ${new Date(
+                    eventToDelete.end
+                  ).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}`
+                : null}
+            </p>
+            {/* Liste des créneaux/inscrits si slots présents */}
+            {Array.isArray(eventToDelete.slots) &&
+              eventToDelete.slots.length > 0 && (
+                <div className="flex-1 overflow-y-auto flex flex-col gap-2 mb-4 pr-1">
+                  {eventToDelete.slots.map((slot: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 bg-blue-50 rounded-xl px-5 py-2"
+                    >
+                      <span className="flex-1 text-sm">
+                        {new Date(slot.start).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}{" "}
+                        -{" "}
+                        {new Date(slot.end).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      {slot.user ? (
+                        <span className="text-xs text-blue-700 font-semibold">
+                          {slot.user}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Libre</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            <button
+              className="mt-2 px-5 py-2 bg-red-400 text-white rounded-xl font-semibold shadow-sm hover:bg-red-500 hover:shadow-lg transition-all duration-200 self-end text-lg"
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "Voulez-vous vraiment supprimer cet événement ?"
+                  )
+                )
+                  handleDeleteEvent();
+              }}
+            >
+              Supprimer l'événement
+            </button>
+          </div>
+        </div>
       )}
       {/* Style personnalisé FullCalendar */}
       <style jsx global>{`
@@ -437,7 +578,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
         }
         .fc .fc-button {
           background: #e6f0ff;
-          color: #1971FF;
+          color: #1971ff;
           border: none;
           border-radius: 9999px;
           font-size: 1rem;
@@ -448,24 +589,24 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           transition: background 0.2s, color 0.2s;
         }
         .fc .fc-button:hover {
-          background: #1971FF;
+          background: #1971ff;
           color: #fff;
         }
         .fc .fc-button:focus {
           outline: none;
           box-shadow: none;
           background: #e6f0ff;
-          color: #1971FF;
+          color: #1971ff;
         }
         .fc .fc-button:active {
-          background: #1971FF;
+          background: #1971ff;
           color: #fff;
         }
         .fc .fc-button.fc-today-button {
           margin-right: 1.5rem;
           margin-left: 0.5rem;
           background: #e6f0ff;
-          color: #1971FF;
+          color: #1971ff;
           border-radius: 9999px;
           font-size: 1rem;
           padding: 0.25rem 2.2rem;
@@ -478,25 +619,25 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           justify-content: center;
         }
         .fc .fc-button.fc-today-button:hover {
-          background: #1971FF;
+          background: #1971ff;
           color: #fff;
         }
         .fc .fc-button.fc-today-button:focus {
           outline: none;
           box-shadow: none;
           background: #e6f0ff;
-          color: #1971FF;
+          color: #1971ff;
         }
         .fc .fc-button.fc-today-button:disabled {
           background: #e6f0ff !important;
-          color: #1971FF !important;
+          color: #1971ff !important;
           opacity: 1 !important;
           cursor: pointer !important;
         }
         .fc .fc-toolbar-title {
           font-size: 1.25rem;
           font-weight: bold;
-          color: #1971FF;
+          color: #1971ff;
           text-align: center;
           width: 100%;
         }
@@ -532,11 +673,11 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           border-radius: 8px;
         }
         .fc .fc-timegrid-body::-webkit-scrollbar-thumb:hover {
-          background: #1971FF;
+          background: #1971ff;
         }
       `}</style>
     </div>
   );
 };
 
-export default Calendar; 
+export default Calendar;

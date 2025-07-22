@@ -29,6 +29,13 @@ import { getUserIdFromToken } from "@/lib/auth";
 import { getUserProfileData } from "@/lib/userData";
 import AdminLoading from "@/components/admin/AdminLoading";
 
+// Type générique pour les promotions pour éviter les conflits
+interface PromotionData {
+  id: string;
+  name: string;
+  created_at?: string;
+}
+
 interface EditFormData {
   firstName: string;
   lastName: string;
@@ -112,6 +119,15 @@ const EditUserPage = () => {
     error: promotionsError,
   } = usePromotionsData();
 
+  // Fonction pour récupérer l'ID de promotion par nom
+  const getPromotionIdByName = (promotionName: string): string => {
+    if (!promotions || !promotionName) return "";
+    const promotion = promotions.find(
+      (p: { id: string; name: string }) => p.name === promotionName
+    );
+    return promotion ? promotion.id : "";
+  };
+
   // Récupérer le rôle de l'utilisateur connecté
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -165,6 +181,23 @@ const EditUserPage = () => {
           ? await studentsResponse.json()
           : { success: false, data: null };
 
+        // Récupérer toutes les promotions pour convertir l'ID en nom
+        const promotionsResponse = await fetch(
+          "http://localhost:3004/promotions"
+        );
+        const promotionsData = promotionsResponse.ok
+          ? await promotionsResponse.json()
+          : { success: false, data: [] };
+
+        // Fonction pour récupérer le nom de promotion par ID
+        const getPromotionNameById = (promotionId: string): string => {
+          if (!promotionsData.success || !promotionId) return "";
+          const promotion = promotionsData.data.find(
+            (p: { id: string; name: string }) => p.id === promotionId
+          );
+          return promotion ? promotion.name : "";
+        };
+
         // Récupérer les données conseiller si applicable
         const advisorsResponse = await fetch(
           `http://localhost:3004/advisor/profile/${userId}`
@@ -199,7 +232,12 @@ const EditUserPage = () => {
           roles_user: profileData.data.roles_user,
           profileImage: profileData.data.profileImage,
           ...(studentsData.success &&
-            studentsData.data && { student: studentsData.data }),
+            studentsData.data && {
+              student: {
+                ...studentsData.data,
+                promotion: getPromotionNameById(studentsData.data.id_promotion),
+              },
+            }),
           ...(advisorsData.success &&
             advisorsData.data && {
               advisor: {
@@ -501,7 +539,7 @@ const EditUserPage = () => {
         if (userData?.student) {
           // Mettre à jour l'étudiant existant
           const studentUpdateData = {
-            promotion: formData.promotion,
+            id_promotion: getPromotionIdByName(formData.promotion || ""),
             major: formData.major,
           };
 
@@ -527,7 +565,7 @@ const EditUserPage = () => {
           // Créer un nouvel étudiant
           const studentCreateData = {
             id_user_profile: userData?.id,
-            promotion: formData.promotion,
+            id_promotion: getPromotionIdByName(formData.promotion || ""),
             major: formData.major,
           };
 
@@ -830,7 +868,7 @@ const EditUserPage = () => {
             {formData.role === "student" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <PromotionDropdown
-                  promotions={promotions}
+                  promotions={promotions as any}
                   selectedPromotion={formData.promotion || ""}
                   onPromotionChange={handlePromotionChange}
                   loading={promotionsLoading}

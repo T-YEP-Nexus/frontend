@@ -15,32 +15,32 @@ interface HeaderProps {
   description?: string;
 }
 
-const initialNotifications: Notification[] = [
-  {
-    id: "1",
-    title: "Nouveau message",
-    message: "Vous avez reçu un nouveau message !",
-    date: "2024-05-01 10:00",
-    read: false,
-  },
-  {
-    id: "2",
-    title: "Mise à jour",
-    message: "Une nouvelle version est disponible.",
-    date: "2024-05-01 09:00",
-    read: true,
-  },
-  {
-    id: "3",
-    title: "Rappel",
-    message: "N'oubliez pas la réunion à 15h.",
-    date: "2024-04-30 18:00",
-    read: false,
-  },
-];
+// const initialNotifications: Notification[] = [
+//   {
+//     id: "1",
+//     title: "Nouveau message",
+//     message: "Vous avez reçu un nouveau message !",
+//     date: "2024-05-01 10:00",
+//     read: false,
+//   },
+//   {
+//     id: "2",
+//     title: "Mise à jour",
+//     message: "Une nouvelle version est disponible.",
+//     date: "2024-05-01 09:00",
+//     read: true,
+//   },
+//   {
+//     id: "3",
+//     title: "Rappel",
+//     message: "N'oubliez pas la réunion à 15h.",
+//     date: "2024-04-30 18:00",
+//     read: false,
+//   },
+// ];
 
 export default function Header({ title = "", description = "" }: HeaderProps) {
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  //   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [open, setOpen] = useState(false);
   const bellRef = useRef<HTMLButtonElement>(null);
   const notifBoxRef = useRef<HTMLDivElement>(null);
@@ -67,21 +67,21 @@ export default function Header({ title = "", description = "" }: HeaderProps) {
     };
   }, [open]);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Marquer comme lue
-  const handleNotificationClick = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((notif) =>
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
-  };
+  //   const handleNotificationClick = (id: string) => {
+  //     setNotifications((prev) =>
+  //       prev.map((notif) =>
+  //         notif.id === id ? { ...notif, read: true } : notif
+  //       )
+  //     );
+  //   };
 
   // Supprimer une notification
-  const handleRemoveNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
-  };
+  //   const handleRemoveNotification = (id: string) => {
+  //     setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+  //   };
 
   return (
     <div className="flex justify-between items-center mb-8 sm:mb-12 relative">
@@ -94,21 +94,20 @@ export default function Header({ title = "", description = "" }: HeaderProps) {
         <p className="text-white/80 text-base sm:text-lg">{description}</p>
       </div>
       <div className="flex items-center gap-4 sm:gap-6">
-        <button className="p-2 sm:p-3 cursor-pointer lg:hover:bg-white/10 text-white rounded-xl transition-all duration-300">
+        {/* <button className="p-2 sm:p-3 cursor-pointer lg:hover:bg-white/10 text-white rounded-xl transition-all duration-300">
           <MoreVertical size={20} className="sm:w-6 sm:h-6" />
-        </button>
+        </button> */}
         <div className="relative">
           <button
             ref={bellRef}
             className="p-2 sm:p-3 cursor-pointer lg:hover:bg-white/10 text-white rounded-xl transition-all duration-300 relative"
             onClick={() => setOpen((o) => !o)}
           >
-            <Bell size={20} className="sm:w-6 sm:h-6" />
-            {unreadCount > 0 && (
+            {/* <Bell size={20} className="sm:w-6 sm:h-6" /> */}
+            {/* {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
                 {unreadCount}
-              </span>
-            )}
+              </span> */}
           </button>
           {open && (
             <>
@@ -119,11 +118,11 @@ export default function Header({ title = "", description = "" }: HeaderProps) {
                 className="absolute right-0 mt-2 z-50 shadow-lg rounded-lg overflow-hidden"
                 style={{ minWidth: 320 }}
               >
-                <NotificationList
-                  notifications={notifications}
-                  onNotificationClick={handleNotificationClick}
+                {/* <NotificationList
+                  notifications={[]}
+                  onNotificationClick={() => {}}
                   onRemoveNotification={handleRemoveNotification}
-                />
+                /> */}
               </div>
             </>
           )}
