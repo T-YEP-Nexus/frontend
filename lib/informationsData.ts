@@ -18,6 +18,7 @@ export interface Profile {
 
 export interface InformationWithCreator extends Information {
   creator_full_name?: string;
+  creator_role?: string;
 }
 
 // Base config
@@ -75,19 +76,24 @@ export async function getActiveInformations(): Promise<InformationWithCreator[]>
         const profileResult = await profileRes.json();
 
         let fullName = "Inconnu";
+        let role = undefined;
+
         if (profileResult.success && profileResult.data) {
           fullName = `${profileResult.data.first_name} ${profileResult.data.last_name}`;
+          role = profileResult.data.roles_user;
         }
 
         return {
           ...info,
           creator_full_name: fullName,
+          creator_role: role,
         };
       } catch (err) {
         console.error(`Erreur lors de la récupération du profil pour l’ID ${info.id_creator}:`, err);
         return {
           ...info,
           creator_full_name: "Inconnu",
+          creator_role: undefined,
         };
       }
     })

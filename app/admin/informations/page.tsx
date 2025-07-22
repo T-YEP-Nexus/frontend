@@ -7,30 +7,31 @@ import {
   Trash2,
   MessageSquare,
   User,
-  Calendar,
-  Search,
-  Filter,
-  MoreVertical,
-  ChevronDown,
-  Loader2,
-  Users,
+  Calendar
+  // Search,
+  // Filter,
+  // MoreVertical,
+  // ChevronDown,
+  // Loader2,
+  // Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/Header/Header";
 import AdminLoading from "@/components/admin/AdminLoading";
 import AdminButton from "@/components/admin/buttons/AdminButton";
-import AdminStatsCards, {
-  createInformationsStats,
-} from "@/components/admin/AdminStatsCards";
+// import AdminStatsCards, {
+//   createInformationsStats,
+// } from "@/components/admin/AdminStatsCards";
 import AdminFilterBar from "@/components/admin/AdminFilterBar";
 import {
   getInformations,
-  createInformation,
-  updateInformation,
+  // createInformation,
+  // updateInformation,
   deleteInformation,
-  toggleInformationStatus,
+  // toggleInformationStatus,
   type Information,
+  InformationWithCreator,
 } from "@/lib/informationsData";
 
 interface User {
@@ -44,15 +45,15 @@ const INITIAL_DISPLAY_COUNT = 6;
 
 export default function AdminInformations() {
   const router = useRouter();
-  const [informations, setInformations] = useState<Information[]>([]);
+  const [informations, setInformations] = useState<InformationWithCreator[]>([]);
   const [filteredInformations, setFilteredInformations] = useState<
-    Information[]
+    InformationWithCreator[]
   >([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [informationToDelete, setInformationToDelete] =
-    useState<Information | null>(null);
+    useState<InformationWithCreator | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [displayedCount, setDisplayedCount] = useState(INITIAL_DISPLAY_COUNT);
@@ -82,10 +83,10 @@ export default function AdminInformations() {
     };
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const data = getInformations();
+      const data = await getInformations();
       setInformations(data);
       setFilteredInformations(data);
     } catch (error) {
@@ -103,17 +104,17 @@ export default function AdminInformations() {
       filtered = filtered.filter(
         (info) =>
           info.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          info.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          info.author.toLowerCase().includes(searchTerm.toLowerCase())
+          info.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          info.creator_full_name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Filtre par statut (supprimé car plus de isActive)
-    // if (statusFilter !== "all") {
-    //   filtered = filtered.filter((info) =>
-    //     statusFilter === "active" ? info.isActive : !info.isActive
-    //   );
-    // }
+    // Sort by most recent (updated_at or created_at)
+    filtered = filtered.slice().sort((a, b) => {
+      const dateA = new Date(a.updated_at || a.created_at).getTime();
+      const dateB = new Date(b.updated_at || b.created_at).getTime();
+      return dateB - dateA;
+    });
 
     setFilteredInformations(filtered);
     setDisplayedCount(INITIAL_DISPLAY_COUNT); // Reset le compteur quand les filtres changent
@@ -124,15 +125,13 @@ export default function AdminInformations() {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (informationToDelete) {
       try {
-        const success = deleteInformation(informationToDelete.id);
-        if (success) {
-          setInformations((prev) =>
-            prev.filter((info) => info.id !== informationToDelete.id)
-          );
-        }
+        await deleteInformation(String(informationToDelete.id));
+        setInformations((prev) =>
+          prev.filter((info) => info.id !== informationToDelete.id)
+        );
       } catch (error) {
         console.error("Erreur lors de la suppression:", error);
       }
@@ -269,21 +268,21 @@ export default function AdminInformations() {
                             </h3>
                             <div className="flex flex-wrap gap-2">
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 whitespace-nowrap">
-                                {information.authorRole === "admin"
+                                {information.creator_role === "admin"
                                   ? "Admin"
-                                  : information.authorRole === "advisor"
+                                  : information.creator_role === "advisor"
                                   ? "Conseiller"
                                   : "Externe"}
                               </span>
                             </div>
                           </div>
                           <p className="text-blue-800 mb-3 leading-relaxed break-words">
-                            {information.content}
+                            {information.message}
                           </p>
                           <div className="flex items-center gap-2 text-sm text-blue-600">
                             <Calendar size={16} />
                             <span className="whitespace-nowrap">
-                              {formatDate(information.updatedAt)}
+                              {formatDate(information.updated_at)}
                             </span>
                           </div>
                         </div>
