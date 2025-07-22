@@ -13,7 +13,10 @@ Réalisation d'une plateforme web regroupant les outils déployés par les écol
 
 
 ## Commande docker
-Il est nécessaire d'avoir le docker-compose.yml à la racine. Dans le terminal à cette racine, il faut build le docker via la commande : ```docker-compose build``` et enfin, lancer le docker via la commande : ```docker-compose up```.
+Il est nécessaire d'avoir le docker-compose.yml à la racine. Dans le terminal à cette racine, il faut build le docker via la commande : ```docker-compose build``` et enfin, lancer le docker via la commande : 
+```bash
+docker-compose up
+```
 
 ## Commande lancement local
 Utilisé la commande suivante : ```npm start```  
