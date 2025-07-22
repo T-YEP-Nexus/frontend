@@ -5,7 +5,7 @@ Réalisation d'une plateforme web regroupant les outils déployés par les écol
 ### Back End
 * **Next.js** : Gère à la fois le front end et le back end(notamment les routes API) dans un seul projet. De plus le front end étant en React, la gestion par Next.js est plus pointu. [Visitez la documentation](https://nextjs.org/docs)
 * **Supabase** : Base de données à la fois moderne et gratuite elle reste une bonne alternative à Firebase. Orienté vers JavaScript/TypeScript. [Visitez la documentation](https://supabase.com/docs)
-* **Node.js** : Permet le fonctionnement de Next.js, mais gère aussi le côté client pour Supabase. Il est aussi nécessaire pour run l'application Next sur un serveur. [Visitez la document](https://nodejs.org/docs/latest/api/)
+* **Node.js** : Permet le fonctionnement de Next.js, mais gère aussi le côté client pour Supabase. Il est aussi nécessaire pour run l'application Next sur un serveur. [Visitez la documentation](https://nodejs.org/docs/latest/api/)
 
 ### Front End
 * **TypeScript** : Meilleure expérience développeur notamment via une auto-complétion et une détection d'erreurs à l'écriture. Souvent utilisé dans des projets modernes avec la présence de React. L'avantage du typage statique augmente la fiabilité du code. [Visitez la documentation](https://www.typescriptlang.org/docs/)
