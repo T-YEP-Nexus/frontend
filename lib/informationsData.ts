@@ -1,137 +1,144 @@
 export interface Information {
-  id: string;
+  id: number;
   title: string;
-  content: string;
-  author: string;
-  authorRole: 'admin' | 'advisor' | 'external';
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  message: string;
+  id_creator: number;
+  created_at: string;
+  updated_at: string;
 }
 
-// Données statiques pour l'instant
-const informationsData: Information[] = [
-  {
-    id: '1',
-    title: 'Bienvenue sur la plateforme T-YEP',
-    content: 'Nous sommes ravis de vous accueillir sur notre plateforme dédiée aux projets étudiants. Découvrez les opportunités qui s\'offrent à vous et commencez votre parcours dès aujourd\'hui. Cette plateforme vous permettra de gérer vos projets, collaborer avec vos équipes et suivre votre progression académique.',
-    author: 'Équipe T-YEP',
-    authorRole: 'admin',
-    isActive: true,
-    createdAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-01-15T10:00:00Z'
-  },
-  {
-    id: '2',
-    title: 'Nouveaux projets disponibles pour la promotion 2024',
-    content: 'Plusieurs nouveaux projets ont été ajoutés à la plateforme pour la promotion 2024. Ces projets couvrent différents domaines : développement web, intelligence artificielle, cybersécurité et bien plus encore. N\'hésitez pas à consulter les détails et à postuler pour ceux qui vous intéressent. Les équipes seront constituées de 3 à 5 étudiants selon les projets.',
-    author: 'Marie Dubois',
-    authorRole: 'advisor',
-    isActive: true,
-    createdAt: '2024-01-20T14:30:00Z',
-    updatedAt: '2024-01-20T14:30:00Z'
-  },
-  {
-    id: '3',
-    title: 'Maintenance prévue - Weekend du 27-28 janvier',
-    content: 'Une maintenance de la plateforme est prévue le weekend prochain (27-28 janvier 2024). Les services pourront être temporairement indisponibles entre 22h00 le samedi et 06h00 le dimanche. Cette maintenance permettra d\'améliorer les performances et d\'ajouter de nouvelles fonctionnalités. Nous vous remercions de votre compréhension.',
-    author: 'Équipe Technique',
-    authorRole: 'admin',
-    isActive: true,
-    createdAt: '2024-01-25T09:15:00Z',
-    updatedAt: '2024-01-25T09:15:00Z'
-  },
-  {
-    id: '4',
-    title: 'Rappel : Validation des émargements',
-    content: 'N\'oubliez pas de valider votre émargement avant 17h15 chaque jour. Toute absence non justifiée sera comptabilisée dans votre dossier. Les justificatifs doivent être déposés dans les 48h suivant l\'absence. Pour toute question, contactez votre conseiller pédagogique.',
-    author: 'Jean Martin',
-    authorRole: 'advisor',
-    isActive: true,
-    createdAt: '2024-01-22T11:45:00Z',
-    updatedAt: '2024-01-22T11:45:00Z'
-  },
-  {
-    id: '5',
-    title: 'Réunion pédagogique - Mardi 30 janvier à 14h',
-    content: 'Une réunion pédagogique est prévue mardi 30 janvier à 14h en salle A101. Cette réunion sera l\'occasion de faire le point sur les projets en cours et de répondre à vos questions. Tous les étudiants et conseillers sont invités à y participer. Ordre du jour : bilan des projets, planning des soutenances, questions diverses.',
-    author: 'Sophie Bernard',
-    authorRole: 'admin',
-    isActive: true,
-    createdAt: '2024-01-26T16:20:00Z',
-    updatedAt: '2024-01-26T16:20:00Z'
-  },
-  {
-    id: '6',
-    title: 'Ancienne annonce de test',
-    content: 'Cette annonce n\'est plus active et ne devrait pas être visible côté client.',
-    author: 'Test User',
-    authorRole: 'external',
-    isActive: false,
-    createdAt: '2024-01-10T11:00:00Z',
-    updatedAt: '2024-01-10T11:00:00Z'
-  },
-  {
-    id: '7',
-    title: 'Nouveaux outils de collaboration disponibles',
-    content: 'De nouveaux outils de collaboration ont été ajoutés à la plateforme : partage de documents en temps réel, chat intégré pour les équipes, et système de suivi des tâches. Ces outils vous permettront de mieux organiser votre travail en équipe et de suivre l\'avancement de vos projets. Un tutoriel est disponible dans la section "Aide".',
-    author: 'Pierre Durand',
-    authorRole: 'advisor',
-    isActive: true,
-    createdAt: '2024-01-28T13:10:00Z',
-    updatedAt: '2024-01-28T13:10:00Z'
+export interface Profile {
+  id: number;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  address: string;
+  is_active: boolean;
+}
+
+export interface InformationWithCreator extends Information {
+  creator_full_name?: string;
+}
+
+// Base config
+const PROFILE_SERVICE_BASE_URL = 'http://localhost:3004';
+const REQUEST_TIMEOUT = 5000;
+
+// Utility: fetch with timeout
+const fetchWithTimeout = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
   }
-];
-
-// Fonctions pour gérer les données (simulation d'API)
-export const getInformations = (): Information[] => {
-  return [...informationsData];
 };
 
-export const getActiveInformations = (): Information[] => {
-  return informationsData.filter(info => info.isActive);
+// ======================= PUBLIC API FUNCTIONS =======================
+
+// GET all active informations (e.g., to filter client-side)
+export const getInformations = async (): Promise<Information[]> => {
+  const res = await fetchWithTimeout(`${PROFILE_SERVICE_BASE_URL}/informations`);
+  const result = await res.json();
+  if (!result.success) throw new Error(result.message || "Failed to fetch informations.");
+  return result.data;
 };
 
-export const getInformationById = (id: string): Information | undefined => {
-  return informationsData.find(info => info.id === id);
+// GET active-only (client-side filtering)
+export async function getActiveInformations(): Promise<InformationWithCreator[]> {
+  const response = await fetch(`${PROFILE_SERVICE_BASE_URL}/informations`);
+
+  if (!response.ok) {
+    throw new Error("Erreur lors du chargement des informations");
+  }
+
+  const result = await response.json();
+  const data = result.data;
+
+  const enriched = await Promise.all(
+    data.map(async (info: any): Promise<InformationWithCreator> => {
+      try {
+        const profileRes = await fetch(`${PROFILE_SERVICE_BASE_URL}/profile/${info.id_creator}`);
+        const profileResult = await profileRes.json();
+
+        let fullName = "Inconnu";
+        if (profileResult.success && profileResult.data) {
+          fullName = `${profileResult.data.first_name} ${profileResult.data.last_name}`;
+        }
+
+        return {
+          ...info,
+          creator_full_name: fullName,
+        };
+      } catch (err) {
+        console.error(`Erreur lors de la récupération du profil pour l’ID ${info.id_creator}:`, err);
+        return {
+          ...info,
+          creator_full_name: "Inconnu",
+        };
+      }
+    })
+  );
+
+  return enriched;
+}
+
+// GET by ID
+export const getInformationById = async (id: string): Promise<Information | null> => {
+  const res = await fetchWithTimeout(`${PROFILE_SERVICE_BASE_URL}/information/${id}`);
+  const result = await res.json();
+  if (!result.success) return null;
+  return result.data;
 };
 
-export const createInformation = (information: Omit<Information, 'id' | 'createdAt' | 'updatedAt'>): Information => {
-  const newInformation: Information = {
-    ...information,
-    id: Date.now().toString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
+// CREATE
+export const createInformation = async (
+  info: Omit<Information, 'id' | 'created_at' | 'updated_at'>
+): Promise<Information> => {
+  const res = await fetchWithTimeout(`${PROFILE_SERVICE_BASE_URL}/information`, {
+    method: 'POST',
+    body: JSON.stringify(info),
+  });
 
-  informationsData.push(newInformation);
-  return newInformation;
+  const result = await res.json();
+  if (!result.success) throw new Error(result.message || "Failed to create information.");
+  return result.data;
 };
 
-export const updateInformation = (id: string, updates: Partial<Omit<Information, 'id' | 'createdAt'>>): Information | null => {
-  const index = informationsData.findIndex(info => info.id === id);
-  if (index === -1) return null;
+// UPDATE
+export const updateInformation = async (
+  id: string,
+  updates: Partial<Omit<Information, 'id' | 'created_at' | 'updated_at'>>
+): Promise<Information> => {
+  const res = await fetchWithTimeout(`${PROFILE_SERVICE_BASE_URL}/information/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
 
-  informationsData[index] = {
-    ...informationsData[index],
-    ...updates,
-    updatedAt: new Date().toISOString()
-  };
-
-  return informationsData[index];
+  const result = await res.json();
+  if (!result.success) throw new Error(result.message || "Failed to update information.");
+  return result.data;
 };
 
-export const deleteInformation = (id: string): boolean => {
-  const index = informationsData.findIndex(info => info.id === id);
-  if (index === -1) return false;
+// DELETE
+export const deleteInformation = async (id: string): Promise<void> => {
+  const res = await fetchWithTimeout(`${PROFILE_SERVICE_BASE_URL}/information/${id}`, {
+    method: 'DELETE',
+  });
 
-  informationsData.splice(index, 1);
-  return true;
-};
-
-export const toggleInformationStatus = (id: string): Information | null => {
-  const information = getInformationById(id);
-  if (!information) return null;
-
-  return updateInformation(id, { isActive: !information.isActive });
+  const result = await res.json();
+  if (!result.success) throw new Error(result.message || "Failed to delete information.");
 };
