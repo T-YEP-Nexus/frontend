@@ -167,7 +167,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   } | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<any | null>(null);
-  const [eventToDelete, setEventToDelete] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string } | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string; slots?: any[] } | null>(null);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string; event_type?: string; description?: string } | null>(null);
   const [isUserRegistered, setIsUserRegistered] = useState(false);
@@ -468,93 +468,97 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
         />
       )}
       {isStudent && selectedEvent && (
-        <ModalEventRegistration
-          open={showRegistrationModal}
-          onClose={() => setShowRegistrationModal(false)}
-          event={selectedEvent}
-          isRegistered={isUserRegistered}
-          onRegister={registerToEvent}
-          onUnregister={unregisterFromEvent}
-        />
+        <>
+          <ModalEventRegistration
+            open={showRegistrationModal}
+            onClose={() => setShowRegistrationModal(false)}
+            event={selectedEvent}
+            isRegistered={isUserRegistered}
+            onRegister={registerToEvent}
+            onUnregister={unregisterFromEvent}
+          />
 
-        <div
-          className={`fixed inset-0 z-50 flex items-center justify-center ${
-            deleteModalOpen ? "" : "hidden"
-          }`}
-          style={{ background: "rgba(0,0,0,0.3)" }}
-        >
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md sm:w-[700px] max-w-[98vw] shadow-lg relative overflow-x-hidden flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-2xl font-bold">Détail de l'événement</h2>
-              <button
-                className="text-gray-400 hover:text-gray-700 text-2xl leading-none rounded-xl p-1 transition-all duration-200 hover:bg-gray-200"
-                onClick={() => setDeleteModalOpen(false)}
-              >
-                &times;
-              </button>
-            </div>
-            <p className="mb-1">
-              Titre :{" "}
-              <span className="font-semibold">{eventToDelete.title}</span>
-            </p>
-            <p className="mb-4 text-base text-gray-500">
-              {eventToDelete.start && eventToDelete.end
-                ? `${new Date(
-                    eventToDelete.start
-                  ).toLocaleString()} - ${new Date(
-                    eventToDelete.end
-                  ).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}`
-                : null}
-            </p>
-            {/* Liste des créneaux/inscrits si slots présents */}
-            {Array.isArray(eventToDelete.slots) &&
-              eventToDelete.slots.length > 0 && (
-                <div className="flex-1 overflow-y-auto flex flex-col gap-2 mb-4 pr-1">
-                  {eventToDelete.slots.map((slot: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="flex items-center gap-2 bg-blue-50 rounded-xl px-5 py-2"
-                    >
-                      <span className="flex-1 text-sm">
-                        {new Date(slot.start).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}{" "}
-                        -{" "}
-                        {new Date(slot.end).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                      {slot.user ? (
-                        <span className="text-xs text-blue-700 font-semibold">
-                          {slot.user}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-400">Libre</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            <button
-              className="mt-2 px-5 py-2 bg-red-400 text-white rounded-xl font-semibold shadow-sm hover:bg-red-500 hover:shadow-lg transition-all duration-200 self-end text-lg"
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "Voulez-vous vraiment supprimer cet événement ?"
-                  )
-                )
-                  handleDeleteEvent();
-              }}
+          {eventToDelete && (
+            <div
+              className={`fixed inset-0 z-50 flex items-center justify-center ${
+                deleteModalOpen ? "" : "hidden"
+              }`}
+              style={{ background: "rgba(0,0,0,0.3)" }}
             >
-              Supprimer l'événement
-            </button>
-          </div>
-        </div>
+              <div className="bg-white rounded-2xl p-6 w-full max-w-md sm:w-[700px] max-w-[98vw] shadow-lg relative overflow-x-hidden flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-2xl font-bold">Détail de l'événement</h2>
+                  <button
+                    className="text-gray-400 hover:text-gray-700 text-2xl leading-none rounded-xl p-1 transition-all duration-200 hover:bg-gray-200"
+                    onClick={() => setDeleteModalOpen(false)}
+                  >
+                    &times;
+                  </button>
+                </div>
+                <p className="mb-1">
+                  Titre :{" "}
+                  <span className="font-semibold">{eventToDelete.title}</span>
+                </p>
+                <p className="mb-4 text-base text-gray-500">
+                  {eventToDelete.start && eventToDelete.end
+                    ? `${new Date(
+                        eventToDelete.start
+                      ).toLocaleString()} - ${new Date(
+                        eventToDelete.end
+                      ).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}`
+                    : null}
+                </p>
+                {/* Liste des créneaux/inscrits si slots présents */}
+                {Array.isArray(eventToDelete.slots) &&
+                  eventToDelete.slots.length > 0 && (
+                    <div className="flex-1 overflow-y-auto flex flex-col gap-2 mb-4 pr-1">
+                      {eventToDelete.slots.map((slot: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2 bg-blue-50 rounded-xl px-5 py-2"
+                        >
+                          <span className="flex-1 text-sm">
+                            {new Date(slot.start).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}{" "}
+                            -{" "}
+                            {new Date(slot.end).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          {slot.user ? (
+                            <span className="text-xs text-blue-700 font-semibold">
+                              {slot.user}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">Libre</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                <button
+                  className="mt-2 px-5 py-2 bg-red-400 text-white rounded-xl font-semibold shadow-sm hover:bg-red-500 hover:shadow-lg transition-all duration-200 self-end text-lg"
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Voulez-vous vraiment supprimer cet événement ?"
+                      )
+                    )
+                      handleDeleteEvent();
+                  }}
+                >
+                  Supprimer l'événement
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
       {/* Style personnalisé FullCalendar */}
       <style jsx global>{`

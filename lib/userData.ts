@@ -247,8 +247,9 @@ export const getUserData = async (userId: string): Promise<UserProfile> => {
       }
     } catch (studentError) {
       console.log("Aucune donnée étudiant trouvée (comportement normal pour un non-étudiant).");
+    }
 
-      // Étape 3 : Récupérer la promotion si c'est un étudiant
+    // Étape 3 : Récupérer la promotion si c'est un étudiant
     let promotionName = "";
     if (profileData.roles_user === "student" && studentData?.id_promotion) {
       try {
