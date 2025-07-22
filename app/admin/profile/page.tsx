@@ -79,6 +79,14 @@ const AdminProfilePage = () => {
     width: 0,
   });
 
+  // États pour les statistiques rapides
+  const [statsData, setStatsData] = useState({
+    totalStudents: 0,
+    activeProjects: 0,
+    totalPromotions: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(false);
+
   const promotionDropdownRef = useRef<HTMLDivElement>(null);
   const studentDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -102,6 +110,56 @@ const AdminProfilePage = () => {
       loadStudentDirectly(studentId);
     }
   }, []);
+
+  // Fonction pour récupérer les statistiques depuis les APIs
+  const fetchStatsData = async () => {
+    if (userRole !== "advisor") return; // Seulement pour les advisors
+
+    try {
+      setStatsLoading(true);
+
+      // Récupérer tous les étudiants
+      const studentsResponse = await fetch("http://localhost:3004/students");
+      const studentsData = studentsResponse.ok
+        ? await studentsResponse.json()
+        : { success: false, data: [] };
+
+      // Récupérer tous les projets actifs
+      const projectsResponse = await fetch(
+        "http://localhost:3003/projects/active/list"
+      );
+      const projectsData = projectsResponse.ok
+        ? await projectsResponse.json()
+        : { success: false, data: [] };
+
+      // Récupérer toutes les promotions
+      const promotionsResponse = await fetch(
+        "http://localhost:3004/promotions"
+      );
+      const promotionsData = promotionsResponse.ok
+        ? await promotionsResponse.json()
+        : { success: false, data: [] };
+
+      // Calculer les statistiques
+      const totalStudents = studentsData.success ? studentsData.data.length : 0;
+      const activeProjects = projectsData.success
+        ? projectsData.data.length
+        : 0;
+      const totalPromotions = promotionsData.success
+        ? promotionsData.data.length
+        : 0;
+
+      setStatsData({
+        totalStudents,
+        activeProjects,
+        totalPromotions,
+      });
+    } catch (error) {
+      console.error("Erreur lors de la récupération des statistiques:", error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   // Fonction pour traduire les rôles
   const getRoleLabel = (role: string) => {
@@ -134,6 +192,13 @@ const AdminProfilePage = () => {
       setUserRole(currentUser.role);
     }
   }, [currentUser]);
+
+  // Charger les statistiques quand le rôle est défini
+  useEffect(() => {
+    if (userRole === "advisor") {
+      fetchStatsData();
+    }
+  }, [userRole]);
 
   // Vérifier les droits d'accès
   useEffect(() => {
@@ -682,17 +747,41 @@ const AdminProfilePage = () => {
               <div className="p-6">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-2xl font-bold text-blue-900">12</div>
-                    <div className="text-sm text-blue-600">Étudiants gérés</div>
+                    {statsLoading ? (
+                      <div className="flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                      </div>
+                    ) : (
+                      <div className="text-2xl font-bold text-blue-900">
+                        {statsData.totalStudents}
+                      </div>
+                    )}
+                    <div className="text-sm text-blue-600">Étudiants</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-2xl font-bold text-blue-900">8</div>
+                    {statsLoading ? (
+                      <div className="flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                      </div>
+                    ) : (
+                      <div className="text-2xl font-bold text-blue-900">
+                        {statsData.activeProjects}
+                      </div>
+                    )}
                     <div className="text-sm text-blue-600">Projets actifs</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-2xl font-bold text-blue-900">3</div>
+                    {statsLoading ? (
+                      <div className="flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                      </div>
+                    ) : (
+                      <div className="text-2xl font-bold text-blue-900">
+                        {statsData.totalPromotions}
+                      </div>
+                    )}
                     <div className="text-sm text-blue-600">
-                      Promotions gérées
+                      Promotions
                     </div>
                   </div>
                   {/* <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
