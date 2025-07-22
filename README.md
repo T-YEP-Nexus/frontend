@@ -23,7 +23,7 @@ docker-compose up
 ```
 
 ## Commande lancement local
-Utilisé la commande suivante : 
+Utilisez les commandes suivantes : 
 ```bash
 npm i
 npm start
