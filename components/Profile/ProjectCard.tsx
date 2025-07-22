@@ -43,11 +43,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     <div
       className={`flex items-center justify-between p-4 bg-gradient-to-br ${config.bg} rounded-lg border ${config.border} hover:shadow-md transition-all duration-300 ${className}`}
     >
-      <div className="flex items-center gap-3">
-        <div className={`w-3 h-3 rounded-full ${config.dot} shadow-sm`}></div>
-        <span className="font-semibold text-gray-900 text-sm">{name}</span>
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div
+          className={`w-3 h-3 rounded-full ${config.dot} shadow-sm flex-shrink-0`}
+        ></div>
+        <span className="font-semibold text-gray-900 text-sm break-words overflow-hidden">
+          {name}
+        </span>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-shrink-0">
         {grade && (
           <span className="text-sm font-bold text-gray-700 bg-white px-2 py-1 rounded-md border border-gray-200">
             {grade}/20
