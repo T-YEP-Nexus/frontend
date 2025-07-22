@@ -27,7 +27,9 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     error,
     fetchAllEvents,
     fetchStudentAgenda,
-    updateEvent, 
+    updateEvent,
+    createEvent,
+    deleteEvent,
     registerToEvent, 
     unregisterFromEvent, 
     checkUserRegistration 
@@ -389,6 +391,9 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           defaultStart={modalData?.start}
           defaultEnd={modalData?.end}
           eventToEdit={eventToEdit}
+          createEvent={createEvent}
+          updateEvent={updateEvent}
+          deleteEvent={deleteEvent}
         />
       )}
       {/* Modal admin : détail, créneaux/inscrits et suppression */}

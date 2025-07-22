@@ -12,9 +12,21 @@ interface ModalEventFormProps {
   defaultStart?: string;
   defaultEnd?: string;
   eventToEdit?: any | null;
+  createEvent: (data: any) => Promise<any>;
+  updateEvent: (id: number, data: any) => Promise<any>;
+  deleteEvent: (id: number) => Promise<void>;
 }
 
-const ModalEventForm: React.FC<ModalEventFormProps> = ({ open, onClose, defaultStart, defaultEnd, eventToEdit }) => {
+const ModalEventForm: React.FC<ModalEventFormProps> = ({ 
+  open, 
+  onClose, 
+  defaultStart, 
+  defaultEnd, 
+  eventToEdit,
+  createEvent,
+  updateEvent,
+  deleteEvent 
+}) => {
   const [title, setTitle] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
@@ -31,8 +43,7 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({ open, onClose, defaultS
 
 
   const { promotions, loading: promotionsLoading, error: promotionsError } = usePromotionsData();
-  const { createEvent, updateEvent, deleteEvent, loading: calendarLoading, error: calendarError } = useCalendarData();
-
+  
   useEffect(() => {
     if (open) {
       setFormError(null);
