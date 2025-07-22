@@ -1,14 +1,16 @@
+"use client";
+
 import React, { useRef, useState, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin, { DateClickArg } from "@fullcalendar/interaction";
 import frLocale from "@fullcalendar/core/locales/fr";
-import { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/core";
+import { EventInput, DateSelectArg, EventClickArg, EventDropArg } from "@fullcalendar/core";
 import ModalEventForm from "./ModalEventForm";
 import ModalDeleteEvent from "./ModalDeleteEvent";
 import ModalEventRegistration from "./ModalEventRegistration";
 import { useCalendarData } from "@/hooks/useCalendarData";
-import { getStudentData, getUserData } from "@/lib/userData";
+import { getUserData } from "@/lib/userData";
 import { getUserIdFromToken } from "@/lib/auth";
 import AdminLoading from "@/components/admin/AdminLoading";
 
@@ -26,13 +28,18 @@ type CalendarEventInput = EventInput & {
 };
 
 const Calendar: React.FC<CalendarProps> = ({ role }) => {
-  const {
-    events: backendEvents,
-    loading,
+  const { 
+    events: backendEvents, 
+    loading, 
     error,
-    registerToEvent,
-    unregisterFromEvent,
-    checkUserRegistration,
+    fetchAllEvents,
+    fetchStudentAgenda,
+    updateEvent,
+    createEvent,
+    deleteEvent,
+    registerToEvent, 
+    unregisterFromEvent, 
+    checkUserRegistration 
   } = useCalendarData();
 
   const [userRole, setUserRole] = useState<
@@ -58,10 +65,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           return;
         }
 
-        // Récupérer les données utilisateur via getStudentData
-        const userData = await getStudentData(userId);
-        // getStudentData retourne des données étudiant, pas le rôle
-        // On utilise getUserData pour avoir le rôle complet
+        // On n'a besoin que de getUserData, qui gère déjà l'agrégation des données
         const fullUserData = await getUserData(userId);
         const role = fullUserData.role || "student";
 
@@ -108,6 +112,18 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     loadUserRole();
   }, []);
 
+  // Charger les données du calendrier en fonction du rôle
+  useEffect(() => {
+    if (!roleLoading && userRole) {
+      const userId = getUserIdFromToken();
+      if (userRole === 'student' && userId) {
+        fetchStudentAgenda(userId);
+      } else if (userRole !== 'student') {
+        fetchAllEvents();
+      }
+    }
+  }, [userRole, roleLoading, fetchStudentAgenda, fetchAllEvents]);
+
   // On adapte les permissions si la prop role est fournie
   useEffect(() => {
     if (role) {
@@ -150,23 +166,10 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     end: string;
   } | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [eventToDelete, setEventToDelete] = useState<{
-    id: string;
-    title: string;
-    start?: Date | string;
-    end?: Date | string;
-    slots?: { start: string; end: string; user: string | null }[];
-  } | null>(null);
+  const [eventToEdit, setEventToEdit] = useState<any | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string } | null>(null);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<{
-    id: string;
-    title: string;
-    start?: Date | string;
-    end?: Date | string;
-    event_type?: string;
-    description?: string;
-    slots?: { start: string; end: string; user: string | null }[];
-  } | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string; event_type?: string; description?: string } | null>(null);
   const [isUserRegistered, setIsUserRegistered] = useState(false);
   const calendarRef = useRef<FullCalendar>(null);
 
@@ -295,10 +298,10 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     setModalData(null);
   };
 
-  // Clic sur un événement : gérer selon le rôle
   const handleEventClick = async (clickInfo: EventClickArg) => {
-    console.log("handleEventClick called", clickInfo);
-    const eventId = clickInfo.event.id;
+    const eventId = Number(clickInfo.event.id);
+    const event = backendEvents.find(e => e.id === eventId);
+
     if (isAdmin) {
       // On cherche l'événement complet pour récupérer les slots
       const event = events.find((e) => String(e.id) === String(eventId));
@@ -317,43 +320,66 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     }
     // Pour les étudiants, on cherche dans backendEvents
     // En mode test front, on cherche dans events (événements front + back)
-    const event = events.find((e) => String(e.id) === String(eventId));
-    console.log("eventId", eventId, "event found", event);
     if (!event) {
       console.error("Aucun événement trouvé pour cet id", eventId);
       return;
     }
+
+    if (isAdmin) {
+      setEventToEdit(event);
+      setModalOpen(true);
+      return;
+    }
+    
     if (isStudent) {
       const isRegistered = await checkUserRegistration(Number(eventId));
-      setIsUserRegistered(isRegistered);
       setSelectedEvent({
         id: clickInfo.event.id,
         title: clickInfo.event.title,
-        start: clickInfo.event.start ?? undefined,
-        end: clickInfo.event.end ?? undefined,
+        start: clickInfo.event.startStr,
+        end: clickInfo.event.endStr,
         event_type: event.event_type,
         description: event.description,
-        slots:
-          event.extendedProps && event.extendedProps.slots
-            ? event.extendedProps.slots
-            : [],
       });
+      setIsUserRegistered(isRegistered);
       setShowRegistrationModal(true);
     }
   };
 
-  // Confirmer la suppression
   const handleDeleteEvent = () => {
     if (eventToDelete) {
-      setEvents((prev) => prev.filter((e) => e.id !== eventToDelete.id));
       setDeleteModalOpen(false);
       setEventToDelete(null);
     }
   };
 
   // Gérer le déplacement d'un événement (drag & drop)
-  const handleEventDrop = (dropInfo: any) => {
+  const handleEventDrop = async (dropInfo: EventDropArg) => {
     if (!permissions.canEditEvents) return;
+
+    const eventId = Number(dropInfo.event.id);
+    const newStartDate = dropInfo.event.start;
+
+    if (!newStartDate) {
+      console.error("La date de début est invalide après le déplacement.");
+      dropInfo.revert(); // Annuler le déplacement sur le calendrier
+      return;
+    }
+
+    // Formater la date pour le backend
+    const isoDateString = newStartDate.toISOString();
+    const formattedStartDate = isoDateString.replace('T', ' ').substring(0, 19) + "+00";
+
+    try {
+      await updateEvent(eventId, { event_datetime: formattedStartDate });
+      // Pas besoin de re-fetch, car FullCalendar met déjà à jour l'UI.
+      // fetchAllEvents() pourrait être appelé si vous voulez rafraîchir toutes les données.
+    } catch (error: any) {
+      console.error("Erreur lors de la mise à jour de l'événement:", error.message);
+      alert("La mise à jour de l'événement a échoué. L'événement va être replacé à sa position d'origine.");
+      dropInfo.revert(); // Annuler le changement visuel en cas d'erreur
+    }
+
     setEvents((prev) =>
       prev.map((e) =>
         e.id === dropInfo.event.id
@@ -420,14 +446,37 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
       {permissions.canCreateEvents && (
         <ModalEventForm
           open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          onSubmit={handleModalSubmit}
+          onClose={() => {
+            setModalOpen(false);
+            setEventToEdit(null);
+          }}
           defaultStart={modalData?.start}
           defaultEnd={modalData?.end}
+          eventToEdit={eventToEdit}
+          createEvent={createEvent}
+          updateEvent={updateEvent}
+          deleteEvent={deleteEvent}
         />
       )}
       {/* Modal admin : détail, créneaux/inscrits et suppression */}
       {isAdmin && eventToDelete && (
+        <ModalDeleteEvent
+          open={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          event={eventToDelete}
+          onConfirm={handleDeleteEvent}
+        />
+      )}
+      {isStudent && selectedEvent && (
+        <ModalEventRegistration
+          open={showRegistrationModal}
+          onClose={() => setShowRegistrationModal(false)}
+          event={selectedEvent}
+          isRegistered={isUserRegistered}
+          onRegister={registerToEvent}
+          onUnregister={unregisterFromEvent}
+        />
+
         <div
           className={`fixed inset-0 z-50 flex items-center justify-center ${
             deleteModalOpen ? "" : "hidden"
@@ -507,15 +556,6 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           </div>
         </div>
       )}
-      {/* Retirer la modal de suppression séparée */}
-      <ModalEventRegistration
-        open={showRegistrationModal}
-        onClose={() => setShowRegistrationModal(false)}
-        event={selectedEvent}
-        isRegistered={isUserRegistered}
-        onRegister={registerToEvent}
-        onUnregister={unregisterFromEvent}
-      />
       {/* Style personnalisé FullCalendar */}
       <style jsx global>{`
         .fc .fc-toolbar {

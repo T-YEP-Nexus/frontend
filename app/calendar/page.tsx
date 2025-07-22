@@ -18,6 +18,11 @@ const CalendarPage = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [filter, setFilter] = useState("Tous");
   const filterRef = useRef<HTMLDivElement>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -48,7 +53,7 @@ const CalendarPage = () => {
       <div className="w-full flex flex-col items-center">
         <div className="w-full bg-transparent flex justify-center">
           <div className="w-full max-w-5xl">
-            {selected === "calendrier" ? <Calendar /> : <AgendaPlaceholder />}
+            {isClient && selected === "calendrier" ? <Calendar /> : <AgendaPlaceholder />}
           </div>
         </div>
       </div>

@@ -2,15 +2,15 @@ import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, GraduationCap, Loader2 } from "lucide-react";
 
 interface Promotion {
-  id: number;
+  id: string; 
   name: string;
   created_at: string;
 }
 
 interface PromotionDropdownProps {
   promotions: Promotion[];
-  selectedPromotion: string;
-  onPromotionChange: (promotion: string) => void;
+  selectedPromotion: string | null;
+  onPromotionChange: (promotionId: string | null) => void;
   loading?: boolean;
   error?: string | null;
   placeholder?: string;
@@ -48,13 +48,13 @@ const PromotionDropdown: React.FC<PromotionDropdownProps> = ({
     };
   }, []);
 
-  const handleSelectPromotion = (promotionName: string) => {
-    onPromotionChange(promotionName);
+  const handleSelectPromotion = (promotionId: string) => {
+    onPromotionChange(promotionId);
     setIsOpen(false);
   };
 
   const selectedPromotionData = promotions.find(
-    (p) => p.name === selectedPromotion
+    (p) => p.id === selectedPromotion
   );
 
   return (
@@ -76,9 +76,9 @@ const PromotionDropdown: React.FC<PromotionDropdownProps> = ({
           }`}
         >
           <span
-            className={selectedPromotion ? "text-gray-900" : "text-gray-500"}
+            className={selectedPromotionData ? "text-gray-900" : "text-gray-500"}
           >
-            {selectedPromotion || placeholder}
+            {selectedPromotionData?.name || placeholder}
           </span>
 
           {loading ? (
@@ -103,7 +103,7 @@ const PromotionDropdown: React.FC<PromotionDropdownProps> = ({
               promotions.map((promotion) => (
                 <div
                   key={promotion.id}
-                  onClick={() => handleSelectPromotion(promotion.name)}
+                  onClick={() => handleSelectPromotion(promotion.id)}
                   className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
                 >
                   <span className="text-gray-900">{promotion.name}</span>

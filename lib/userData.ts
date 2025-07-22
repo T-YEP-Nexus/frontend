@@ -238,14 +238,17 @@ export const getUserData = async (userId: string): Promise<UserProfile> => {
     const profileData = await getUserProfileData(userId);
     console.log("Données profil récupérées:", profileData);
 
-    // Étape 2 : Récupérer les données étudiant (avec fallback)
-    const studentData = await getStudentData(profileData.id);
-    console.log("Données étudiant récupérées:", studentData);
-    console.log("Données étudiant complètes:", studentData);
-    console.log("ID promotion étudiant:", studentData?.id_promotion);
-    console.log("Toutes les propriétés de studentData:", Object.keys(studentData || {}));
+    // Étape 2 : Tenter de récupérer les données étudiant, sans faire échouer le reste si elles n'existent pas
+    let studentData: any = {};
+    try {
+      if (profileData && profileData.id) {
+        studentData = await getStudentData(profileData.id);
+        console.log("Données étudiant récupérées:", studentData);
+      }
+    } catch (studentError) {
+      console.log("Aucune donnée étudiant trouvée (comportement normal pour un non-étudiant).");
 
-    // Étape 3 : Récupérer la promotion si c'est un étudiant
+      // Étape 3 : Récupérer la promotion si c'est un étudiant
     let promotionName = "";
     if (profileData.roles_user === "student" && studentData?.id_promotion) {
       try {
@@ -287,9 +290,9 @@ export const getUserData = async (userId: string): Promise<UserProfile> => {
       profileImage: profileData.profileImage || defaultUserData.profileImage,
       stats: profileData.stats || defaultUserData.stats,
       chartData: profileData.chartData || defaultUserData.chartData,
-      studentNumber: studentData.student_number || defaultUserData.studentNumber,
-      promotion: promotionName || defaultUserData.promotion,
-      major: studentData.major || defaultUserData.major,
+      studentNumber: studentData?.student_number || defaultUserData.studentNumber,
+      promotion: studentData?.promotion || defaultUserData.promotion,
+      major: studentData?.major || defaultUserData.major,
     };
 
     console.log("Données utilisateur finales:", userData);
