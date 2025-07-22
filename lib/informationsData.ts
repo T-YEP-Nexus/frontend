@@ -130,7 +130,8 @@ export const updateInformation = async (
   updates: Partial<Omit<Information, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<Information> => {
   const res = await fetchWithTimeout(`${PROFILE_SERVICE_BASE_URL}/information/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
   });
 

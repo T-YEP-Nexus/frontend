@@ -46,7 +46,8 @@ export default function CreateInformationPage() {
       try {
         const res = await fetch("http://localhost:3004/profiles");
         const data = await res.json();
-        setUsers(data.data || []);
+        const filtered = (data.data || []).filter((user: User) => user.roles_user === 'admin' || user.roles_user === 'advisor');
+        setUsers(filtered);
       } catch (e) {
         setUsers([]);
       }

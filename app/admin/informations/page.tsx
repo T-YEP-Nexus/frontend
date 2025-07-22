@@ -266,15 +266,6 @@ export default function AdminInformations() {
                             <h3 className="font-semibold text-blue-900 text-base sm:text-lg break-words">
                               {information.title}
                             </h3>
-                            <div className="flex flex-wrap gap-2">
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 whitespace-nowrap">
-                                {information.creator_role === "admin"
-                                  ? "Admin"
-                                  : information.creator_role === "advisor"
-                                  ? "Conseiller"
-                                  : "Externe"}
-                              </span>
-                            </div>
                           </div>
                           <p className="text-blue-800 mb-3 leading-relaxed break-words">
                             {information.message}
