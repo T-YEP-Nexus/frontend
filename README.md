@@ -24,7 +24,8 @@ docker-compose up
 
 ## Commande lancement local
 Utilisé la commande suivante : 
-```bash 
+```bash
+npm i
 npm start
 ```  
 Afin de lancer le projet, il est nécessaire tout d'abord de lancer tous les repos services (auth-service, calendar-service,...) afin d'avoir accès via le repos frontend aux différentes pages de Nexus. Quand tous les services sont lancés, on peut faire la même commande dans le repo frontend qui se déploiera en localhost.
