@@ -341,7 +341,7 @@ export default function CreateProjectPage() {
       console.log("PROJECTZEBI", formData);
       // Rediriger après 2 secondes
       setTimeout(() => {
-        // router.push("/admin/projects");
+        router.push("/admin/projects");
       }, 2000);
     } catch (err) {
       console.error("Erreur lors de la création:", err);
