@@ -537,6 +537,72 @@ export default function AdminDashboard() {
     }
   };
 
+  // Vérifier si l'utilisateur connecté peut supprimer un utilisateur donné
+  const canDeleteUser = (userToDelete: AdminUser): boolean => {
+    if (!currentUser) return false;
+
+    // Les admins peuvent tout supprimer
+    if (currentUser.role === "admin") return true;
+
+    // Les advisors ne peuvent supprimer que les étudiants
+    if (currentUser.role === "advisor") {
+      return userToDelete.roles_user === "student";
+    }
+
+    return false;
+  };
+
+  // Vérifier si l'utilisateur connecté peut modifier un utilisateur donné
+  const canEditUser = (userToEdit: AdminUser): boolean => {
+    if (!currentUser) return false;
+
+    // Les admins peuvent tout modifier
+    if (currentUser.role === "admin") return true;
+
+    // Les advisors ne peuvent modifier que les étudiants
+    if (currentUser.role === "advisor") {
+      return userToEdit.roles_user === "student";
+    }
+
+    return false;
+  };
+
+  // Obtenir le message d'erreur pour le bouton de suppression
+  const getDeleteButtonMessage = (userToDelete: AdminUser): string => {
+    if (!currentUser) return "Non autorisé";
+
+    if (currentUser.role === "admin") return "";
+
+    if (currentUser.role === "advisor") {
+      if (userToDelete.roles_user === "admin") {
+        return "Les advisors ne peuvent pas supprimer les admins";
+      }
+      if (userToDelete.roles_user === "advisor") {
+        return "Les advisors ne peuvent pas supprimer d'autres advisors";
+      }
+    }
+
+    return "";
+  };
+
+  // Obtenir le message d'erreur pour le bouton de modification
+  const getEditButtonMessage = (userToEdit: AdminUser): string => {
+    if (!currentUser) return "Non autorisé";
+
+    if (currentUser.role === "admin") return "";
+
+    if (currentUser.role === "advisor") {
+      if (userToEdit.roles_user === "admin") {
+        return "Les advisors ne peuvent pas modifier les admins";
+      }
+      if (userToEdit.roles_user === "advisor") {
+        return "Les advisors ne peuvent pas modifier d'autres advisors";
+      }
+    }
+
+    return "";
+  };
+
   // Gestion du tri
   const handleSort = (field: "name" | "promotion" | "role") => {
     if (sortBy === field) {
@@ -921,7 +987,13 @@ export default function AdminDashboard() {
                         onClick={() =>
                           router.push(`/admin/users/edit/${user.id}`)
                         }
-                        className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
+                        className={`group/btn border font-medium px-3 py-1.5 rounded-lg transition-all duration-300 cursor-pointer text-xs ${
+                          canEditUser(user)
+                            ? "border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white hover:scale-105"
+                            : "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed opacity-50"
+                        }`}
+                        disabled={!canEditUser(user)}
+                        title={getEditButtonMessage(user)}
                       >
                         Modifier
                       </Button>
@@ -932,7 +1004,13 @@ export default function AdminDashboard() {
                           setUserToDelete(user);
                           setShowDeleteModal(true);
                         }}
-                        className="group/btn border border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
+                        className={`group/btn border font-medium px-3 py-1.5 rounded-lg transition-all duration-300 cursor-pointer text-xs ${
+                          canDeleteUser(user)
+                            ? "border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white hover:scale-105"
+                            : "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed opacity-50"
+                        }`}
+                        disabled={!canDeleteUser(user)}
+                        title={getDeleteButtonMessage(user)}
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>

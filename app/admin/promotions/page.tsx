@@ -24,6 +24,8 @@ import AdminStatsCards, {
 } from "@/components/admin/AdminStatsCards";
 import AdminFilterBar from "@/components/admin/AdminFilterBar";
 import usePromotionsData from "@/hooks/usePromotionsData";
+import { useUserData } from "@/hooks/useUserData";
+import { getUserIdFromToken } from "@/lib/auth";
 
 interface Promotion {
   id: string;
@@ -44,6 +46,12 @@ export default function AdminPromotionsPage() {
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const statusDropdownRef = React.useRef<HTMLDivElement | null>(null);
   const secondDropdownRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Utiliser le hook pour récupérer l'utilisateur connecté
+  const { userData: currentUser } = useUserData(getUserIdFromToken());
+
+  // Vérifier si l'utilisateur peut créer/supprimer des promotions
+  const canManagePromotions = currentUser?.role === "admin";
 
   // Hook pour récupérer les promotions
   const {
@@ -296,12 +304,14 @@ export default function AdminPromotionsPage() {
       />
 
       {/* Boutons d'action */}
-      <div className="flex flex-wrap gap-4 mb-10">
-        <AdminButton onClick={() => router.push("/admin/promotions/create")}>
-          <Plus size={20} />
-          Nouvelle Promotion
-        </AdminButton>
-      </div>
+      {canManagePromotions && (
+        <div className="flex flex-wrap gap-4 mb-10">
+          <AdminButton onClick={() => router.push("/admin/promotions/create")}>
+            <Plus size={20} />
+            Nouvelle Promotion
+          </AdminButton>
+        </div>
+      )}
 
       {/* Statistiques */}
       {/* <AdminStatsCards
@@ -395,23 +405,28 @@ export default function AdminPromotionsPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          onClick={() =>
-                            handleDeletePromotion(promotion.id, promotion.name)
-                          }
-                          disabled={deletingPromotion === promotion.id}
-                          variant="outline"
-                          size="sm"
-                          className="group/btn border border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {deletingPromotion === promotion.id ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={16} />
-                          )}
-                        </Button>
-                      </div>
+                      {canManagePromotions && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={() =>
+                              handleDeletePromotion(
+                                promotion.id,
+                                promotion.name
+                              )
+                            }
+                            disabled={deletingPromotion === promotion.id}
+                            variant="outline"
+                            size="sm"
+                            className="group/btn border border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {deletingPromotion === promotion.id ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={16} />
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
