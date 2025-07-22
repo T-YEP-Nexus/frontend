@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getUserIdFromToken } from "@/lib/auth";
 
 interface Event {
@@ -11,6 +11,7 @@ interface Event {
   report?: string;
   id_creator: string;
   created_at: string;
+  id_prom?: string | null;
 }
 
 interface EventStudent {
@@ -25,11 +26,7 @@ export function useCalendarData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<null | string>(null);
 
-  useEffect(() => {
-    fetchAllEvents();
-  }, []);
-
-  const fetchAllEvents = async () => {
+  const fetchAllEvents = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch("http://localhost:3002/events");
@@ -50,9 +47,9 @@ export function useCalendarData() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchEventsByStudent = async (studentId?: string) => {
+  const fetchEventsByStudent = useCallback(async (studentId?: string) => {
     try {
       setLoading(true);
       const userId = studentId || getUserIdFromToken();
@@ -94,9 +91,9 @@ export function useCalendarData() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchEventById = async (eventId: number) => {
+  const fetchEventById = useCallback(async (eventId: number) => {
     try {
       setLoading(true);
       const response = await fetch(`http://localhost:3002/events/${eventId}`);
@@ -117,9 +114,9 @@ export function useCalendarData() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchEventsByType = async (eventType: string) => {
+  const fetchEventsByType = useCallback(async (eventType: string) => {
     try {
       setLoading(true);
       const response = await fetch(`http://localhost:3002/events/type/${eventType}`);
@@ -140,10 +137,108 @@ export function useCalendarData() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const fetchStudentAgenda = useCallback(async (studentId: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:3002/agenda/student/${studentId}`);
+      if (!response.ok) {
+        throw new Error("Erreur lors du chargement de l'agenda de l'étudiant");
+      }
+      const result = await response.json();
+      if (result.success) {
+        setEvents(result.data);
+      } else {
+        throw new Error(result.message || "Erreur lors du chargement de l'agenda");
+      }
+    } catch (err: any) {
+      setError(err.message || "Erreur inconnue");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const createEvent = useCallback(async (eventData: Omit<Event, 'id' | 'created_at'>) => {
+    try {
+      const response = await fetch("http://localhost:3002/events", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(eventData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erreur lors de la création de l'événement");
+      }
+      
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || "Erreur lors de la création de l'événement");
+      }
+      
+      await fetchAllEvents();
+      return result.data;
+    } catch (err: any) {
+      setError(err.message || "Erreur inconnue lors de la création");
+      throw err; // Re-throw to be caught in the form
+    }
+  }, [fetchAllEvents]);
+
+  const deleteEvent = useCallback(async (eventId: number) => {
+    try {
+      const response = await fetch(`http://localhost:3002/events/${eventId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erreur lors de la suppression de l'événement");
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || "Erreur lors de la suppression de l'événement");
+      }
+      
+      await fetchAllEvents();
+    } catch (err: any) {
+      throw new Error(err.message || "Erreur inconnue lors de la suppression");
+    }
+  }, [fetchAllEvents]);
+
+  const updateEvent = useCallback(async (eventId: number, eventData: Partial<Omit<Event, 'id' | 'created_at' | 'id_creator'>>) => {
+    try {
+      const response = await fetch(`http://localhost:3002/events/${eventId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(eventData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erreur lors de la mise à jour de l'événement");
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || "Erreur lors de la mise à jour de l'événement");
+      }
+
+      await fetchAllEvents();
+      return result.data;
+    } catch (err: any) {
+      setError(err.message || "Erreur inconnue lors de la mise à jour");
+      throw err; // Re-throw to be caught in the form
+    }
+  }, [fetchAllEvents]);
 
   // S'inscrire à un événement
-  const registerToEvent = async (eventId: number) => {
+  const registerToEvent = useCallback(async (eventId: number) => {
     try {
       const userId = getUserIdFromToken();
       if (!userId) {
@@ -176,10 +271,10 @@ export function useCalendarData() {
     } catch (err: any) {
       throw new Error(err.message || "Erreur lors de l'inscription");
     }
-  };
+  }, [fetchAllEvents]);
 
   // Se désinscrire d'un événement
-  const unregisterFromEvent = async (eventId: number) => {
+  const unregisterFromEvent = useCallback(async (eventId: number) => {
     try {
       const userId = getUserIdFromToken();
       if (!userId) {
@@ -214,10 +309,10 @@ export function useCalendarData() {
     } catch (err: any) {
       throw new Error(err.message || "Erreur lors de la désinscription");
     }
-  };
+  }, [fetchAllEvents]);
 
   // Vérifier si l'utilisateur est inscrit à un événement
-  const checkUserRegistration = async (eventId: number): Promise<boolean> => {
+  const checkUserRegistration = useCallback(async (eventId: number): Promise<boolean> => {
     try {
       const userId = getUserIdFromToken();
       if (!userId) return false;
@@ -230,7 +325,7 @@ export function useCalendarData() {
     } catch (error) {
       return false;
     }
-  };
+  }, []);
 
   return { 
     events, 
@@ -242,6 +337,10 @@ export function useCalendarData() {
     fetchEventsByType,
     registerToEvent,
     unregisterFromEvent,
-    checkUserRegistration
+    checkUserRegistration,
+    fetchStudentAgenda,
+    createEvent,
+    deleteEvent,
+    updateEvent,
   };
 } 

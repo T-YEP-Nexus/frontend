@@ -1,14 +1,16 @@
+"use client";
+
 import React, { useRef, useState, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin, { DateClickArg } from "@fullcalendar/interaction";
 import frLocale from "@fullcalendar/core/locales/fr";
-import { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/core";
+import { EventInput, DateSelectArg, EventClickArg, EventDropArg } from "@fullcalendar/core";
 import ModalEventForm from "./ModalEventForm";
 import ModalDeleteEvent from "./ModalDeleteEvent";
 import ModalEventRegistration from "./ModalEventRegistration";
 import { useCalendarData } from "@/hooks/useCalendarData";
-import { getStudentData, getUserData } from "@/lib/userData";
+import { getUserData } from "@/lib/userData";
 import { getUserIdFromToken } from "@/lib/auth";
 
 // Ajout de la prop role
@@ -22,7 +24,10 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   const { 
     events: backendEvents, 
     loading, 
-    error, 
+    error,
+    fetchAllEvents,
+    fetchStudentAgenda,
+    updateEvent, 
     registerToEvent, 
     unregisterFromEvent, 
     checkUserRegistration 
@@ -49,10 +54,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           return;
         }
 
-        // Récupérer les données utilisateur via getStudentData
-        const userData = await getStudentData(userId);
-        // getStudentData retourne des données étudiant, pas le rôle
-        // On utilise getUserData pour avoir le rôle complet
+        // On n'a besoin que de getUserData, qui gère déjà l'agrégation des données
         const fullUserData = await getUserData(userId);
         const role = fullUserData.role || 'student';
         
@@ -97,6 +99,18 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     loadUserRole();
   }, []);
 
+  // Charger les données du calendrier en fonction du rôle
+  useEffect(() => {
+    if (!roleLoading && userRole) {
+      const userId = getUserIdFromToken();
+      if (userRole === 'student' && userId) {
+        fetchStudentAgenda(userId);
+      } else if (userRole !== 'student') {
+        fetchAllEvents();
+      }
+    }
+  }, [userRole, roleLoading, fetchStudentAgenda, fetchAllEvents]);
+
   // On adapte les permissions si la prop role est fournie
   useEffect(() => {
     if (role) {
@@ -134,9 +148,10 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState<{start: string, end: string} | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [eventToDelete, setEventToDelete] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string; slots?: { start: string; end: string; user: string | null }[] } | null>(null);
+  const [eventToEdit, setEventToEdit] = useState<any | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string } | null>(null);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string; event_type?: string; description?: string; slots?: { start: string; end: string; user: string | null }[] } | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string; event_type?: string; description?: string } | null>(null);
   const [isUserRegistered, setIsUserRegistered] = useState(false);
   const calendarRef = useRef<FullCalendar>(null);
 
@@ -245,68 +260,69 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     setModalData(null);
   };
 
-  // Clic sur un événement : gérer selon le rôle
   const handleEventClick = async (clickInfo: EventClickArg) => {
-    console.log("handleEventClick called", clickInfo);
-    const eventId = clickInfo.event.id;
-    if (isAdmin) {
-      // On cherche l'événement complet pour récupérer les slots
-      const event = events.find(e => String(e.id) === String(eventId));
-      setEventToDelete({
-        id: clickInfo.event.id,
-        title: clickInfo.event.title,
-        start: clickInfo.event.start ?? undefined,
-        end: clickInfo.event.end ?? undefined,
-        slots: event && event.extendedProps && event.extendedProps.slots ? event.extendedProps.slots : [],
-      });
-      setDeleteModalOpen(true);
-      return;
-    }
-    // Pour les étudiants, on cherche dans backendEvents
-    // En mode test front, on cherche dans events (événements front + back)
-    const event = events.find(e => String(e.id) === String(eventId));
-    console.log("eventId", eventId, "event found", event);
+    const eventId = Number(clickInfo.event.id);
+    const event = backendEvents.find(e => e.id === eventId);
+
     if (!event) {
       console.error("Aucun événement trouvé pour cet id", eventId);
       return;
     }
+
+    if (isAdmin) {
+      setEventToEdit(event);
+      setModalOpen(true);
+      return;
+    }
+    
     if (isStudent) {
       const isRegistered = await checkUserRegistration(Number(eventId));
-      setIsUserRegistered(isRegistered);
       setSelectedEvent({
         id: clickInfo.event.id,
         title: clickInfo.event.title,
-        start: clickInfo.event.start ?? undefined,
-        end: clickInfo.event.end ?? undefined,
+        start: clickInfo.event.startStr,
+        end: clickInfo.event.endStr,
         event_type: event.event_type,
         description: event.description,
-        slots: event.extendedProps && event.extendedProps.slots ? event.extendedProps.slots : [],
       });
+      setIsUserRegistered(isRegistered);
       setShowRegistrationModal(true);
     }
   };
 
-  // Confirmer la suppression
   const handleDeleteEvent = () => {
     if (eventToDelete) {
-      setEvents((prev) => prev.filter((e) => e.id !== eventToDelete.id));
       setDeleteModalOpen(false);
       setEventToDelete(null);
     }
   };
 
   // Gérer le déplacement d'un événement (drag & drop)
-  const handleEventDrop = (dropInfo: any) => {
+  const handleEventDrop = async (dropInfo: EventDropArg) => {
     if (!permissions.canEditEvents) return;
-    setEvents((prev) => prev.map((e) =>
-      e.id === dropInfo.event.id
-        ? {
-            ...e,
-            start: dropInfo.event.start,
-            end: dropInfo.event.end,
-          }
-        : e
-    ));
+
+    const eventId = Number(dropInfo.event.id);
+    const newStartDate = dropInfo.event.start;
+
+    if (!newStartDate) {
+      console.error("La date de début est invalide après le déplacement.");
+      dropInfo.revert(); // Annuler le déplacement sur le calendrier
+      return;
+    }
+
+    // Formater la date pour le backend
+    const isoDateString = newStartDate.toISOString();
+    const formattedStartDate = isoDateString.replace('T', ' ').substring(0, 19) + "+00";
+
+    try {
+      await updateEvent(eventId, { event_datetime: formattedStartDate });
+      // Pas besoin de re-fetch, car FullCalendar met déjà à jour l'UI.
+      // fetchAllEvents() pourrait être appelé si vous voulez rafraîchir toutes les données.
+    } catch (error: any) {
+      console.error("Erreur lors de la mise à jour de l'événement:", error.message);
+      alert("La mise à jour de l'événement a échoué. L'événement va être replacé à sa position d'origine.");
+      dropInfo.revert(); // Annuler le changement visuel en cas d'erreur
+    }
   };
 
   // Afficher un message de chargement ou d'erreur
@@ -366,59 +382,34 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
       {permissions.canCreateEvents && (
         <ModalEventForm
           open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          onSubmit={handleModalSubmit}
+          onClose={() => {
+            setModalOpen(false);
+            setEventToEdit(null);
+          }}
           defaultStart={modalData?.start}
           defaultEnd={modalData?.end}
+          eventToEdit={eventToEdit}
         />
       )}
       {/* Modal admin : détail, créneaux/inscrits et suppression */}
       {isAdmin && eventToDelete && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center ${deleteModalOpen ? '' : 'hidden'}`} style={{ background: 'rgba(0,0,0,0.3)' }}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md sm:w-[700px] max-w-[98vw] shadow-lg relative overflow-x-hidden flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-2xl font-bold">Détail de l'événement</h2>
-              <button className="text-gray-400 hover:text-gray-700 text-2xl leading-none rounded-xl p-1 transition-all duration-200 hover:bg-gray-200" onClick={() => setDeleteModalOpen(false)}>&times;</button>
-            </div>
-            <p className="mb-1">Titre : <span className="font-semibold">{eventToDelete.title}</span></p>
-            <p className="mb-4 text-base text-gray-500">{eventToDelete.start && eventToDelete.end ? `${new Date(eventToDelete.start).toLocaleString()} - ${new Date(eventToDelete.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : null}</p>
-            {/* Liste des créneaux/inscrits si slots présents */}
-            {Array.isArray(eventToDelete.slots) && eventToDelete.slots.length > 0 && (
-              <div className="flex-1 overflow-y-auto flex flex-col gap-2 mb-4 pr-1">
-                {eventToDelete.slots.map((slot: any, idx: number) => (
-                  <div key={idx} className="flex items-center gap-2 bg-blue-50 rounded-xl px-5 py-2">
-                    <span className="flex-1 text-sm">
-                      {new Date(slot.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(slot.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    {slot.user ? (
-                      <span className="text-xs text-blue-700 font-semibold">{slot.user}</span>
-                    ) : (
-                      <span className="text-xs text-gray-400">Libre</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            <button
-              className="mt-2 px-5 py-2 bg-red-400 text-white rounded-xl font-semibold shadow-sm hover:bg-red-500 hover:shadow-lg transition-all duration-200 self-end text-lg"
-              onClick={() => {
-                if (window.confirm('Voulez-vous vraiment supprimer cet événement ?')) handleDeleteEvent();
-              }}
-            >
-              Supprimer l'événement
-            </button>
-          </div>
-        </div>
+        <ModalDeleteEvent
+          open={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          event={eventToDelete}
+          onConfirm={handleDeleteEvent}
+        />
       )}
-      {/* Retirer la modal de suppression séparée */}
-      <ModalEventRegistration
-        open={showRegistrationModal}
-        onClose={() => setShowRegistrationModal(false)}
-        event={selectedEvent}
-        isRegistered={isUserRegistered}
-        onRegister={registerToEvent}
-        onUnregister={unregisterFromEvent}
-      />
+      {isStudent && selectedEvent && (
+        <ModalEventRegistration
+          open={showRegistrationModal}
+          onClose={() => setShowRegistrationModal(false)}
+          event={selectedEvent}
+          isRegistered={isUserRegistered}
+          onRegister={registerToEvent}
+          onUnregister={unregisterFromEvent}
+        />
+      )}
       {/* Style personnalisé FullCalendar */}
       <style jsx global>{`
         .fc .fc-toolbar {
