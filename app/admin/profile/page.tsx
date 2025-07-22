@@ -81,6 +81,19 @@ const AdminProfilePage = () => {
   const promotionDropdownRef = useRef<HTMLDivElement>(null);
   const studentDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Gestion des paramètres URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const studentId = urlParams.get("studentId");
+    const showOtherUsersParam = urlParams.get("showOtherUsers");
+
+    if (studentId && showOtherUsersParam === "true") {
+      setShowOtherUsers(true);
+      // Charger automatiquement le profil de l'étudiant
+      loadStudentDirectly(studentId);
+    }
+  }, []);
+
   // Fonction pour traduire les rôles
   const getRoleLabel = (role: string) => {
     switch (role) {
@@ -397,6 +410,117 @@ const AdminProfilePage = () => {
         role: "student",
         promotion: selectedStudentData.promotion,
         campus: selectedStudentData.campus,
+        profileImage: profileData.data.profileImage || "/default-avatar.png",
+        stats: {
+          totalHours: Math.floor(Math.random() * 2000) + 500, // Données simulées
+          projectsCompleted: Math.floor(Math.random() * 20) + 5,
+          ectsCredits: Math.floor(Math.random() * 180) + 60,
+          attendanceRate: Math.floor(Math.random() * 30) + 70,
+          skills: [
+            { name: "React", level: Math.floor(Math.random() * 40) + 60 },
+            { name: "Node.js", level: Math.floor(Math.random() * 40) + 60 },
+            { name: "Python", level: Math.floor(Math.random() * 40) + 60 },
+            { name: "Docker", level: Math.floor(Math.random() * 40) + 60 },
+            { name: "TypeScript", level: Math.floor(Math.random() * 40) + 60 },
+          ],
+          recentProjects: [
+            {
+              name: "Projet Web",
+              grade: Math.floor(Math.random() * 30) + 70,
+              status: "completed",
+            },
+            {
+              name: "API REST",
+              grade: Math.floor(Math.random() * 30) + 70,
+              status: "completed",
+            },
+            {
+              name: "Application Mobile",
+              grade: Math.floor(Math.random() * 30) + 70,
+              status: "in-progress",
+            },
+          ],
+          badges: [
+            { name: "Premier commit", icon: "faMedal", obtained: true },
+            { name: "Architecture validée", icon: "faCrown", obtained: true },
+            {
+              name: "Projet terminé",
+              icon: "faFire",
+              obtained: Math.random() > 0.5,
+            },
+            { name: "Mentor", icon: "faMedal", obtained: Math.random() > 0.5 },
+          ],
+        },
+        chartData: {
+          skillsRadar: [
+            { label: "React", value: Math.floor(Math.random() * 40) + 60 },
+            { label: "Node.js", value: Math.floor(Math.random() * 40) + 60 },
+            { label: "Python", value: Math.floor(Math.random() * 40) + 60 },
+            { label: "Docker", value: Math.floor(Math.random() * 40) + 60 },
+            { label: "TypeScript", value: Math.floor(Math.random() * 40) + 60 },
+          ],
+        },
+      };
+
+      setStudentData(studentProfile);
+    } catch (err) {
+      console.error("Erreur lors de la récupération de l'étudiant:", err);
+      setError(err instanceof Error ? err.message : "Erreur inconnue");
+    } finally {
+      setLoadingStudent(false);
+    }
+  };
+
+  // Nouvelle fonction pour charger un étudiant directement depuis l'API
+  const loadStudentDirectly = async (studentId: string) => {
+    setSelectedStudent(studentId);
+    setLoadingStudent(true);
+    setError(null);
+
+    try {
+      // Récupérer les données complètes du profil étudiant
+      const profileResponse = await fetch(
+        `http://localhost:3004/profile/${studentId}`
+      );
+      if (!profileResponse.ok) {
+        throw new Error("Erreur lors de la récupération du profil");
+      }
+      const profileData = await profileResponse.json();
+
+      if (!profileData.success) {
+        throw new Error(profileData.message || "Erreur serveur");
+      }
+
+      // Récupérer les données étudiant spécifiques
+      const studentResponse = await fetch(
+        `http://localhost:3004/student/profile/${studentId}`
+      );
+      const studentData = studentResponse.ok
+        ? await studentResponse.json()
+        : { success: false, data: null };
+
+      // Récupérer les données utilisateur pour l'email
+      const userResponse = await fetch(
+        `http://localhost:3001/users/${profileData.data.id_user}`
+      );
+      const userData = userResponse.ok
+        ? await userResponse.json()
+        : { success: false, data: null };
+
+      // Construire l'objet Student avec les vraies données
+      const studentProfile: Student = {
+        id: profileData.data.id,
+        firstName: profileData.data.first_name,
+        lastName: profileData.data.last_name,
+        email: userData.success
+          ? userData.data.email
+          : profileData.data.email || "",
+        phone: profileData.data.phone || "",
+        role: "student",
+        promotion: studentData.success
+          ? studentData.data.promotion
+          : "Non spécifiée",
+        campus: profileData.data.campus || "Non spécifié",
         profileImage: profileData.data.profileImage || "/default-avatar.png",
         stats: {
           totalHours: Math.floor(Math.random() * 2000) + 500, // Données simulées
