@@ -31,6 +31,7 @@ import usePromotionsData from "@/hooks/usePromotionsData";
 import { useRouter } from "next/navigation";
 import AdminButton from "@/components/admin/buttons/AdminButton";
 import AdminLoading from "@/components/admin/AdminLoading";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 interface Student {
   id: string;
@@ -80,6 +81,14 @@ const AdminProfilePage = () => {
 
   const promotionDropdownRef = useRef<HTMLDivElement>(null);
   const studentDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fonction pour nettoyer les paramètres URL
+  const cleanUrlParams = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("studentId");
+    url.searchParams.delete("showOtherUsers");
+    window.history.replaceState({}, "", url.toString());
+  };
 
   // Gestion des paramètres URL
   useEffect(() => {
@@ -162,6 +171,7 @@ const AdminProfilePage = () => {
     setSelectedStudent("");
     setStudentData(null);
     setPromotionDropdownOpen(false);
+    cleanUrlParams(); // Nettoyer les paramètres URL
   };
 
   // Gestion du bouton pour voir les autres utilisateurs
@@ -170,6 +180,7 @@ const AdminProfilePage = () => {
     setSelectedPromotion("");
     setSelectedStudent("");
     setStudentData(null);
+    cleanUrlParams(); // Nettoyer les paramètres URL
   };
 
   // Gestion du retour au profil admin
@@ -178,6 +189,7 @@ const AdminProfilePage = () => {
     setSelectedPromotion("");
     setSelectedStudent("");
     setStudentData(null);
+    cleanUrlParams(); // Nettoyer les paramètres URL
   };
 
   // Gestion de la déconnexion
@@ -370,6 +382,7 @@ const AdminProfilePage = () => {
     setStudentDropdownOpen(false);
     setLoadingStudent(true);
     setError(null);
+    cleanUrlParams(); // Nettoyer les paramètres URL
 
     try {
       // Récupérer les données de l'étudiant depuis la BDD
@@ -507,6 +520,48 @@ const AdminProfilePage = () => {
         ? await userResponse.json()
         : { success: false, data: null };
 
+      // Récupérer la promotion depuis l'API des promotions
+      let promotionName = "Non spécifiée";
+      if (studentData.success && studentData.data.id_promotion) {
+        try {
+          // Récupérer toutes les promotions
+          const promotionsResponse = await fetch(
+            "http://localhost:3004/promotions"
+          );
+          if (promotionsResponse.ok) {
+            const promotionsData = await promotionsResponse.json();
+
+            if (promotionsData.success) {
+              // Fonction pour récupérer le nom de promotion par ID
+              const getPromotionNameById = (promotionId: string): string => {
+                if (!promotionsData.success || !promotionId) return "";
+                const promotion = promotionsData.data.find(
+                  (p: { id: string; name: string }) => p.id === promotionId
+                );
+                console.log(
+                  "Recherche promotion pour ID:",
+                  promotionId,
+                  "Résultat:",
+                  promotion
+                );
+                return promotion ? promotion.name : "";
+              };
+
+              // Convertir l'ID de promotion en nom
+              const promotionId = studentData.data.id_promotion;
+              console.log("ID promotion à convertir:", promotionId);
+              promotionName = getPromotionNameById(promotionId);
+              console.log("Nom de promotion trouvé:", promotionName);
+            }
+          }
+        } catch (error) {
+          console.error(
+            "Erreur lors de la récupération de la promotion:",
+            error
+          );
+        }
+      }
+
       // Construire l'objet Student avec les vraies données
       const studentProfile: Student = {
         id: profileData.data.id,
@@ -517,9 +572,7 @@ const AdminProfilePage = () => {
           : profileData.data.email || "",
         phone: profileData.data.phone || "",
         role: "student",
-        promotion: studentData.success
-          ? studentData.data.promotion
-          : "Non spécifiée",
+        promotion: promotionName,
         campus: profileData.data.campus || "Non spécifié",
         profileImage: profileData.data.profileImage || "/default-avatar.png",
         stats: {
@@ -1060,25 +1113,19 @@ const AdminProfilePage = () => {
             <ProfileSection title="Informations personnelles" icon={Users}>
               <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
                 <div className="relative">
-                  <Image
-                    src={
-                      studentData.profileImage &&
-                      studentData.profileImage.trim() !== ""
-                        ? studentData.profileImage
-                        : "/default-avatar.png"
-                    }
-                    alt="Photo de profil"
-                    width={120}
-                    height={120}
-                    className="rounded-full border-4 border-blue-200 shadow-lg"
-                  />
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white text-3xl font-bold">
+                      {studentData.firstName.charAt(0).toUpperCase()}
+                      {studentData.lastName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
                 </div>
                 <div className="text-center md:text-left">
                   <h2 className="text-2xl font-bold text-blue-900 mb-2">
                     {studentData.firstName} {studentData.lastName}
                   </h2>
                   <p className="text-blue-800/80 mb-1">
-                    {studentData.role} - {studentData.promotion}
+                    Étudiant - {studentData.promotion}
                   </p>
                   <p className="text-blue-700/70 text-sm">
                     {studentData.campus}
@@ -1086,35 +1133,84 @@ const AdminProfilePage = () => {
                 </div>
               </div>
 
-              {/* Informations de contact */}
-              <div className="flex w-full justify-around">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <GraduationCap size={20} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-blue-800/60">Email</p>
-                    <p className="text-blue-900 font-medium">
-                      {studentData.email}
-                    </p>
+              {/* Informations complètes de l'étudiant */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                {/* Email */}
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-200 rounded-lg">
+                      <GraduationCap size={18} className="text-blue-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-600 font-medium mb-1">
+                        Email
+                      </p>
+                      <p className="text-blue-900 font-semibold text-sm">
+                        {studentData.email}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Users size={20} className="text-blue-600" />
+
+                {/* Téléphone */}
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-200 rounded-lg">
+                      <Users size={18} className="text-blue-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-600 font-medium mb-1">
+                        Téléphone
+                      </p>
+                      <p className="text-blue-900 font-semibold text-sm">
+                        {studentData.phone}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-blue-800/60">Téléphone</p>
-                    <p className="text-blue-900 font-medium">
-                      {studentData.phone}
-                    </p>
+                </div>
+
+                {/* Promotion */}
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-200 rounded-lg">
+                      <GraduationCap size={18} className="text-blue-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-600 font-medium mb-1">
+                        Promotion
+                      </p>
+                      <p className="text-blue-900 font-semibold text-sm">
+                        {studentData.promotion}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ID */}
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-200 rounded-lg">
+                      <Users size={18} className="text-blue-700" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-600 font-medium mb-1">
+                        ID
+                      </p>
+                      <p className="text-blue-900 font-semibold text-sm">
+                        {studentData.id}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </ProfileSection>
 
             {/* Statistiques principales avec anneaux de progression */}
-            <ProfileSection title="Statistiques principales" icon={TrendingUp}>
+            <ProfileSection
+              title="Statistiques principales"
+              icon={TrendingUp}
+              showDevelopmentBadge={true}
+            >
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
                 <div className="flex flex-col items-center">
                   <ProgressRing
@@ -1170,7 +1266,11 @@ const AdminProfilePage = () => {
             </ProfileSection>
 
             {/* Compétences avec radar chart */}
-            <ProfileSection title="Compétences techniques" icon={Target}>
+            <ProfileSection
+              title="Compétences techniques"
+              icon={Target}
+              showDevelopmentBadge={true}
+            >
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                 <div className="space-y-4">
                   {studentData.stats!.skills.length > 0 ? (
@@ -1203,7 +1303,11 @@ const AdminProfilePage = () => {
           {/* Colonne droite */}
           <div className="flex flex-col gap-6">
             {/* Projets récents */}
-            <ProfileSection title="Projets récents" icon={BookOpen}>
+            <ProfileSection
+              title="Projets récents"
+              icon={BookOpen}
+              showDevelopmentBadge={true}
+            >
               <div className="space-y-3">
                 {studentData.stats!.recentProjects.length > 0 ? (
                   studentData.stats!.recentProjects.map((project, index) => (
@@ -1228,6 +1332,7 @@ const AdminProfilePage = () => {
                 studentData.stats!.badges.filter((m) => m.obtained).length
               }/${studentData.stats!.badges.length})`}
               icon={Badge}
+              showDevelopmentBadge={true}
             >
               <div className="grid grid-cols-2 gap-4">
                 {studentData.stats!.badges.length > 0 ? (
@@ -1276,16 +1381,18 @@ const AdminProfilePage = () => {
                   Modifier le profil
                 </AdminButton>
                 <Button
-                  className="w-full !border-blue-600 !text-blue-600 hover:!bg-blue-50 hover:!text-blue-700 cursor-pointer"
+                  className="w-full !border-blue-600 !text-blue-600 hover:!bg-blue-50 hover:!text-blue-700 cursor-pointer flex items-center gap-2"
                   variant="outline"
                 >
                   Exporter les données
+                  <DevelopmentBadge size="xs" />
                 </Button>
                 <Button
-                  className="w-full !border-green-600 !text-green-600 hover:!bg-green-50 hover:!text-green-700 cursor-pointer"
+                  className="w-full !border-green-600 !text-green-600 hover:!bg-green-50 hover:!text-green-700 cursor-pointer flex items-center gap-2"
                   variant="outline"
                 >
                   Voir les projets
+                  <DevelopmentBadge size="xs" />
                 </Button>
               </div>
             </ProfileSection>
