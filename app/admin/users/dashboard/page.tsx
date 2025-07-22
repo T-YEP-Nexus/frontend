@@ -1287,14 +1287,20 @@ export default function AdminDashboard() {
                 >
                   Fermer
                 </Button>
-                <AdminButton
+                <Button
                   onClick={() =>
                     router.push(`/admin/users/edit/${selectedUser.id}`)
                   }
-                  className="flex-1"
+                  disabled={!canEditUser(selectedUser)}
+                  className={`flex-1 font-semibold px-6 py-3 rounded-xl transition-all duration-300 cursor-pointer ${
+                    canEditUser(selectedUser)
+                      ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl hover:scale-105"
+                      : "bg-gray-100 text-gray-400 border border-gray-300 cursor-not-allowed opacity-50"
+                  }`}
+                  title={getEditButtonMessage(selectedUser)}
                 >
                   Modifier l'utilisateur
-                </AdminButton>
+                </Button>
               </div>
             </div>
           </div>
