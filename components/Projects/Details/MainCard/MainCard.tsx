@@ -15,13 +15,14 @@ export default function MainCard({
   className = "",
 }: MainCardProps) {
   return (
-    <div className={`bg-white rounded-2xl p-8 shadow-xl ${className}`}>
-      <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-3">
-        {icon}
-        <span>{title}</span>
-        <DevelopmentBadge size="xs" />
-      </h2>
-      {children}
-    </div>
+    <DevelopmentBadge>
+      <div className={`bg-white rounded-2xl p-8 shadow-xl ${className}`}>
+        <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-3">
+          {icon}
+          <span>{title}</span>
+        </h2>
+        {children}
+      </div>
+    </DevelopmentBadge>
   );
 }

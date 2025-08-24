@@ -146,96 +146,99 @@ Pierre,Durand,pierre.durand@epitech.eu,+33111222333,Campus Epitech Marseille,adv
 
       <div className="max-w-6xl mx-auto">
         {/* Zone d'upload */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-8">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <Upload size={24} />
+        <DevelopmentBadge>
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-8">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <Upload size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">
+                      Import en masse d'utilisateurs
+                    </h2>
+                    <p className="text-blue-100 text-sm">
+                      Importez plusieurs utilisateurs à partir d'un fichier CSV
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold">
-                    Import en masse d'utilisateurs
-                  </h2>
-                  <p className="text-blue-100 text-sm">
-                    Importez plusieurs utilisateurs à partir d'un fichier CSV
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* Template et instructions */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Instructions
+                  </h3>
+                  <Button
+                    onClick={downloadTemplate}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Download size={16} />
+                    Télécharger le template
+                  </Button>
+                </div>
+
+                <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800">
+                  <h4 className="font-semibold mb-2">
+                    Format du fichier CSV :
+                  </h4>
+                  <ul className="space-y-1">
+                    <li>
+                      <strong>firstName, lastName, email</strong> : Champs
+                      obligatoires
+                    </li>
+                    <li>
+                      <strong>phone, campus</strong> : Champs optionnels
+                    </li>
+                    <li>
+                      <strong>role</strong> : "student", "advisor" ou "admin"
+                      (défaut: "student")
+                    </li>
+                    <li>
+                      <strong>promotion, major, studentNumber</strong> : Pour
+                      les étudiants uniquement
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Zone de drop */}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  <Upload size={48} className="mx-auto text-gray-400 mb-4" />
+                  <p className="text-lg font-medium text-gray-900 mb-2">
+                    Cliquez pour sélectionner un fichier CSV
                   </p>
-                </div>
+                  <p className="text-sm text-gray-500">
+                    ou glissez-déposez votre fichier ici
+                  </p>
+                </label>
               </div>
-              <DevelopmentBadge size="sm" />
+
+              {uploadedFile && (
+                <div className="mt-4 p-4 bg-green-50 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-800">
+                    <CheckCircle size={16} />
+                    <span className="font-medium">Fichier sélectionné :</span>
+                    <span>{uploadedFile.name}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-
-          <div className="p-6">
-            {/* Template et instructions */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Instructions
-                </h3>
-                <Button
-                  onClick={downloadTemplate}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Download size={16} />
-                  Télécharger le template
-                </Button>
-              </div>
-
-              <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800">
-                <h4 className="font-semibold mb-2">Format du fichier CSV :</h4>
-                <ul className="space-y-1">
-                  <li>
-                    <strong>firstName, lastName, email</strong> : Champs
-                    obligatoires
-                  </li>
-                  <li>
-                    <strong>phone, campus</strong> : Champs optionnels
-                  </li>
-                  <li>
-                    <strong>role</strong> : "student", "advisor" ou "admin"
-                    (défaut: "student")
-                  </li>
-                  <li>
-                    <strong>promotion, major, studentNumber</strong> : Pour les
-                    étudiants uniquement
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Zone de drop */}
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="file-upload"
-              />
-              <label htmlFor="file-upload" className="cursor-pointer">
-                <Upload size={48} className="mx-auto text-gray-400 mb-4" />
-                <p className="text-lg font-medium text-gray-900 mb-2">
-                  Cliquez pour sélectionner un fichier CSV
-                </p>
-                <p className="text-sm text-gray-500">
-                  ou glissez-déposez votre fichier ici
-                </p>
-              </label>
-            </div>
-
-            {uploadedFile && (
-              <div className="mt-4 p-4 bg-green-50 rounded-lg">
-                <div className="flex items-center gap-2 text-green-800">
-                  <CheckCircle size={16} />
-                  <span className="font-medium">Fichier sélectionné :</span>
-                  <span>{uploadedFile.name}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        </DevelopmentBadge>
 
         {/* Aperçu des données */}
         {previewData.length > 0 && (

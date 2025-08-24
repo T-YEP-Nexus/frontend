@@ -764,11 +764,12 @@ export default function AdminDashboard() {
           <FileText size={20} />
           Créer une promotion
         </AdminButton>
-        <AdminButton onClick={() => router.push("/admin/bulk-import")}>
-          <FileText size={20} />
-          Import en masse
-          <DevelopmentBadge size="xs" />
-        </AdminButton>
+        <DevelopmentBadge>
+          <AdminButton onClick={() => router.push("/admin/bulk-import")}>
+            <FileText size={20} />
+            Import en masse
+          </AdminButton>
+        </DevelopmentBadge>
       </div>
 
       {/* Filtres et recherche */}

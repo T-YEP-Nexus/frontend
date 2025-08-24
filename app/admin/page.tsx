@@ -386,40 +386,45 @@ export default function AdminDashboard() {
           Actions rapides
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {quickActions.map((action, index) => (
-            <div
-              key={index}
-              onClick={() => router.push(action.href)}
-              className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer relative"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div
-                  className={`p-3 bg-gradient-to-br ${action.color} rounded-xl group-hover:scale-110 transition-transform duration-300`}
-                >
-                  <action.icon size={24} className="text-white" />
+          {quickActions.map((action, index) => {
+            const cardContent = (
+              <div
+                key={index}
+                onClick={() => router.push(action.href)}
+                className="group bg-white rounded-2xl shadow-lg p-6 border border-blue-200/50 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer relative"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div
+                    className={`p-3 bg-gradient-to-br ${action.color} rounded-xl group-hover:scale-110 transition-transform duration-300`}
+                  >
+                    <action.icon size={24} className="text-white" />
+                  </div>
+                  <ArrowRight
+                    size={20}
+                    className="text-blue-400 group-hover:text-blue-600 transition-colors duration-300"
+                  />
                 </div>
-                <ArrowRight
-                  size={20}
-                  className="text-blue-400 group-hover:text-blue-600 transition-colors duration-300"
-                />
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300">
+                      {action.title}
+                    </h3>
+                    <p className="text-blue-600 text-sm group-hover:text-blue-500 transition-colors duration-300">
+                      {action.description}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300">
-                    {action.title}
-                  </h3>
-                  <p className="text-blue-600 text-sm group-hover:text-blue-500 transition-colors duration-300">
-                    {action.description}
-                  </p>
-                </div>
-              </div>
-              {action.showDevelopmentBadge && (
-                <div className="absolute bottom-2 right-2">
-                  <DevelopmentBadge size="sm" />
-                </div>
-              )}
-            </div>
-          ))}
+            );
+
+            if (action.showDevelopmentBadge) {
+              return (
+                <DevelopmentBadge key={index}>{cardContent}</DevelopmentBadge>
+              );
+            }
+
+            return cardContent;
+          })}
         </div>
       </div>
 
@@ -539,51 +544,54 @@ export default function AdminDashboard() {
         </div>
 
         {/* Activité récente */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-blue-200/50">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-bold text-2xl text-blue-900 flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
-                <Clock className="w-6 h-6 text-blue-600" />
-              </div>
-              Activité récente
-            </h2>
-            <DevelopmentBadge size="sm" />
-          </div>
-          <div className="space-y-4">
-            {recentActivities.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl hover:shadow-md transition-all duration-300"
+        <DevelopmentBadge>
+          <div className="bg-white rounded-2xl shadow-lg p-8 border border-blue-200/50">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-bold text-2xl text-blue-900 flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
+                  <Clock className="w-6 h-6 text-blue-600" />
+                </div>
+                Activité récente
+              </h2>
+            </div>
+            <div className="space-y-4">
+              {recentActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl hover:shadow-md transition-all duration-300"
+                >
+                  <div className="p-2 bg-white rounded-lg shadow-sm">
+                    {getActivityIcon(activity.type)}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-blue-900 font-medium text-sm">
+                      {activity.description}
+                    </p>
+                    {activity.user && (
+                      <p className="text-blue-600 text-xs">
+                        par {activity.user}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-blue-600 text-xs font-medium">
+                      {formatTimestamp(activity.timestamp)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 text-center">
+              <Button
+                onClick={() => router.push("/admin/users/dashboard")}
+                variant="outline"
+                className="border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300"
               >
-                <div className="p-2 bg-white rounded-lg shadow-sm">
-                  {getActivityIcon(activity.type)}
-                </div>
-                <div className="flex-1">
-                  <p className="text-blue-900 font-medium text-sm">
-                    {activity.description}
-                  </p>
-                  {activity.user && (
-                    <p className="text-blue-600 text-xs">par {activity.user}</p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="text-blue-600 text-xs font-medium">
-                    {formatTimestamp(activity.timestamp)}
-                  </p>
-                </div>
-              </div>
-            ))}
+                Voir toutes les activités
+              </Button>
+            </div>
           </div>
-          <div className="mt-6 text-center">
-            <Button
-              onClick={() => router.push("/admin/users/dashboard")}
-              variant="outline"
-              className="border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300"
-            >
-              Voir toutes les activités
-            </Button>
-          </div>
-        </div>
+        </DevelopmentBadge>
       </div>
 
       {/* Footer avec informations système */}
