@@ -34,7 +34,11 @@ export default function CreateInformationPage() {
   const [successTitle, setSuccessTitle] = useState<string | null>(null);
   const [authorDropdownOpen, setAuthorDropdownOpen] = useState(false);
   const [authorSearchTerm, setAuthorSearchTerm] = useState("");
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
   const authorDropdownRef = useRef<HTMLDivElement | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -46,7 +50,10 @@ export default function CreateInformationPage() {
       try {
         const res = await fetch("http://localhost:3004/profiles");
         const data = await res.json();
-        const filtered = (data.data || []).filter((user: User) => user.roles_user === 'admin' || user.roles_user === 'advisor');
+        const filtered = (data.data || []).filter(
+          (user: User) =>
+            user.roles_user === "admin" || user.roles_user === "advisor"
+        );
         setUsers(filtered);
       } catch (e) {
         setUsers([]);
@@ -57,7 +64,9 @@ export default function CreateInformationPage() {
   }, []);
 
   // Handlers
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -141,7 +150,8 @@ export default function CreateInformationPage() {
           </div>
           {successTitle && (
             <div className="bg-green-100 text-green-700 px-4 py-2 rounded mb-4">
-              Information « <strong>{successTitle}</strong> » publiée avec succès !
+              Information « <strong>{successTitle}</strong> » publiée avec
+              succès !
             </div>
           )}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -190,9 +200,20 @@ export default function CreateInformationPage() {
                 <div
                   onClick={() => {
                     if (!authorDropdownOpen && authorDropdownRef.current) {
-                      const rect = authorDropdownRef.current.getBoundingClientRect();
+                      const rect =
+                        authorDropdownRef.current.getBoundingClientRect();
+                      const dropdownHeight = 300; // Hauteur approximative de la dropdown
+                      const spaceBelow = window.innerHeight - rect.bottom;
+                      const spaceAbove = rect.top;
+
+                      // Si il y a plus d'espace en haut qu'en bas, ouvrir au-dessus
+                      const shouldOpenAbove =
+                        spaceAbove > spaceBelow && spaceAbove > dropdownHeight;
+
                       setDropdownPosition({
-                        top: rect.bottom + 5,
+                        top: shouldOpenAbove
+                          ? rect.top - dropdownHeight - 5
+                          : rect.bottom + 5,
                         left: rect.left,
                         width: rect.width,
                       });
@@ -250,7 +271,9 @@ export default function CreateInformationPage() {
                       {usersLoading ? (
                         <div className="px-4 py-3 text-center">
                           <Loader2 className="w-4 h-4 animate-spin mx-auto text-blue-600" />
-                          <p className="text-sm text-gray-600 mt-1">Chargement...</p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Chargement...
+                          </p>
                         </div>
                       ) : filteredUsers.length === 0 ? (
                         <div className="px-4 py-3 text-center text-sm text-gray-600">
