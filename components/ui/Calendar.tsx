@@ -3,9 +3,15 @@
 import React, { useRef, useState, useEffect } from "react";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin, { DateClickArg } from "@fullcalendar/interaction";
 import frLocale from "@fullcalendar/core/locales/fr";
-import { EventInput, DateSelectArg, EventClickArg, EventDropArg } from "@fullcalendar/core";
+import {
+  EventInput,
+  DateSelectArg,
+  EventClickArg,
+  EventDropArg,
+} from "@fullcalendar/core";
 import ModalEventForm from "./ModalEventForm";
 import ModalDeleteEvent from "./ModalDeleteEvent";
 import ModalEventRegistration from "./ModalEventRegistration";
@@ -28,18 +34,18 @@ type CalendarEventInput = EventInput & {
 };
 
 const Calendar: React.FC<CalendarProps> = ({ role }) => {
-  const { 
-    events: backendEvents, 
-    loading, 
+  const {
+    events: backendEvents,
+    loading,
     error,
     fetchAllEvents,
     fetchStudentAgenda,
     updateEvent,
     createEvent,
     deleteEvent,
-    registerToEvent, 
-    unregisterFromEvent, 
-    checkUserRegistration 
+    registerToEvent,
+    unregisterFromEvent,
+    checkUserRegistration,
   } = useCalendarData();
 
   const [userRole, setUserRole] = useState<
@@ -115,9 +121,9 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   // Sélecteur de rôle pour test front
   const [roleSelector, setRoleSelector] = useState<
     "admin" | "advisor" | "student"
-  >("admin");
-  // Si la prop role est fournie, on l'utilise, sinon on prend le sélecteur ou la détection auto
-  const effectiveRole = role || roleSelector || userRole;
+  >("student");
+  // Si la prop role est fournie, on l'utilise, sinon on prend la détection auto, puis le sélecteur
+  const effectiveRole = role || userRole || roleSelector;
   const isAdmin = effectiveRole === "admin" || effectiveRole === "advisor";
   const isStudent = effectiveRole === "student";
   const [modalOpen, setModalOpen] = useState(false);
@@ -127,10 +133,25 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   } | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<any | null>(null);
-  const [eventToDelete, setEventToDelete] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string; slots?: any[] } | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<{
+    id: string;
+    title: string;
+    start?: Date | string;
+    end?: Date | string;
+    slots?: any[];
+  } | null>(null);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<{ id: string; title: string; start?: Date | string; end?: Date | string; event_type?: string; description?: string } | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<{
+    id: string;
+    title: string;
+    start?: Date | string;
+    end?: Date | string;
+    event_type?: string;
+    description?: string;
+    color?: string;
+  } | null>(null);
   const [isUserRegistered, setIsUserRegistered] = useState(false);
+  const [currentView, setCurrentView] = useState("timeGridWeek");
   const calendarRef = useRef<FullCalendar>(null);
 
   // Synchroniser les événements du backend avec le calendrier
@@ -173,7 +194,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   const getEventColor = (eventType: string) => {
     switch (eventType) {
       case "follow-up":
-        return "#4ade80"; // vert
+        return "#10b981"; // vert émeraude
       case "kick-off":
         return "#f59e0b"; // orange
       case "keynote":
@@ -181,7 +202,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
       case "hub-talk":
         return "#06b6d4"; // cyan
       case "other":
-        return "#60a5fa"; // bleu
+        return "#3b82f6"; // bleu
       default:
         return "#6b7280"; // gris
     }
@@ -248,7 +269,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
         title,
         start,
         end,
-        color: "#60a5fa",
+        color: "#3b82f6",
         extendedProps: {
           slots,
         },
@@ -260,7 +281,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
 
   const handleEventClick = async (clickInfo: EventClickArg) => {
     const eventId = Number(clickInfo.event.id);
-    const event = backendEvents.find(e => e.id === eventId);
+    const event = backendEvents.find((e) => e.id === eventId);
 
     if (!event) {
       console.error("Aucun événement trouvé pour cet id", eventId);
@@ -281,6 +302,9 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
         end: clickInfo.event.endStr,
         event_type: event.event_type,
         description: event.description,
+        color:
+          (clickInfo.event as any).backgroundColor ||
+          (clickInfo.event as any).color,
       });
       setIsUserRegistered(isRegistered);
       setShowRegistrationModal(true);
@@ -309,15 +333,21 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
 
     // Formater la date pour le backend
     const isoDateString = newStartDate.toISOString();
-    const formattedStartDate = isoDateString.replace('T', ' ').substring(0, 19) + "+00";
+    const formattedStartDate =
+      isoDateString.replace("T", " ").substring(0, 19) + "+00";
 
     try {
       await updateEvent(eventId, { event_datetime: formattedStartDate });
       // Pas besoin de re-fetch, car FullCalendar met déjà à jour l'UI.
       // fetchAllEvents() pourrait être appelé si vous voulez rafraîchir toutes les données.
     } catch (error: any) {
-      console.error("Erreur lors de la mise à jour de l'événement:", error.message);
-      alert("La mise à jour de l'événement a échoué. L'événement va être replacé à sa position d'origine.");
+      console.error(
+        "Erreur lors de la mise à jour de l'événement:",
+        error.message
+      );
+      alert(
+        "La mise à jour de l'événement a échoué. L'événement va être replacé à sa position d'origine."
+      );
       dropInfo.revert(); // Annuler le changement visuel en cas d'erreur
     }
 
@@ -337,8 +367,8 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   // Afficher un message de chargement ou d'erreur
   if (loading || roleLoading) {
     return (
-      <div className="bg-white rounded-lg shadow p-2 relative">
-        <div className="flex items-center justify-center h-[500px]">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="flex items-center justify-center h-[600px]">
           <AdminLoading message="Chargement des événements..." />
         </div>
       </div>
@@ -347,10 +377,12 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-2 relative">
-        <div className="flex items-center justify-center h-[500px]">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="flex items-center justify-center h-[600px]">
           <div className="text-center">
-            <p className="text-red-600 mb-2">Erreur de chargement</p>
+            <p className="text-red-600 mb-2 text-lg font-semibold">
+              Erreur de chargement
+            </p>
             <p className="text-gray-600 text-sm">{error}</p>
           </div>
         </div>
@@ -359,18 +391,44 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-2 relative">
+    <div
+      className={`bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden w-full ${
+        isAdmin ? "admin-calendar" : ""
+      }`}
+    >
       <FullCalendar
         ref={calendarRef}
-        plugins={[timeGridPlugin, interactionPlugin]}
-        initialView="timeGridWeek"
+        plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+        initialView={currentView}
         locale={frLocale}
-        headerToolbar={{ left: "prev today", center: "title", right: "next" }}
-        customButtons={{}}
-        height={500}
-        slotMinTime="07:00:00"
-        slotMaxTime="20:00:00"
-        allDaySlot={false}
+        headerToolbar={{
+          left: "prev today",
+          center: "title",
+          right: "dayGridMonth,timeGridWeek,timeGridDay next",
+        }}
+        views={{
+          timeGridDay: {
+            titleFormat: { year: "numeric", month: "long", day: "numeric" },
+            slotMinTime: "06:00:00",
+            slotMaxTime: "22:00:00",
+            slotDuration: "01:00:00",
+            slotLabelInterval: "02:00:00",
+            allDaySlot: false,
+          },
+          timeGridWeek: {
+            titleFormat: { year: "numeric", month: "long", day: "numeric" },
+            slotMinTime: "06:00:00",
+            slotMaxTime: "22:00:00",
+            slotDuration: "01:00:00",
+            slotLabelInterval: "02:00:00",
+            allDaySlot: false,
+          },
+          dayGridMonth: {
+            titleFormat: { year: "numeric", month: "long" },
+            dayHeaderFormat: { weekday: "short" },
+          },
+        }}
+        height={800}
         events={events}
         nowIndicator={true}
         dayHeaderFormat={{ weekday: "short", day: "numeric", month: "short" }}
@@ -421,204 +479,703 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
 
           {eventToDelete && (
             <div
-              className={`fixed inset-0 z-50 flex items-center justify-center ${
-                deleteModalOpen ? "" : "hidden"
+              className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
+                deleteModalOpen
+                  ? "opacity-100"
+                  : "opacity-0 pointer-events-none"
               }`}
-              style={{ background: "rgba(0,0,0,0.3)" }}
+              style={{
+                background: "rgba(0,0,0,0.4)",
+                backdropFilter: "blur(4px)",
+              }}
             >
-              <div className="bg-white rounded-2xl p-6 w-full max-w-md sm:w-[700px] max-w-[98vw] shadow-lg relative overflow-x-hidden flex flex-col">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-2xl font-bold">Détail de l'événement</h2>
-                  <button
-                    className="text-gray-400 hover:text-gray-700 text-2xl leading-none rounded-xl p-1 transition-all duration-200 hover:bg-gray-200"
-                    onClick={() => setDeleteModalOpen(false)}
-                  >
-                    &times;
-                  </button>
-                </div>
-                <p className="mb-1">
-                  Titre :{" "}
-                  <span className="font-semibold">{eventToDelete.title}</span>
-                </p>
-                <p className="mb-4 text-base text-gray-500">
-                  {eventToDelete.start && eventToDelete.end
-                    ? `${new Date(
-                        eventToDelete.start
-                      ).toLocaleString()} - ${new Date(
-                        eventToDelete.end
-                      ).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}`
-                    : null}
-                </p>
-                {/* Liste des créneaux/inscrits si slots présents */}
-                {Array.isArray(eventToDelete.slots) &&
-                  eventToDelete.slots.length > 0 && (
-                    <div className="flex-1 overflow-y-auto flex flex-col gap-2 mb-4 pr-1">
-                      {eventToDelete.slots.map((slot: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-2 bg-blue-50 rounded-xl px-5 py-2"
+              <div
+                className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative transform transition-all duration-300 ${
+                  deleteModalOpen
+                    ? "opacity-100 translate-y-0 scale-100"
+                    : "opacity-0 translate-y-8 scale-95"
+                }`}
+                style={{
+                  transform: deleteModalOpen
+                    ? "translateY(0) scale(1)"
+                    : "translateY(2rem) scale(0.95)",
+                }}
+              >
+                {/* Header de la modale */}
+                <div className="bg-gradient-to-r from-red-500 to-red-700 p-6 text-white rounded-t-2xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-white/20 rounded-xl">
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
                         >
-                          <span className="flex-1 text-sm">
-                            {new Date(slot.start).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}{" "}
-                            -{" "}
-                            {new Date(slot.end).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                          {slot.user ? (
-                            <span className="text-xs text-blue-700 font-semibold">
-                              {slot.user}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-gray-400">Libre</span>
-                          )}
-                        </div>
-                      ))}
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold">
+                          Détail de l'événement
+                        </h2>
+                        <p className="text-red-100 text-sm">
+                          Gestion des créneaux et inscriptions
+                        </p>
+                      </div>
                     </div>
-                  )}
-                <button
-                  className="mt-2 px-5 py-2 bg-red-400 text-white rounded-xl font-semibold shadow-sm hover:bg-red-500 hover:shadow-lg transition-all duration-200 self-end text-lg"
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        "Voulez-vous vraiment supprimer cet événement ?"
-                      )
-                    )
-                      handleDeleteEvent();
-                  }}
-                >
-                  Supprimer l'événement
-                </button>
+                    <button
+                      onClick={() => setDeleteModalOpen(false)}
+                      className="p-2 hover:bg-white/20 rounded-lg transition-all duration-300 hover:scale-110 cursor-pointer"
+                    >
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Contenu de la modale */}
+                <div className="p-6 space-y-6">
+                  {/* Informations de l'événement */}
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <svg
+                        className="w-5 h-5 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      Informations générales
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Titre</p>
+                        <p className="font-semibold text-gray-900">
+                          {eventToDelete.title}
+                        </p>
+                      </div>
+                      {eventToDelete.start && eventToDelete.end && (
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Horaires</p>
+                          <p className="font-semibold text-gray-900">
+                            {new Date(eventToDelete.start).toLocaleString(
+                              "fr-FR",
+                              {
+                                weekday: "long",
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )}{" "}
+                            -{" "}
+                            {new Date(eventToDelete.end).toLocaleTimeString(
+                              "fr-FR",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Liste des créneaux/inscrits si slots présents */}
+                  {Array.isArray(eventToDelete.slots) &&
+                    eventToDelete.slots.length > 0 && (
+                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6">
+                        <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                          <svg
+                            className="w-5 h-5 text-blue-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                            />
+                          </svg>
+                          Créneaux et inscriptions ({eventToDelete.slots.length}
+                          )
+                        </h3>
+                        <div className="space-y-3 max-h-60 overflow-y-auto">
+                          {eventToDelete.slots.map((slot: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 ${
+                                slot.user
+                                  ? "bg-white border-green-200 shadow-sm"
+                                  : "bg-white border-gray-200"
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`p-2 rounded-lg ${
+                                    slot.user ? "bg-green-100" : "bg-gray-100"
+                                  }`}
+                                >
+                                  <svg
+                                    className={`w-4 h-4 ${
+                                      slot.user
+                                        ? "text-green-600"
+                                        : "text-gray-400"
+                                    }`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-900">
+                                    {new Date(slot.start).toLocaleTimeString(
+                                      "fr-FR",
+                                      {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }
+                                    )}{" "}
+                                    -{" "}
+                                    {new Date(slot.end).toLocaleTimeString(
+                                      "fr-FR",
+                                      {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }
+                                    )}
+                                  </p>
+                                  <p className="text-sm text-gray-600">
+                                    {slot.user ? "Inscrit" : "Disponible"}
+                                  </p>
+                                </div>
+                              </div>
+                              {slot.user && (
+                                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                  {slot.user}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Boutons d'action */}
+                  <div className="flex gap-4 pt-6 border-t border-gray-200">
+                    <button
+                      onClick={() => setDeleteModalOpen(false)}
+                      className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-300"
+                    >
+                      Fermer
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Voulez-vous vraiment supprimer cet événement ?"
+                          )
+                        ) {
+                          handleDeleteEvent();
+                        }
+                      }}
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                      Supprimer l'événement
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
         </>
       )}
-      {/* Style personnalisé FullCalendar */}
+      {/* Style personnalisé FullCalendar - Design moderne */}
       <style jsx global>{`
-        .fc .fc-toolbar {
-          margin-bottom: 0.5rem;
+        /* Container principal */
+        .fc {
+          font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+            Roboto, sans-serif;
+          background: white;
+          border-radius: 1rem;
+          overflow: hidden;
+          width: 100% !important;
+          max-width: 100% !important;
         }
+
+        .fc .fc-view-harness {
+          width: 100% !important;
+          max-width: none !important;
+        }
+
+        .fc .fc-scroller {
+          width: 100% !important;
+          max-width: none !important;
+        }
+
+        .fc .fc-scroller-liquid {
+          width: 100% !important;
+          max-width: none !important;
+        }
+
+        .fc .fc-scroller-liquid-absolute {
+          width: 100% !important;
+          max-width: none !important;
+        }
+
+        .fc .fc-timegrid-body {
+          width: 100% !important;
+          max-width: none !important;
+        }
+
+        .fc .fc-timegrid-axis {
+          width: auto !important;
+        }
+
+        .fc .fc-timegrid-slot-lane {
+          width: 100% !important;
+        }
+
+        /* Toolbar moderne */
+        .fc .fc-toolbar {
+          padding: 2rem 3rem 1.5rem 3rem;
+          margin: 0;
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          border-bottom: 1px solid #e2e8f0;
+        }
+
         .fc .fc-toolbar-chunk {
           display: flex;
           align-items: center;
+          gap: 0.5rem;
         }
+
         .fc .fc-toolbar-chunk:first-child {
-          min-width: 180px;
+          min-width: 200px;
         }
+
         .fc .fc-toolbar-chunk:last-child {
-          min-width: 180px;
+          min-width: 200px;
           justify-content: flex-end;
         }
+
         .fc .fc-toolbar-center {
           justify-content: center;
-          gap: 1.5rem;
+          flex: 1;
         }
+
+        /* Boutons modernes */
         .fc .fc-button {
-          background: #e6f0ff;
-          color: #1971ff;
-          border: none;
-          border-radius: 9999px;
-          font-size: 1rem;
-          padding: 0.25rem 0.75rem;
+          background: white;
+          color: #3b82f6;
+          border: 2px solid #e2e8f0;
+          border-radius: 0.75rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          padding: 0.5rem 1rem;
           margin: 0 0.25rem;
-          min-width: 32px;
-          min-height: 32px;
-          transition: background 0.2s, color 0.2s;
+          min-width: 40px;
+          min-height: 40px;
+          transition: all 0.2s ease;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
         .fc .fc-button:hover {
-          background: #1971ff;
-          color: #fff;
+          background: #3b82f6;
+          color: white;
+          border-color: #3b82f6;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
+
         .fc .fc-button:focus {
           outline: none;
-          box-shadow: none;
-          background: #e6f0ff;
-          color: #1971ff;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
+
         .fc .fc-button:active {
-          background: #1971ff;
-          color: #fff;
+          transform: translateY(0);
         }
+
+        /* Boutons de vue */
+        .fc .fc-button-group {
+          display: flex;
+          gap: 0;
+          border: none !important;
+          box-shadow: none !important;
+        }
+
+        .fc .fc-button-group .fc-button {
+          border-radius: 0.5rem;
+          margin: 0;
+          border: 2px solid #e2e8f0 !important;
+          border-right: 1px solid #e2e8f0 !important;
+          border-left: 1px solid #e2e8f0 !important;
+        }
+
+        .fc .fc-button-group .fc-button:first-child {
+          border-top-right-radius: 0;
+          border-bottom-right-radius: 0;
+          border-left: 2px solid #e2e8f0 !important;
+        }
+
+        .fc .fc-button-group .fc-button:last-child {
+          border-top-left-radius: 0;
+          border-bottom-left-radius: 0;
+          border-right: 2px solid #e2e8f0 !important;
+        }
+
+        .fc .fc-button-group .fc-button:not(:first-child):not(:last-child) {
+          border-radius: 0;
+        }
+
+        .fc .fc-button-group .fc-button.fc-button-active {
+          background: #3b82f6 !important;
+          color: white !important;
+          border-color: #3b82f6 !important;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+          z-index: 1;
+        }
+
+        .fc .fc-button-group .fc-button:hover {
+          background: #3b82f6 !important;
+          color: white !important;
+          border-color: #3b82f6 !important;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+        }
+
+        /* Bouton Today spécial */
         .fc .fc-button.fc-today-button {
-          margin-right: 1.5rem;
-          margin-left: 0.5rem;
-          background: #e6f0ff;
-          color: #1971ff;
-          border-radius: 9999px;
-          font-size: 1rem;
-          padding: 0.25rem 2.2rem;
-          min-width: 100px;
-          min-height: 32px;
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          color: white;
+          border: none;
+          border-radius: 0.75rem;
+          font-size: 0.875rem;
           font-weight: 600;
-          box-shadow: 0 1px 4px #1971ff22;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
+          padding: 0.5rem 1.5rem;
+          min-width: 120px;
+          min-height: 40px;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          margin: 0 1rem;
         }
+
         .fc .fc-button.fc-today-button:hover {
-          background: #1971ff;
-          color: #fff;
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
         }
+
         .fc .fc-button.fc-today-button:focus {
           outline: none;
-          box-shadow: none;
-          background: #e6f0ff;
-          color: #1971ff;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
+
         .fc .fc-button.fc-today-button:disabled {
-          background: #e6f0ff !important;
-          color: #1971ff !important;
+          background: linear-gradient(
+            135deg,
+            #3b82f6 0%,
+            #2563eb 100%
+          ) !important;
+          color: white !important;
           opacity: 1 !important;
           cursor: pointer !important;
         }
+
+        /* Titre du calendrier */
         .fc .fc-toolbar-title {
-          font-size: 1.25rem;
-          font-weight: bold;
-          color: #1971ff;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1e293b;
           text-align: center;
           width: 100%;
+          letter-spacing: -0.025em;
         }
+
+        /* En-têtes des colonnes */
+        .fc .fc-col-header {
+          background: #f8fafc;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .fc .fc-col-header-cell {
+          border: none;
+          padding: 1rem 0;
+        }
+
         .fc .fc-col-header-cell-cushion {
           text-align: center;
           font-weight: 600;
-          font-size: 1rem;
+          font-size: 0.875rem;
+          color: #475569;
+          text-decoration: none;
+          padding: 0.5rem;
+          border-radius: 0.5rem;
+          transition: all 0.2s ease;
         }
-        /* Cacher la scrollbar de l'en-tête des dates */
-        .fc .fc-scroller-harness .fc-scroller {
-          scrollbar-width: none;
-          -ms-overflow-style: none;
+
+        .fc .fc-col-header-cell-cushion:hover {
+          background: #e2e8f0;
+          color: #1e293b;
         }
-        .fc .fc-scroller-harness .fc-scroller::-webkit-scrollbar {
-          display: none;
+
+        /* Cellules du calendrier */
+        .fc .fc-timegrid-slot {
+          border-color: #f1f5f9;
+          height: 50px;
         }
-        /* Scrollbar du calendrier : invisible par défaut, visible au hover */
+
+        .fc .fc-timegrid-slot-label {
+          border-color: #f1f5f9;
+          color: #64748b;
+          font-size: 0.75rem;
+          font-weight: 500;
+          padding: 0.25rem 0.5rem;
+        }
+
+        .fc .fc-timegrid-slot-lane {
+          border-color: #f1f5f9;
+        }
+
+        .fc .fc-timegrid-axis {
+          border-color: #f1f5f9;
+          background: #f8fafc;
+        }
+
+        /* Vue mois */
+        .fc .fc-daygrid-day {
+          border-color: #f1f5f9;
+          min-height: 120px;
+        }
+
+        .fc .fc-daygrid-day-frame {
+          min-height: 120px;
+        }
+
+        .fc .fc-daygrid-day-number {
+          color: #475569;
+          font-weight: 600;
+          padding: 0.5rem;
+        }
+
+        .fc .fc-daygrid-day.fc-day-today {
+          background: rgba(59, 130, 246, 0.05);
+        }
+
+        .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+          background: #3b82f6;
+          color: white;
+          border-radius: 50%;
+          width: 2rem;
+          height: 2rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0.25rem;
+        }
+
+        /* Événements */
+        .fc .fc-event {
+          border: none;
+          border-radius: 0.5rem;
+          font-weight: 500;
+          font-size: 0.7rem;
+          padding: 0.2rem 0.4rem;
+          margin: 1px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          transition: all 0.2s ease;
+        }
+
+        .fc .fc-event:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .fc .fc-event-main {
+          padding: 0;
+        }
+
+        .fc .fc-event-title {
+          font-weight: 600;
+          line-height: 1.2;
+        }
+
+        .fc .fc-event-time {
+          font-weight: 500;
+          opacity: 0.9;
+        }
+
+        /* Indicateur "maintenant" */
+        .fc .fc-timegrid-now-indicator-line {
+          border-color: #ef4444;
+          border-width: 2px;
+        }
+
+        .fc .fc-timegrid-now-indicator-arrow {
+          border-color: #ef4444;
+          border-width: 5px;
+        }
+
+        /* Sélection de plage */
+        .fc .fc-highlight {
+          background: rgba(59, 130, 246, 0.1);
+          border: 2px solid rgba(59, 130, 246, 0.3);
+          border-radius: 0.5rem;
+        }
+
+        /* Scrollbars personnalisées */
         .fc .fc-timegrid-body {
           scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 #f1f5f9;
         }
+
         .fc .fc-timegrid-body::-webkit-scrollbar {
           width: 8px;
-          background: transparent;
-          opacity: 0;
-          transition: opacity 0.2s;
         }
-        .fc .fc-timegrid-body:hover::-webkit-scrollbar {
-          opacity: 1;
-          background: #e6f0ff;
+
+        .fc .fc-timegrid-body::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 4px;
         }
+
         .fc .fc-timegrid-body::-webkit-scrollbar-thumb {
-          background: #b3cfff;
-          border-radius: 8px;
+          background: #cbd5e1;
+          border-radius: 4px;
+          transition: background 0.2s ease;
         }
+
         .fc .fc-timegrid-body::-webkit-scrollbar-thumb:hover {
-          background: #1971ff;
+          background: #94a3b8;
+        }
+
+        /* Hover sur les cases du calendrier - UNIQUEMENT pour les admins */
+        .admin-calendar .fc .fc-timegrid-slot {
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+
+        .admin-calendar .fc .fc-timegrid-slot:hover {
+          background-color: rgba(59, 130, 246, 0.1) !important;
+        }
+
+        /* Cibler uniquement les cellules individuelles par jour - UNIQUEMENT pour les admins */
+        .admin-calendar .fc .fc-timegrid-col .fc-timegrid-slot {
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+
+        .admin-calendar .fc .fc-timegrid-col .fc-timegrid-slot:hover {
+          background-color: rgba(59, 130, 246, 0.1) !important;
+        }
+
+        /* Solution finale : cibler uniquement les cellules individuelles - UNIQUEMENT pour les admins */
+        .admin-calendar .fc .fc-timegrid-slot-lane .fc-timegrid-slot {
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+
+        .admin-calendar .fc .fc-timegrid-slot-lane .fc-timegrid-slot:hover {
+          background-color: rgba(59, 130, 246, 0.1) !important;
+        }
+
+        /* Hover sur les jours dans la vue mois - UNIQUEMENT pour les admins */
+        .admin-calendar .fc .fc-daygrid-day {
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+
+        .admin-calendar .fc .fc-daygrid-day:hover {
+          background-color: rgba(59, 130, 246, 0.1) !important;
+        }
+
+        /* Hover sur les cellules d'événements - UNIQUEMENT pour les admins */
+        .admin-calendar .fc .fc-daygrid-day-events {
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+
+        /* Curseur pointer sur les événements pour tous les utilisateurs */
+        .fc .fc-event {
+          cursor: pointer;
+        }
+
+        .fc .fc-daygrid-day-events:hover {
+          background-color: rgba(59, 130, 246, 0.1) !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+          .fc .fc-toolbar {
+            padding: 1rem;
+            flex-direction: column;
+            gap: 1rem;
+          }
+
+          .fc .fc-toolbar-chunk {
+            min-width: auto;
+            justify-content: center;
+          }
+
+          .fc .fc-toolbar-title {
+            font-size: 1.25rem;
+          }
+
+          .fc .fc-button {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+          }
+
+          .fc .fc-button.fc-today-button {
+            padding: 0.375rem 1rem;
+            min-width: 100px;
+          }
         }
       `}</style>
     </div>
