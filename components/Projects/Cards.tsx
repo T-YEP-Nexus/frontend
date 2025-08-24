@@ -293,9 +293,6 @@ function Cards({
             {/* Header de la carte étendue */}
             <div className="flex justify-between items-start mb-4 flex-shrink-0">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-center mb-2">
-                  <DevelopmentBadge size="sm" />
-                </div>
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="font-bold text-gray-800 text-xl lg:group-hover:text-[#0E58D8] transition-colors duration-300 break-words overflow-hidden">
                     {projectName}

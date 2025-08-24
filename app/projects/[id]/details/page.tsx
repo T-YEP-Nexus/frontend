@@ -122,25 +122,26 @@ export default function ProjectDetails({
         </div>
 
         {/* Barre de progression principale */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-3">
-              <h2 className="text-white text-xl font-semibold">
-                Progression globale
-              </h2>
-              <DevelopmentBadge size="xs" />
+        <DevelopmentBadge>
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-3">
+                <h2 className="text-white text-xl font-semibold">
+                  Progression globale
+                </h2>
+              </div>
+              <span className="text-white font-bold text-2xl">
+                {project.progress}%
+              </span>
             </div>
-            <span className="text-white font-bold text-2xl">
-              {project.progress}%
-            </span>
+            <div className="w-full bg-white/20 rounded-full h-4">
+              <div
+                className="bg-white h-4 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${project.progress}%` }}
+              ></div>
+            </div>
           </div>
-          <div className="w-full bg-white/20 rounded-full h-4">
-            <div
-              className="bg-white h-4 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${project.progress}%` }}
-            ></div>
-          </div>
-        </div>
+        </DevelopmentBadge>
       </div>
 
       {/* Contenu principal */}

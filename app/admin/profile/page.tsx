@@ -780,9 +780,7 @@ const AdminProfilePage = () => {
                         {statsData.totalPromotions}
                       </div>
                     )}
-                    <div className="text-sm text-blue-600">
-                      Promotions
-                    </div>
+                    <div className="text-sm text-blue-600">Promotions</div>
                   </div>
                   {/* <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
                     <div className="text-2xl font-bold text-blue-900">24</div>
@@ -1469,20 +1467,22 @@ const AdminProfilePage = () => {
                 >
                   Modifier le profil
                 </AdminButton>
-                <Button
-                  className="w-full !border-blue-600 !text-blue-600 hover:!bg-blue-50 hover:!text-blue-700 cursor-pointer flex items-center gap-2"
-                  variant="outline"
-                >
-                  Exporter les données
-                  <DevelopmentBadge size="xs" />
-                </Button>
-                <Button
-                  className="w-full !border-green-600 !text-green-600 hover:!bg-green-50 hover:!text-green-700 cursor-pointer flex items-center gap-2"
-                  variant="outline"
-                >
-                  Voir les projets
-                  <DevelopmentBadge size="xs" />
-                </Button>
+                <DevelopmentBadge>
+                  <Button
+                    className="w-full !border-blue-600 !text-blue-600 hover:!bg-blue-50 hover:!text-blue-700 cursor-pointer flex items-center gap-2"
+                    variant="outline"
+                  >
+                    Exporter les données
+                  </Button>
+                </DevelopmentBadge>
+                <DevelopmentBadge>
+                  <Button
+                    className="w-full !border-green-600 !text-green-600 hover:!bg-green-50 hover:!text-green-700 cursor-pointer flex items-center gap-2"
+                    variant="outline"
+                  >
+                    Voir les projets
+                  </Button>
+                </DevelopmentBadge>
               </div>
             </ProfileSection>
           </div>

@@ -137,7 +137,7 @@ export default function AdminStatsCards({
       {stats.map((stat, index) => {
         const colorClasses = getColorClasses(stat.color);
 
-        return (
+        const cardContent = (
           <div
             key={index}
             className={`group bg-white rounded-2xl shadow-lg ${sizeClasses.card} border ${colorClasses.borderColor} hover:shadow-2xl hover:scale-105 transition-all duration-300`}
@@ -150,7 +150,6 @@ export default function AdminStatsCards({
                   >
                     {stat.title}
                   </p>
-                  {stat.showDevelopmentBadge && <DevelopmentBadge size="xs" />}
                 </div>
                 <p
                   className={`${sizeClasses.value} font-bold bg-gradient-to-r ${colorClasses.gradient} bg-clip-text text-transparent`}
@@ -166,6 +165,12 @@ export default function AdminStatsCards({
             </div>
           </div>
         );
+
+        if (stat.showDevelopmentBadge) {
+          return <DevelopmentBadge key={index}>{cardContent}</DevelopmentBadge>;
+        }
+
+        return cardContent;
       })}
     </div>
   );

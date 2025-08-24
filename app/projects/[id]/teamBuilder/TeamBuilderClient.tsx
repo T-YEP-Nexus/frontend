@@ -136,11 +136,12 @@ export default function TeamBuilderClient({ project }: { project: Project }) {
 
       {/* Règles */}
       <div className="bg-white rounded-xl lg:rounded-2xl shadow-lg p-6 mb-8 sm:mb-10 lg:mb-16 border border-gray-200">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 flex items-center gap-3">
-          <Users className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
-          <span>Règles de constitution des équipes</span>
-          <DevelopmentBadge size="sm" />
-        </h2>
+        <DevelopmentBadge>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 flex items-center gap-3">
+            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+            <span>Règles de constitution des équipes</span>
+          </h2>
+        </DevelopmentBadge>
         <ul className="text-gray-700 text-sm sm:text-base space-y-2 list-disc pl-6">
           <li>Vous ne pouvez rejoindre qu'une seule équipe par projet</li>
           <li>Chaque équipe peut contenir jusqu'à 3 membres</li>
