@@ -6,7 +6,8 @@
         "dev": "next dev --turbopack",
         "build": "next build",
         "start": "next start",
-        "lint": "next lint"
+        "lint": "next lint",
+        "test:e2e": "playwright test"
     },
     "dependencies": {
         "@fortawesome/fontawesome-svg-core": "^6.7.2",
@@ -29,6 +30,7 @@
         "tailwind-merge": "^3.3.1"
     },
     "devDependencies": {
+        "@playwright/test": "^1.47.2",
         "@tailwindcss/postcss": "^4",
         "@types/jsonwebtoken": "^9.0.10",
         "@types/node": "^20",

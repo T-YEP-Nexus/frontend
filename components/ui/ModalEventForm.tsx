@@ -1,9 +1,22 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import PromotionDropdown from "./promotion-dropdown";
+import MultiPromotionSelector from "./MultiPromotionSelector";
+import EventTypeSelector from "./EventTypeSelector";
+import SlotManager from "./SlotManager";
 import usePromotionsData from "@/hooks/usePromotionsData";
 import { useCalendarData } from "@/hooks/useCalendarData";
 import { getUserIdFromToken } from "@/lib/auth";
+import { 
+  X, 
+  Calendar, 
+  Clock, 
+  MapPin, 
+  Users, 
+  FileText,
+  Settings,
+  Save,
+  Trash2
+} from "lucide-react";
 
 interface ModalEventFormProps {
   open: boolean;
@@ -33,13 +46,15 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
   const [slotDuration, setSlotDuration] = useState(30);
   const [promotion, setPromotion] = useState("");
   const [targetPromotion, setTargetPromotion] = useState(false);
-  const [slotsPreview, setSlotsPreview] = useState<{start: string, end: string}[]>([]);
+  const [slots, setSlots] = useState<{id: string, start: string, end: string, user: string | null, maxUsers?: number, currentUsers?: number}[]>([]);
   const [eventType, setEventType] = useState('other');
   const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [slotDurationError, setSlotDurationError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedPromotionId, setSelectedPromotionId] = useState<string | null>(null);
+  const [selectedPromotionIds, setSelectedPromotionIds] = useState<string[]>([]);
+  const [allowMultipleUsers, setAllowMultipleUsers] = useState(false);
 
 
   const { promotions, loading: promotionsLoading, error: promotionsError } = usePromotionsData();
@@ -47,30 +62,113 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
   useEffect(() => {
     if (open) {
       setFormError(null);
-      if (eventToEdit && eventToEdit.event_datetime) {
-        // Convert the UTC date from the backend to a local date for the input
-        const utcDate = new Date(eventToEdit.event_datetime);
+      if (eventToEdit) {
+        // Pré-remplir le formulaire avec les données existantes de l'événement
+        console.log("Pré-remplissage du formulaire avec:", eventToEdit);
+        console.log("Détails des champs:", {
+          title: eventToEdit.title,
+          description: eventToEdit.description,
+          event_type: eventToEdit.event_type,
+          location: eventToEdit.location,
+          target_promotions: eventToEdit.target_promotions,
+          id_prom: eventToEdit.id_prom,
+          slots: eventToEdit.slots,
+          slot_duration: eventToEdit.slot_duration,
+          allow_multiple_users: eventToEdit.allow_multiple_users
+        });
         
-        // Format the local date into a string that datetime-local input accepts (YYYY-MM-DDTHH:MM)
-        const localDateString = new Date(utcDate.getTime() - (utcDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-
-        setTitle(eventToEdit.title || "");
-        setStart(localDateString);
-        
-        if (eventToEdit.duration_minutes) {
-          const endDate = new Date(utcDate.getTime() + eventToEdit.duration_minutes * 60000);
-          const localEndDateString = new Date(endDate.getTime() - (endDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-          setEnd(localEndDateString);
-        } else {
-          setEnd("");
+        // Gestion des dates
+        if (eventToEdit.event_datetime) {
+          const utcDate = new Date(eventToEdit.event_datetime);
+          const localDateString = new Date(utcDate.getTime() - (utcDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+          setStart(localDateString);
+          
+          if (eventToEdit.duration_minutes) {
+            const endDate = new Date(utcDate.getTime() + eventToEdit.duration_minutes * 60000);
+            const localEndDateString = new Date(endDate.getTime() - (endDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            setEnd(localEndDateString);
+          } else {
+            setEnd("");
+          }
+        } else if (eventToEdit.start) {
+          // Fallback pour les événements avec start/end
+          const startDate = new Date(eventToEdit.start);
+          const localStartString = new Date(startDate.getTime() - (startDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+          setStart(localStartString);
+          
+          if (eventToEdit.end) {
+            const endDate = new Date(eventToEdit.end);
+            const localEndString = new Date(endDate.getTime() - (endDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            setEnd(localEndString);
+          }
         }
 
+        // Pré-remplir tous les autres champs avec gestion des valeurs undefined/null
+        setTitle(eventToEdit.title || "");
         setDescription(eventToEdit.description || '');
         setEventType(eventToEdit.event_type || 'other');
-        setPromotion(eventToEdit.id_prom || null);
-        setTargetPromotion(!!eventToEdit.id_prom);
-        setSelectedPromotionId(eventToEdit.id_prom || null);
+        
+        // Gestion du lieu - vérifier si c'est undefined, null ou chaîne vide
+        const eventLocation = eventToEdit.location;
+        if (eventLocation !== undefined && eventLocation !== null && eventLocation !== '') {
+          console.log("Lieu trouvé:", eventLocation);
+          setLocation(eventLocation);
+        } else {
+          console.log("Lieu non défini, utilisation de la valeur par défaut: ''");
+          setLocation('');
+        }
+        
+        // Gestion des promotions - Vérifier la structure exacte
+        console.log("Vérification des promotions:", {
+          target_promotions: eventToEdit.target_promotions,
+          id_prom: eventToEdit.id_prom,
+          hasTargetPromotions: eventToEdit.target_promotions && eventToEdit.target_promotions.length > 0,
+          hasIdProm: !!eventToEdit.id_prom
+        });
+        
+        if (eventToEdit.target_promotions && Array.isArray(eventToEdit.target_promotions) && eventToEdit.target_promotions.length > 0) {
+          console.log("Utilisation de target_promotions:", eventToEdit.target_promotions);
+          setTargetPromotion(true);
+          setSelectedPromotionIds(eventToEdit.target_promotions);
+        } else if (eventToEdit.id_prom && eventToEdit.id_prom !== null && eventToEdit.id_prom !== undefined) {
+          console.log("Utilisation de id_prom:", eventToEdit.id_prom);
+          setTargetPromotion(true);
+          setSelectedPromotionIds([eventToEdit.id_prom]);
+        } else {
+          console.log("Aucune promotion ciblée");
+          setTargetPromotion(false);
+          setSelectedPromotionIds([]);
+        }
 
+        // Gestion des créneaux existants - vérifier si c'est undefined, null ou array vide
+        const eventSlots = eventToEdit.slots;
+        if (eventSlots && Array.isArray(eventSlots) && eventSlots.length > 0) {
+          console.log("Créneaux trouvés:", eventSlots);
+          setSlots(eventSlots);
+        } else {
+          console.log("Aucun créneau trouvé ou slots undefined/null");
+          setSlots([]);
+        }
+
+        // Gestion de la durée des créneaux - vérifier si c'est undefined, null ou 0
+        const eventSlotDuration = eventToEdit.slot_duration;
+        if (eventSlotDuration !== undefined && eventSlotDuration !== null && eventSlotDuration > 0) {
+          console.log("Durée des créneaux:", eventSlotDuration);
+          setSlotDuration(eventSlotDuration);
+        } else {
+          console.log("Durée des créneaux non définie, utilisation de la valeur par défaut: 30");
+          setSlotDuration(30);
+        }
+
+        // Gestion des utilisateurs multiples - vérifier si c'est undefined, null ou false
+        const eventAllowMultipleUsers = eventToEdit.allow_multiple_users;
+        if (eventAllowMultipleUsers !== undefined && eventAllowMultipleUsers !== null) {
+          console.log("Utilisateurs multiples:", eventAllowMultipleUsers);
+          setAllowMultipleUsers(Boolean(eventAllowMultipleUsers));
+        } else {
+          console.log("Utilisateurs multiples non défini, utilisation de la valeur par défaut: false");
+          setAllowMultipleUsers(false);
+        }
 
       } else {
         // Reset form for new event
@@ -78,34 +176,18 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
         setStart(defaultStart || "");
         setEnd(defaultEnd || "");
         setSlotDuration(30);
-        setPromotion("");
         setTargetPromotion(false);
         setEventType('other');
         setDescription('');
-        setSelectedPromotionId(null);
+        setLocation('');
+        setSelectedPromotionIds([]);
+        setSlots([]);
+        setAllowMultipleUsers(false);
       }
     }
   }, [open, eventToEdit, defaultStart, defaultEnd]);
 
-  useEffect(() => {
-    // Générer dynamiquement les créneaux à chaque changement
-    if (start && end && slotDuration > 0) {
-      const slots: {start: string, end: string}[] = [];
-      const startDate = new Date(start);
-      const endDate = new Date(end);
-      let current = new Date(startDate);
-      while (current < endDate) {
-        const slotStart = new Date(current);
-        const slotEnd = new Date(current.getTime() + slotDuration * 60000);
-        if (slotEnd > endDate) break;
-        slots.push({ start: slotStart.toISOString(), end: slotEnd.toISOString() });
-        current = slotEnd;
-      }
-      setSlotsPreview(slots);
-    } else {
-      setSlotsPreview([]);
-    }
-  }, [start, end, slotDuration]);
+  // Les créneaux sont maintenant gérés par le composant SlotManager
 
   useEffect(() => {
     if (start && end) {
@@ -130,14 +212,15 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    // Validation des erreurs de créneaux
     if (slotDurationError) {
       setFormError("Veuillez corriger les erreurs indiquées avant de soumettre.");
       return;
     }
 
-    const userId = getUserIdFromToken();
-    if (!userId && !eventToEdit) { 
-      alert("Vous n'êtes pas authentifié.");
+    // Validation de base
+    if (!title.trim()) {
+      setFormError("Le titre de l'événement est obligatoire.");
       return;
     }
 
@@ -146,25 +229,45 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
       return;
     }
 
-    // Convert start date to the specific format expected by the backend
-    const isoDateString = new Date(start).toISOString();
-    const formattedStartDate = isoDateString.replace('T', ' ').substring(0, 19) + "+00";
+    if (!end) {
+      setFormError("La date de fin est obligatoire.");
+      return;
+    }
 
+    // Validation des dates
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    
+    if (endDate <= startDate) {
+      setFormError("La date de fin doit être après la date de début.");
+      return;
+    }
 
-    if (title && start && end) {
-      const startDate = new Date(start);
-      const endDate = new Date(end);
-      const duration_minutes = (endDate.getTime() - startDate.getTime()) / 60000;
+    // Calcul de la durée
+    const duration_minutes = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
 
-      const eventData = {
-        title,
-        event_datetime: formattedStartDate,
-        duration_minutes,
-        description,
-        event_type: eventType as 'follow-up' | 'kick-off' | 'keynote' | 'hub-talk' | 'other',
-        id_prom: targetPromotion ? selectedPromotionId : null,
-      };
+    // Préparation des données de l'événement
+    const eventData = {
+      title: title.trim(),
+      event_datetime: startDate.toISOString(), // Utiliser directement l'ISO string
+      duration_minutes,
+      description: description.trim(),
+      location: location.trim(),
+      event_type: eventType as 'follow-up' | 'kick-off' | 'keynote' | 'hub-talk' | 'other',
+      target_promotions: targetPromotion ? selectedPromotionIds : [],
+      slot_duration: slotDuration,
+      slots: slots.map(slot => ({
+        start: slot.start,
+        end: slot.end,
+        user: slot.user,
+        maxUsers: allowMultipleUsers ? (slot.maxUsers || 5) : 1, // Assigner maxUsers
+        currentUsers: slot.currentUsers || 0
+      })),
+      allow_multiple_users: allowMultipleUsers,
+    };
 
+    console.log("Données formatées pour l'API:", eventData);
+    
       try {
         setLoading(true); 
         setFormError(null);
@@ -184,7 +287,6 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
       } finally {
         setLoading(false);
       }
-    }
   };
 
   const handleDelete = async () => {
@@ -207,134 +309,301 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
   if (!open) return null;
 
   return (
-    <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-md sm:w-[900px] max-w-[98vw] shadow-lg relative overflow-x-hidden">
-        <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl leading-none rounded-xl p-1 transition-all duration-200 hover:bg-gray-200" onClick={onClose}>&times;</button>
-        <h2 className="text-2xl font-bold mb-4">{eventToEdit ? "Modifier" : "Créer"} un événement</h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="text"
-            placeholder="Titre de l'événement"
-            className="border border-blue-300 bg-blue-50 rounded-xl px-3 py-2 text-lg focus:outline-none focus:border-blue-500"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            required
-          />
-          <textarea
-            placeholder="Description (optionnel)"
-            className="border border-blue-300 bg-blue-50 rounded-xl px-3 py-2 text-lg focus:outline-none focus:border-blue-500"
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            rows={2}
-          />
-          <select
-            value={eventType}
-            onChange={e => setEventType(e.target.value)}
-            className="border border-blue-300 bg-blue-50 rounded-xl px-3 py-2 text-lg focus:outline-none focus:border-blue-500"
-            required
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl w-full max-w-5xl max-h-[95vh] shadow-2xl relative overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 text-white relative">
+          <button 
+            className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 text-xl p-2 rounded-full transition-all duration-200" 
+            onClick={onClose}
           >
-            <option value="other">Autre</option>
-            <option value="follow-up">Follow-up</option>
-            <option value="kick-off">Kick-off</option>
-            <option value="keynote">Keynote</option>
-            <option value="hub-talk">Hub-talk</option>
-          </select>
-          <label className="flex items-center gap-2 text-base font-medium">
-            <input
-              type="checkbox"
-              checked={targetPromotion}
-              onChange={e => setTargetPromotion(e.target.checked)}
-              className="form-checkbox h-5 w-5 text-blue-600"
-            />
-            Cibler une promotion spécifique
-          </label>
-          {targetPromotion && (
-            <PromotionDropdown
-              promotions={promotions}
-              selectedPromotion={selectedPromotionId}
-              onPromotionChange={setSelectedPromotionId}
-              loading={promotionsLoading}
-              error={promotionsError || undefined}
-              placeholder="Sélectionner une promotion"
-              required
-            />
-          )}
-          <div className="flex gap-4">
-            <div className="flex-1 min-w-0">
-              <label className="block text-base font-medium mb-1">Début</label>
-              <input
-                type="datetime-local"
-                className="border border-blue-300 bg-blue-50 rounded-xl px-2 py-1 w-full max-w-full text-lg focus:outline-none focus:border-blue-500"
-                value={start}
-                onChange={e => setStart(e.target.value)}
-                required
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <label className="block text-base font-medium mb-1">Fin</label>
-              <input
-                type="datetime-local"
-                className="border border-blue-300 bg-blue-50 rounded-xl px-2 py-1 w-full max-w-full text-lg focus:outline-none focus:border-blue-500"
-                value={end}
-                onChange={e => setEnd(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <label className="block text-base font-medium mb-1 mt-2">Durée d'un créneau (min)</label>
-            <input
-              type="number"
-              min={5}
-              max={240}
-              step={5}
-              className="border border-blue-300 bg-blue-50 rounded-xl px-2 py-1 w-full max-w-full text-lg focus:outline-none focus:border-blue-500"
-              value={slotDuration}
-              onChange={e => setSlotDuration(Number(e.target.value))}
-              required
-            />
-            {slotDurationError && <p className="text-red-500 text-sm mt-1">{slotDurationError}</p>}
-          </div>
-          {/* Aperçu des créneaux générés */}
-          {slotsPreview.length > 0 && !slotDurationError && (
-            <div className="mt-2 bg-blue-50 border border-blue-200 rounded-xl p-3">
-              <div className="font-semibold text-blue-900 mb-2">Créneaux générés :</div>
-              <ul className="flex flex-col gap-1 max-h-40 overflow-y-auto pr-2">
-                {slotsPreview.map((slot, idx) => (
-                  <li key={idx} className="flex items-center gap-2 text-blue-800 text-sm">
-                    <span className="flex-1">{new Date(slot.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(slot.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    <span className="text-xs text-gray-400">Libre</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {formError && <p className="text-red-500 text-sm mt-2">{formError}</p>}
-          <div className="flex justify-between items-center">
+            <X size={20} />
+          </button>
+          <div className="flex items-center gap-3">
+            <Calendar className="w-8 h-8" />
             <div>
-              {eventToEdit && (
-                <button 
-                  type="button" 
-                  onClick={handleDelete}
-                  disabled={loading}
-                  className="px-4 py-2 rounded-lg bg-white text-red-500 border border-red-200 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-all duration-300 ease-in-out disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200"
-                >
-                  Supprimer
-                </button>
-              )}
-            </div>
-            <div className="flex space-x-3">
-              <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-white text-gray-600 border border-gray-300 hover:bg-gray-100 hover:border-gray-400 transition-all duration-300 ease-in-out">Annuler</button>
-              <button 
-                type="submit" 
-                disabled={loading} 
-                className="px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold shadow-sm hover:bg-blue-600 hover:-translate-y-0.5 transform transition-all duration-300 ease-in-out disabled:bg-blue-300 disabled:cursor-not-allowed disabled:shadow-none disabled:transform-none"
-              >
-                {loading ? (eventToEdit ? "Mise à jour..." : "Création...") : (eventToEdit ? "Mettre à jour" : "Créer")}
-              </button>
+              <h2 className="text-2xl font-bold">
+                {eventToEdit ? "Modifier l'événement" : "Créer un nouvel événement"}
+              </h2>
+              <p className="text-blue-100 text-sm mt-1">
+                {eventToEdit ? "Modifiez les détails de votre événement" : "Remplissez les informations pour créer votre événement"}
+              </p>
             </div>
           </div>
-        </form>
+        </div>
+
+        {/* Body - Scrollable content */}
+        <div className="overflow-y-auto max-h-[calc(95vh-180px)]">
+          <form id="event-form" onSubmit={handleSubmit} className="p-8 space-y-8">
+            
+            {/* Section 1: Informations de base */}
+            <div className="bg-gray-50 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Informations de base</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Titre de l'événement *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Réunion d'équipe, Formation React..."
+                    className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    value={title}
+                    onChange={e => setTitle(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    placeholder="Décrivez votre événement, objectifs, prérequis..."
+                    className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+                
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                    <MapPin className="w-4 h-4" />
+                    Lieu
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Salle 101, Visioconférence, En ligne..."
+                    className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    value={location}
+                    onChange={e => setLocation(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Type d'événement */}
+            <div className="bg-gray-50 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Settings className="w-5 h-5 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Type d'événement</h3>
+              </div>
+              
+              <EventTypeSelector
+                value={eventType}
+                onChange={setEventType}
+                required
+              />
+            </div>
+
+            {/* Section 3: Ciblage et promotions */}
+            <div className="bg-gray-50 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Users className="w-5 h-5 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Public cible</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <label className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200 cursor-pointer hover:border-green-300 transition-colors duration-200">
+                  <input
+                    type="checkbox"
+                    checked={targetPromotion}
+                    onChange={e => setTargetPromotion(e.target.checked)}
+                    className="form-checkbox h-5 w-5 text-green-600 rounded focus:ring-green-500"
+                  />
+                  <div>
+                    <div className="text-base font-medium text-gray-900">Cibler une promotion spécifique</div>
+                    <div className="text-sm text-gray-500">Limiter l'accès à certaines promotions uniquement</div>
+                  </div>
+                </label>
+                
+                {targetPromotion && (
+                  <div className="mt-4">
+                    <MultiPromotionSelector
+                      promotions={promotions}
+                      selectedPromotions={selectedPromotionIds}
+                      onPromotionsChange={setSelectedPromotionIds}
+                      loading={promotionsLoading}
+                      error={promotionsError || undefined}
+                      placeholder="Sélectionner des promotions"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Section 4: Horaires */}
+            <div className="bg-gray-50 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Clock className="w-5 h-5 text-orange-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Horaires</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date et heure de début *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+                    value={start}
+                    onChange={e => setStart(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date et heure de fin *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+                    value={end}
+                    onChange={e => setEnd(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 5: Configuration des créneaux */}
+            <div className="bg-gray-50 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-indigo-100 rounded-lg">
+                  <Settings className="w-5 h-5 text-indigo-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Configuration des créneaux</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Durée d'un créneau (minutes) *
+                  </label>
+                  <input
+                    type="number"
+                    min={5}
+                    max={240}
+                    step={5}
+                    className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                    value={slotDuration}
+                    onChange={e => setSlotDuration(Number(e.target.value))}
+                    required
+                  />
+                  {slotDurationError && (
+                    <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                      <span className="w-4 h-4 text-red-500">⚠</span>
+                      {slotDurationError}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="flex items-center">
+                  <label className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200 cursor-pointer hover:border-indigo-300 transition-colors duration-200 w-full">
+                    <input
+                      type="checkbox"
+                      id="allowMultipleUsers"
+                      checked={allowMultipleUsers}
+                      onChange={e => setAllowMultipleUsers(e.target.checked)}
+                      className="form-checkbox h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500"
+                    />
+                    <div>
+                      <div className="text-base font-medium text-gray-900">Créneaux partagés</div>
+                      <div className="text-sm text-gray-500">Permettre plusieurs utilisateurs par créneau</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Gestionnaire de créneaux */}
+              <SlotManager
+                slots={slots}
+                onSlotsChange={setSlots}
+                eventStart={start}
+                eventEnd={end}
+                slotDuration={slotDuration}
+                allowMultipleUsers={allowMultipleUsers}
+                maxUsersPerSlot={allowMultipleUsers ? 5 : 1}
+              />
+            </div>
+
+            {/* Messages d'erreur */}
+            {formError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-red-500 text-xl">⚠</span>
+                  <p className="text-red-700 font-medium">{formError}</p>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+
+        {/* Footer avec boutons d'action */}
+        <div className="bg-gray-50 px-8 py-6 border-t border-gray-200 flex justify-between items-center">
+          <div>
+            {eventToEdit && (
+              <button 
+                type="button" 
+                onClick={handleDelete}
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="w-4 h-4" />
+                Supprimer
+              </button>
+            )}
+          </div>
+          
+          <div className="flex gap-3">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-6 py-3 rounded-xl bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+            >
+              Annuler
+            </button>
+            <button 
+              type="submit" 
+              form="event-form"
+              disabled={loading} 
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              onClick={(e) => {
+                e.preventDefault();
+                const form = document.querySelector('form');
+                if (form) {
+                  const submitEvent = new Event('submit', { bubbles: true });
+                  form.dispatchEvent(submitEvent);
+                }
+              }}
+            >
+              <Save className="w-4 h-4" />
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  {eventToEdit ? "Mise à jour..." : "Création..."}
+                </span>
+              ) : (
+                <span>{eventToEdit ? "Mettre à jour" : "Créer l'événement"}</span>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,10 +1,12 @@
 "use client";
 
 import Sidebar from "@/components/Sidebar/Sidebar";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header/Header";
 import { useRoleRedirect } from "@/hooks/useRoleRedirect";
 import AdminLoading from "@/components/admin/AdminLoading";
+import { getUserIdFromToken } from "@/lib/auth";
+import { getUserData } from "@/lib/userData";
 
 function DashboardCard({
   title,
@@ -30,12 +32,145 @@ function DashboardCard({
   );
 }
 
+interface BackendEvent {
+  id: number;
+  title: string;
+  event_datetime?: string;
+  duration_minutes?: number;
+  start?: string;
+  end?: string;
+  description?: string;
+  event_type?: string;
+  location?: string;
+}
+
+interface BackendProject {
+  id: number | string;
+  title?: string;
+  name?: string;
+  created_at?: string;
+}
+
 export default function Dashboard() {
   const { isLoading } = useRoleRedirect();
 
-  // Afficher un loader pendant la vérification
-  if (isLoading) {
-    return <AdminLoading message="Vérification des droits d'accès..." />;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [role, setRole] = useState<"admin" | "advisor" | "student" | null>(null);
+  const [events, setEvents] = useState<BackendEvent[]>([]);
+  const [projects, setProjects] = useState<BackendProject[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const userId = getUserIdFromToken();
+        if (!userId) {
+          setError("Utilisateur non authentifié");
+          setLoading(false);
+          return;
+        }
+
+        // Rôle via userData util (déjà robuste aux profils sans données student)
+        const user = await getUserData(userId);
+        const detectedRole = (user.role || "student").toLowerCase();
+        const finalRole: "admin" | "advisor" | "student" = ["admin", "advisor"].includes(detectedRole)
+          ? (detectedRole as any)
+          : "student";
+        setRole(finalRole);
+
+        // Charger événements
+        let fetchedEvents: BackendEvent[] = [];
+        if (finalRole === "student") {
+          const res = await fetch(`http://localhost:3002/events/student/${userId}`);
+          if (res.ok) {
+            const json = await res.json();
+            fetchedEvents = Array.isArray(json.data) ? json.data : [];
+          }
+        } else {
+          const res = await fetch("http://localhost:3002/events");
+          if (res.ok) {
+            const json = await res.json();
+            fetchedEvents = Array.isArray(json.data) ? json.data : [];
+          }
+        }
+        setEvents(fetchedEvents);
+
+        // Charger projets (liste simple)
+        try {
+          const pr = await fetch("http://localhost:3003/projects");
+          if (pr.ok) {
+            const pj = await pr.json();
+            setProjects(Array.isArray(pj.data) ? pj.data : []);
+          } else {
+            setProjects([]);
+          }
+        } catch {
+          setProjects([]);
+        }
+      } catch (e: any) {
+        setError(e?.message || "Erreur de chargement du dashboard");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  // Prochains événements (triés par date, prochains 3)
+  const upcomingEvents = useMemo(() => {
+    const now = Date.now();
+    const normalized = events.map((e) => {
+      const startIso = e.event_datetime || e.start || null;
+      const endIso = e.end || (e.event_datetime && e.duration_minutes ? new Date(new Date(e.event_datetime).getTime() + (e.duration_minutes || 0) * 60000).toISOString() : null);
+      const startTs = startIso ? new Date(startIso).getTime() : NaN;
+      return { ...e, startIso, endIso, startTs };
+    });
+    return normalized
+      .filter((e) => !isNaN(e.startTs) && e.startTs >= now)
+      .sort((a, b) => a.startTs - b.startTs)
+      .slice(0, 3);
+  }, [events]);
+
+  // Stats calendrier (semaine courante)
+  const weekStats = useMemo(() => {
+    const startOfWeek = new Date();
+    startOfWeek.setHours(0, 0, 0, 0);
+    const day = startOfWeek.getDay();
+    const diff = (day === 0 ? -6 : 1) - day; // lundi début de semaine
+    startOfWeek.setDate(startOfWeek.getDate() + diff);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+    const inWeek = events.filter((e) => {
+      const iso = e.event_datetime || e.start;
+      if (!iso) return false;
+      const d = new Date(iso);
+      return d >= startOfWeek && d < endOfWeek;
+    });
+    return { count: inWeek.length };
+  }, [events]);
+
+  // Projets simplifiés (3 premiers)
+  const topProjects = useMemo(() => {
+    return (projects || []).slice(0, 3);
+  }, [projects]);
+
+  if (isLoading || loading) {
+    return <AdminLoading message="Chargement du tableau de bord..." />;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-red-600 mb-2">Erreur de chargement</p>
+            <p className="text-gray-600 text-sm">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -43,7 +178,7 @@ export default function Dashboard() {
       {/* Header */}
       <Header
         title="Tableau de bord"
-        description="Vue d'ensemble de votre journée"
+        description={role === "student" ? "Vos prochaines échéances" : "Vue d'ensemble de la semaine"}
       />
 
       <div className="w-full grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-x-8 gap-y-6 items-start">
@@ -62,21 +197,8 @@ export default function Dashboard() {
               </h2>
             </div>
             <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-200 to-blue-300 flex items-center justify-center font-bold text-blue-900 shadow-md">
-                  EB
-                </div>
-                <div>
-                  <div className="font-semibold text-blue-900">
-                    Enzo Bourdin
-                  </div>
-                  <div className="text-xs text-blue-600">il y a 2h</div>
-                </div>
-              </div>
               <p className="text-gray-700 leading-relaxed">
-                Ceci est une annonce importante pour tous les étudiants. Merci
-                de consulter régulièrement cette section pour rester informé des
-                dernières actualités.
+                Bienvenue sur votre tableau de bord. Les annonces dynamiques seront bientôt connectées.
               </p>
             </div>
           </section>
@@ -97,14 +219,9 @@ export default function Dashboard() {
               <div className="p-6">
                 <div className="flex flex-wrap gap-3">
                   <DashboardCard
-                    title="Maths"
-                    description="DM à rendre le 15/04"
+                    title="À venir"
+                    description="Bientôt connecté"
                   />
-                  <DashboardCard
-                    title="Anglais"
-                    description="Rédaction à finir"
-                  />
-                  <DashboardCard title="Physique" description="TP à préparer" />
                 </div>
               </div>
             </section>
@@ -123,12 +240,17 @@ export default function Dashboard() {
               </div>
               <div className="p-6">
                 <div className="flex flex-wrap gap-3">
-                  <DashboardCard
-                    title="T-DEV-500"
-                    description="Projet de développement"
-                  />
-                  <DashboardCard title="T-YOP-700" description="Projet YOP" />
-                  <DashboardCard title="T-SEN-700" description="Projet SEN" />
+                  {topProjects.length > 0 ? (
+                    topProjects.map((p) => (
+                      <DashboardCard
+                        key={String(p.id)}
+                        title={p.title || p.name || `Projet ${p.id}`}
+                        description={p.created_at ? new Date(p.created_at).toLocaleDateString("fr-FR") : ""}
+                      />
+                    ))
+                  ) : (
+                    <DashboardCard title="Aucun projet" description="Créez ou assignez des projets" />
+                  )}
                 </div>
               </div>
             </section>
@@ -148,8 +270,7 @@ export default function Dashboard() {
             </div>
             <div className="p-6">
               <div className="flex flex-wrap gap-3">
-                <DashboardCard title="NOUVEAU" description="Document reçu" />
-                <DashboardCard title="EMARGEMENT" description="13:00 / 17:15" />
+                <DashboardCard title="Calendrier" description={`${weekStats.count} événement(s) cette semaine`} />
               </div>
             </div>
           </section>
@@ -166,12 +287,22 @@ export default function Dashboard() {
                     📅
                   </div>
                 </div>
-                Calendrier
+                Prochains événements
               </h2>
             </div>
             <div className="p-6">
-              <div className="text-gray-700 text-sm">
-                [Widget calendrier à venir]
+              <div className="flex flex-col gap-3">
+                {upcomingEvents.length > 0 ? (
+                  upcomingEvents.map((ev) => (
+                    <DashboardCard
+                      key={ev.id}
+                      title={ev.title}
+                      description={ev.startIso ? new Date(ev.startIso).toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : ""}
+                    />
+                  ))
+                ) : (
+                  <DashboardCard title="Aucun événement" description="Rien à venir" />
+                )}
               </div>
             </div>
           </section>
@@ -190,11 +321,13 @@ export default function Dashboard() {
             </div>
             <div className="p-6">
               <div className="flex flex-wrap gap-3">
-                <DashboardCard title="T-DEV-600" description="18/06/2025" />
-                <DashboardCard
-                  title="SUMMER FESTIVAL"
-                  description="18/06/2025"
-                />
+                {upcomingEvents.map((ev) => (
+                  <DashboardCard
+                    key={ev.id}
+                    title={ev.title}
+                    description={ev.startIso ? new Date(ev.startIso).toLocaleDateString("fr-FR") : ""}
+                  />
+                ))}
               </div>
             </div>
           </section>
@@ -213,11 +346,16 @@ export default function Dashboard() {
             </div>
             <div className="p-6">
               <div className="flex flex-wrap gap-3">
-                <DashboardCard title="FOLLOW UP" description="18/06/2025" />
-                <DashboardCard
-                  title="KICK OFF T-CEN-100"
-                  description="18/06/2025"
-                />
+                {upcomingEvents.slice(0, 2).map((ev) => (
+                  <DashboardCard
+                    key={`meet-${ev.id}`}
+                    title={ev.title}
+                    description={ev.startIso ? new Date(ev.startIso).toLocaleString("fr-FR") : ""}
+                  />
+                ))}
+                {upcomingEvents.length === 0 && (
+                  <DashboardCard title="Aucun rendez-vous" description="Planifiez vos suivis" />
+                )}
               </div>
             </div>
           </section>

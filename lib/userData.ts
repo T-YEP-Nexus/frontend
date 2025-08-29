@@ -240,13 +240,15 @@ export const getUserData = async (userId: string): Promise<UserProfile> => {
 
     // Étape 2 : Tenter de récupérer les données étudiant, sans faire échouer le reste si elles n'existent pas
     let studentData: any = {};
-    try {
-      if (profileData && profileData.id) {
-        studentData = await getStudentData(profileData.id);
-        console.log("Données étudiant récupérées:", studentData);
+    if (profileData && profileData.roles_user === 'student') {
+      try {
+        if (profileData && profileData.id) {
+          studentData = await getStudentData(profileData.id);
+          console.log("Données étudiant récupérées:", studentData);
+        }
+      } catch (studentError) {
+        console.log("Aucune donnée étudiant trouvée (comportement normal pour un non-étudiant).");
       }
-    } catch (studentError) {
-      console.log("Aucune donnée étudiant trouvée (comportement normal pour un non-étudiant).");
     }
 
     // Étape 3 : Récupérer la promotion si c'est un étudiant
