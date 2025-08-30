@@ -381,6 +381,7 @@ export default function TrombinoscopePage() {
         setIsLoading(false);
       }
     };
+    console.log("Fetching students for promotion:", selectedPromotion);
 
     fetchStudents();
   }, [selectedPromotion, promotions, userPromotion, userRole]);

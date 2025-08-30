@@ -449,7 +449,7 @@ export const toggleProjectActive = async (projectId: string): Promise<Project> =
 // ===================== GESTION DES RESSOURCES =====================
 
 // Récupérer les ressources d'un projet
-export const getProjectResources = async (projectId: string): Promise<{ project_name: string; resources: ProjectResource[]; resources_count: number }> => {
+export const getProjectResources = async (projectId: string): Promise<{ project_name: string; description: string;resources: ProjectResource[]; resources_count: number }> => {
   const url = `${PROJECT_SERVICE_BASE_URL}/projects/${projectId}/resources`;
 
   try {
@@ -459,7 +459,7 @@ export const getProjectResources = async (projectId: string): Promise<{ project_
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const result: ApiResponse<{ project_name: string; resources: ProjectResource[]; resources_count: number }> = await response.json();
+    const result: ApiResponse<{ project_name: string;description: string; resources: ProjectResource[]; resources_count: number }> = await response.json();
     
     if (!result.success || !result.data) {
       throw new Error(result.message || 'Failed to fetch project resources');
@@ -476,6 +476,7 @@ export const getProjectResources = async (projectId: string): Promise<{ project_
 
     return {
       project_name: project.name,
+      description: project.description,
       resources: project.ressources || [],
       resources_count: project.ressources ? project.ressources.length : 0
     };

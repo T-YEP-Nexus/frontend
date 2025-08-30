@@ -21,25 +21,47 @@ import ResourceSection from "@/components/Projects/Details/Ressources/ResourceSe
 import MainCard from "@/components/Projects/Details/MainCard/MainCard";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
+import { Project, getProjectResources } from "@/lib/projectData";
 
 export default function ProjectDetails({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const resolvedParams = React.use(params);
-  const project = getProjectById(
-    parseInt(resolvedParams.id)
-  ) as typeof import("@/lib/projectsData").projects[number] & {
+  // Récupération de l'id depuis les params
+  const projectId = parseInt(params.id);
+
+  // Récupération du projet
+  const project = getProjectById(projectId) as typeof import("@/lib/projectsData").projects[number] & {
     hotTopics?: { title: string; description: string }[];
     skills?: string[];
-    resources?: {
-      bootstrap: { name: string; action: string; url: string }[];
-      kickOff: { name: string; action: string; url: string }[];
-      projet: { name: string; action: string; url: string }[];
-    };
   };
 
+  // State pour les ressources
+  type ProjectResource = {
+    filename: string;
+    url: string;
+    uploaded_at: string;
+  };
+
+  type ProjectData = {
+    project_name: string;
+    description: string;
+    resources: ProjectResource[];
+    resources_count: number;
+  };
+
+  const [resourcesData, setResourcesData] = React.useState<ProjectData | null>(null);
+
+  React.useEffect(() => {
+    const fetchResources = async () => {
+      const data = await getProjectResources(params.id);
+      setResourcesData(data);
+    };
+
+    fetchResources();
+  }, [params.id]);
+  console.log( "Ressources Data:", resourcesData);
   // État local pour les tâches
   const [tasks, setTasks] = React.useState<string[]>([]);
   const [newTask, setNewTask] = React.useState("");
@@ -115,7 +137,7 @@ export default function ProjectDetails({
       <div className="px-4 sm:px-8 lg:px-16 py-6">
         <div className="flex items-center gap-4 mb-8">
           <ProjectHeader
-            title={project.name}
+            title={resourcesData?.project_name}
             description="Détails du projet"
             backIcon={<ArrowLeft size={20} />}
           />
@@ -155,63 +177,63 @@ export default function ProjectDetails({
               icon={<FileText className="w-8 h-8 text-blue-400" />}
             >
               <p className="text-gray-600 leading-relaxed">
-                {project.longDescription}
+                {resourcesData?.description}
               </p>
             </MainCard>
 
-            {/* ===================== RESSOURCES ===================== */}
-            {/* Pour passer en dynamique, il suffira de remplacer le tableau ci-dessous par les données de l'API */}
+            {/* ===================== RESSOURCES DYNAMIQUES ===================== */}
             <MainCard
               title="Ressources"
               icon={<Download className="w-6 h-6 text-blue-400" />}
             >
-              {/* Tableau statique pour les ressources, à remplacer par un fetch plus tard */}
-              {/**
-               * Pour passer en dynamique :
-               * 1. Remplacer le tableau 'ressources' par les données de l'API
-               * 2. Adapter les propriétés (nom, description, couleur, url, etc.)
-               */}
-              {(() => {
-                // Toutes les ressources sont bleues (icône et bouton)
-                const ressources = [
-                  {
-                    nom: "Guide de démarrage",
-                    description: "Documentation complète du projet",
-                  },
-                  {
-                    nom: "Template de présentation",
-                    description: "Modèle PowerPoint pour la soutenance",
-                  },
-                  {
-                    nom: "Cahier des charges",
-                    description: "Spécifications détaillées du projet",
-                  },
-                ];
-                // Pour changer la couleur, modifier ici :
-                const iconClass = "text-blue-500";
-                const buttonClass = "bg-blue-500 hover:bg-blue-600";
-                return ressources.map((res, idx) => (
-                  <div
-                    key={res.nom}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 mb-2"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Download className={`w-5 h-5 ${iconClass}`} />
-                      <div>
-                        <h4 className="font-semibold text-gray-800">
-                          {res.nom}
-                        </h4>
+              {resourcesData?.resources && Array.isArray(resourcesData?.resources) && resourcesData?.resources.length > 0 ? (
+                <div className="space-y-2">
+                  {resourcesData?.resources.map((resource, index) => {
+                    const resObj = typeof resource === "string" ? JSON.parse(resource) : resource;
+                    const isValidUrl = resObj.url && (resObj.url.startsWith("http") || resObj.url.startsWith("/"));
+                    return (
+                      <div
+                        key={`resource-${index}-${resObj.filename}`}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <Download className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-gray-800 truncate">
+                              {resObj.filename || `Ressource ${index + 1}`}
+                            </h4>
+                          </div>
+                        </div>
+                        {isValidUrl ? (
+                          <a
+                            href={resObj.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-medium flex items-center gap-2 cursor-pointer flex-shrink-0 ml-4"
+                            title={`Télécharger ${resObj.filename}`}
+                          >
+                            <ArrowDownToLine className="w-4 h-4" />
+                            Télécharger
+                          </a>
+                        ) : (
+                          <div className="px-4 py-2 bg-gray-300 text-gray-600 rounded-lg font-medium flex items-center gap-2 flex-shrink-0 ml-4">
+                            <ArrowDownToLine className="w-4 h-4" />
+                            Indisponible
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <button
-                      className={`px-4 py-2 text-white rounded-lg transition-colors font-medium flex items-center gap-2 cursor-pointer ${buttonClass}`}
-                    >
-                      <ArrowDownToLine className="w-4 h-4" />
-                      Télécharger
-                    </button>
-                  </div>
-                ));
-              })()}
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 font-medium mb-2">Aucune ressource disponible</p>
+                  <p className="text-sm text-gray-400">
+                    Les ressources du projet apparaîtront ici une fois ajoutées.
+                  </p>
+                </div>
+              )}
             </MainCard>
 
             {/* Médailles */}

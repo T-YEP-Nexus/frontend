@@ -24,9 +24,15 @@ export default function Page() {
     projects,
     loading,
     error,
-    fetchActiveProjects,
+    fetchProjectsForCurrentStudent,
     fetchProjectsByStudent,
   } = useProjectsData();
+
+  // Charger les projets au montage du composant
+  useEffect(() => {
+    console.log("🔍 DEBUG - Composant page monté");
+    fetchProjectsForCurrentStudent();
+  }, []);
 
   // Transformer les données du backend vers le format attendu par Cards
   const transformProjectData = (project: any) => {
@@ -122,8 +128,10 @@ export default function Page() {
     setExpandedCard(null);
 
     if (mode === "active") {
-      await fetchActiveProjects();
+      // Utiliser la nouvelle fonction pour récupérer les projets de la promotion
+      await fetchProjectsForCurrentStudent();
     } else {
+      // Garder l'ancienne fonction pour "mes projets" (projets assignés directement)
       await fetchProjectsByStudent();
     }
   };
@@ -179,9 +187,17 @@ export default function Page() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-600 text-lg">
-          Erreur lors du chargement des projets : {error}
-        </p>
+        <div className="text-center">
+          <p className="text-red-600 text-lg mb-4">
+            Erreur lors du chargement des projets : {error}
+          </p>
+          <Button 
+            onClick={() => fetchProjectsForCurrentStudent()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+          >
+            Réessayer
+          </Button>
+        </div>
       </div>
     );
   }
@@ -204,7 +220,7 @@ export default function Page() {
               : "bg-white border-2 border-blue-300 text-blue-800 hover:bg-blue-600 hover:border-blue-600 hover:text-white hover:shadow-md hover:scale-105 cursor-pointer"
           }`}
         >
-          Projets Actifs
+          Projets de la Promotion
         </Button>
         <Button
           onClick={() => handleViewModeChange("my-projects")}
@@ -214,7 +230,7 @@ export default function Page() {
               : "bg-white border-2 border-blue-300 text-blue-800 hover:bg-blue-600 hover:border-blue-600 hover:text-white hover:shadow-md hover:scale-105 cursor-pointer"
           }`}
         >
-          Mes Projets
+          Mes Projets Assignés
         </Button>
       </div>
 
@@ -225,38 +241,59 @@ export default function Page() {
         placeholder="Rechercher un projet..."
       />
 
+      {/* Message si aucun projet */}
+      {projects.length === 0 && !loading && (
+        <div className="text-center py-12">
+          <p className="text-gray-600 text-lg mb-4">
+            {viewMode === "active" 
+              ? "Aucun projet trouvé pour votre promotion" 
+              : "Aucun projet ne vous est assigné"}
+          </p>
+          <Button 
+            onClick={() => fetchProjectsForCurrentStudent()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+          >
+            Actualiser
+          </Button>
+        </div>
+      )}
+
       {/* Grille de cartes */}
-      <div
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-8 mb-12 auto-rows-fr transition-all duration-300"
-        ref={projectsGridRef}
-      >
-        {displayedProjects.map((project) => (
-          <Cards
-            key={project.id}
-            projectId={project.id}
-            projectName={project.name}
-            progress={project.progress}
-            description={project.description}
-            details={project.details}
-            deadline={project.deadline}
-            documentation={project.documentation}
-            tasks={project.tasks}
-            trophies={project.trophies}
-            isExpanded={expandedCard === project.id}
-            onToggle={() => handleCardToggle(project.id)}
-            isBlurred={expandedCard !== null && expandedCard !== project.id}
-          />
-        ))}
-      </div>
+      {projects.length > 0 && (
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-8 mb-12 auto-rows-fr transition-all duration-300"
+          ref={projectsGridRef}
+        >
+          {displayedProjects.map((project) => (
+            <Cards
+              key={project.id}
+              projectId={project.id}
+              projectName={project.name}
+              progress={project.progress}
+              description={project.description}
+              details={project.details}
+              deadline={project.deadline}
+              documentation={project.documentation}
+              tasks={project.tasks}
+              trophies={project.trophies}
+              isExpanded={expandedCard === project.id}
+              onToggle={() => handleCardToggle(project.id)}
+              isBlurred={expandedCard !== null && expandedCard !== project.id}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Boutons Afficher plus/moins */}
-      <ShowMoreLessButtons
-        showMoreVisible={displayedProjects.length < filteredProjects.length}
-        showLessVisible={displayCount > 8}
-        onShowMore={handleShowMore}
-        onShowLess={handleShowLess}
-        buttonsRef={buttonsRef}
-      />
+      {projects.length > 0 && (
+        <ShowMoreLessButtons
+          showMoreVisible={displayedProjects.length < filteredProjects.length}
+          showLessVisible={displayCount > 8}
+          onShowMore={handleShowMore}
+          onShowLess={handleShowLess}
+          buttonsRef={buttonsRef}
+        />
+      )}
     </div>
   );
 }
