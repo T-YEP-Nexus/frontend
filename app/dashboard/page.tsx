@@ -10,21 +10,44 @@ import { getUserData } from "@/lib/userData";
 import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 import { useProjectsData } from "@/hooks/useProjectsData";
 import { useRouter } from "next/navigation";
-import { Plus, ChevronLeft, ChevronRight, ChevronDown, Calendar, Clock } from "lucide-react";
-import { getActiveInformations, type InformationWithCreator } from "@/lib/informationsData";
+import {
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Calendar,
+  Clock,
+  Megaphone,
+  Wallet,
+} from "lucide-react";
+import {
+  getActiveInformations,
+  type InformationWithCreator,
+} from "@/lib/informationsData";
 import { useCalendarData } from "@/hooks/useCalendarData";
 
 function DashboardCard({
   title,
   description,
   icon,
+  onClick,
+  isClickable = false,
 }: {
   title: string;
   description: string;
   icon?: ReactNode;
+  onClick?: () => void;
+  isClickable?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-3 bg-white rounded-lg shadow p-3 min-w-[180px] max-w-full w-full">
+    <div
+      className={`flex items-center gap-3 bg-white rounded-lg shadow p-3 min-w-[180px] max-w-full w-full ${
+        isClickable
+          ? "hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-102"
+          : ""
+      }`}
+      onClick={isClickable ? onClick : undefined}
+    >
       {icon && <div className="text-blue-700 text-2xl">{icon}</div>}
       <div className="flex flex-col">
         <span className="font-semibold text-blue-900 text-base leading-tight">
@@ -92,7 +115,9 @@ export default function Dashboard() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [role, setRole] = useState<"admin" | "advisor" | "student" | null>(null);
+  const [role, setRole] = useState<"admin" | "advisor" | "student" | null>(
+    null
+  );
   const [events, setEvents] = useState<BackendEvent[]>([]);
   const [projects, setProjects] = useState<BackendProject[]>([]);
 
@@ -111,7 +136,10 @@ export default function Dashboard() {
         // Rôle via userData util (déjà robuste aux profils sans données student)
         const user = await getUserData(userId);
         const detectedRole = (user.role || "student").toLowerCase();
-        const finalRole: "admin" | "advisor" | "student" = ["admin", "advisor"].includes(detectedRole)
+        const finalRole: "admin" | "advisor" | "student" = [
+          "admin",
+          "advisor",
+        ].includes(detectedRole)
           ? (detectedRole as any)
           : "student";
         setRole(finalRole);
@@ -119,7 +147,9 @@ export default function Dashboard() {
         // Charger événements
         let fetchedEvents: BackendEvent[] = [];
         if (finalRole === "student") {
-          const res = await fetch(`http://localhost:3002/events/student/${userId}`);
+          const res = await fetch(
+            `http://localhost:3002/events/student/${userId}`
+          );
           if (res.ok) {
             const json = await res.json();
             fetchedEvents = Array.isArray(json.data) ? json.data : [];
@@ -230,20 +260,27 @@ export default function Dashboard() {
       );
   };
 
-  // Mettre à jour les événements du jour à partir des événements globaux
+  // Mettre à jour les événements du jour à partir des événements de la promotion
   useEffect(() => {
-    if (!eventsLoading && allEvents.length > 0) {
-      const today = getTodayEvents(allEvents as any[]);
+    if (!loading && events.length > 0) {
+      const today = getTodayEvents(events);
       setTodayEvents(today);
     }
-  }, [allEvents, eventsLoading]);
+  }, [events, loading]);
 
   // Prochains événements (triés par date, prochains 3)
   const upcomingEvents = useMemo(() => {
     const now = Date.now();
     const normalized = events.map((e) => {
       const startIso = e.event_datetime || e.start || null;
-      const endIso = e.end || (e.event_datetime && e.duration_minutes ? new Date(new Date(e.event_datetime).getTime() + (e.duration_minutes || 0) * 60000).toISOString() : null);
+      const endIso =
+        e.end ||
+        (e.event_datetime && e.duration_minutes
+          ? new Date(
+              new Date(e.event_datetime).getTime() +
+                (e.duration_minutes || 0) * 60000
+            ).toISOString()
+          : null);
       const startTs = startIso ? new Date(startIso).getTime() : NaN;
       return { ...e, startIso, endIso, startTs };
     });
@@ -288,7 +325,9 @@ export default function Dashboard() {
       description: project.description,
     };
   };
-  const dashboardProjects = (activeProjects || []).slice(0, 3).map(transformProjectData);
+  const dashboardProjects = (activeProjects || [])
+    .slice(0, 3)
+    .map(transformProjectData);
 
   if (isLoading || loading) {
     return <AdminLoading message="Chargement du tableau de bord..." />;
@@ -312,7 +351,11 @@ export default function Dashboard() {
       {/* Header */}
       <Header
         title="Tableau de bord"
-        description={role === "student" ? "Vos prochaines échéances" : "Vue d'ensemble de la semaine"}
+        description={
+          role === "student"
+            ? "Vos prochaines échéances"
+            : "Vue d'ensemble de la semaine"
+        }
       />
 
       <div className="w-full grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-x-8 gap-y-6 items-start">
@@ -349,21 +392,30 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-200 to-blue-300 flex items-center justify-center font-bold text-blue-900 shadow-md">
-                        {recentAnnouncements[currentAnnouncementIndex]?.creator_full_name?.charAt(0) || "A"}
+                        {recentAnnouncements[
+                          currentAnnouncementIndex
+                        ]?.creator_full_name?.charAt(0) || "A"}
                       </div>
                       <div>
                         <div className="font-semibold text-blue-900">
-                          {recentAnnouncements[currentAnnouncementIndex]?.creator_full_name || "Anonyme"}
+                          {recentAnnouncements[currentAnnouncementIndex]
+                            ?.creator_full_name || "Anonyme"}
                         </div>
                         <div className="text-xs text-blue-600">
                           {(() => {
-                            const date = recentAnnouncements[currentAnnouncementIndex]?.created_at || "";
+                            const date =
+                              recentAnnouncements[currentAnnouncementIndex]
+                                ?.created_at || "";
                             const now = new Date();
                             const d = new Date(date);
-                            const diff = Math.floor((now.getTime() - d.getTime()) / 1000);
+                            const diff = Math.floor(
+                              (now.getTime() - d.getTime()) / 1000
+                            );
                             if (diff < 60) return `il y a ${diff} sec`;
-                            if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`;
-                            if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} h`;
+                            if (diff < 3600)
+                              return `il y a ${Math.floor(diff / 60)} min`;
+                            if (diff < 86400)
+                              return `il y a ${Math.floor(diff / 3600)} h`;
                             return `il y a ${Math.floor(diff / 86400)} j`;
                           })()}
                         </div>
@@ -377,7 +429,9 @@ export default function Dashboard() {
                     <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-3 sm:p-4 mb-4">
                       <span
                         className={`text-blue-800 text-sm sm:text-base leading-relaxed break-words transition-all duration-300 ${
-                          expandedAnnouncement === currentAnnouncementIndex ? "" : "line-clamp-3"
+                          expandedAnnouncement === currentAnnouncementIndex
+                            ? ""
+                            : "line-clamp-3"
                         }`}
                       >
                         {recentAnnouncements[currentAnnouncementIndex]?.message}
@@ -385,21 +439,30 @@ export default function Dashboard() {
                     </div>
 
                     {recentAnnouncements[currentAnnouncementIndex]?.message &&
-                      recentAnnouncements[currentAnnouncementIndex]!.message.length > 120 && (
+                      recentAnnouncements[currentAnnouncementIndex]!.message
+                        .length > 120 && (
                         <div className="flex justify-start mb-4">
                           <button
-                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl px-4 py-2 transition-all duration-300 text-sm flex items-center gap-2 hover:scale-105 shadow-lg hover:shadow-xl"
+                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl px-4 py-2 transition-all duration-300 text-sm flex items-center gap-2 hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer"
                             onClick={() =>
                               setExpandedAnnouncement(
-                                expandedAnnouncement === currentAnnouncementIndex ? null : currentAnnouncementIndex
+                                expandedAnnouncement ===
+                                  currentAnnouncementIndex
+                                  ? null
+                                  : currentAnnouncementIndex
                               )
                             }
                           >
-                            {expandedAnnouncement === currentAnnouncementIndex ? "Voir moins" : "Voir plus"}
+                            {expandedAnnouncement === currentAnnouncementIndex
+                              ? "Voir moins"
+                              : "Voir plus"}
                             <ChevronDown
                               size={16}
                               className={`transition-transform duration-300 ${
-                                expandedAnnouncement === currentAnnouncementIndex ? "rotate-180" : ""
+                                expandedAnnouncement ===
+                                currentAnnouncementIndex
+                                  ? "rotate-180"
+                                  : ""
                               }`}
                             />
                           </button>
@@ -415,7 +478,9 @@ export default function Dashboard() {
                             key={index}
                             onClick={() => setCurrentAnnouncementIndex(index)}
                             className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                              index === currentAnnouncementIndex ? "bg-blue-600" : "bg-blue-300 hover:bg-blue-400"
+                              index === currentAnnouncementIndex
+                                ? "bg-blue-600"
+                                : "bg-blue-300 hover:bg-blue-400"
                             }`}
                           />
                         ))}
@@ -425,20 +490,24 @@ export default function Dashboard() {
                         <button
                           onClick={() =>
                             setCurrentAnnouncementIndex((prev) =>
-                              prev === 0 ? recentAnnouncements.length - 1 : prev - 1
+                              prev === 0
+                                ? recentAnnouncements.length - 1
+                                : prev - 1
                             )
                           }
-                          className="p-2 bg-blue-100 hover:bg-blue-200 rounded-lg transition-all duration-200"
+                          className="p-2 bg-blue-100 hover:bg-blue-200 rounded-lg transition-all duration-200 cursor-pointer"
                         >
                           <ChevronLeft className="w-4 h-4 text-blue-600" />
                         </button>
                         <button
                           onClick={() =>
                             setCurrentAnnouncementIndex((prev) =>
-                              prev === recentAnnouncements.length - 1 ? 0 : prev + 1
+                              prev === recentAnnouncements.length - 1
+                                ? 0
+                                : prev + 1
                             )
                           }
-                          className="p-2 bg-blue-100 hover:bg-blue-200 rounded-lg transition-all duration-200"
+                          className="p-2 bg-blue-100 hover:bg-blue-200 rounded-lg transition-all duration-200 cursor-pointer"
                         >
                           <ChevronRight className="w-4 h-4 text-blue-600" />
                         </button>
@@ -452,7 +521,7 @@ export default function Dashboard() {
 
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Devoirs & rendus */}
-            <div className="flex-1">
+            {/* <div className="flex-1">
               <DevelopmentBadge>
                 <section className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300 w-full">
                   <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200">
@@ -472,7 +541,7 @@ export default function Dashboard() {
                   </div>
                 </section>
               </DevelopmentBadge>
-            </div>
+            </div> */}
 
             {/* Projets */}
             <div className="flex-1">
@@ -499,7 +568,9 @@ export default function Dashboard() {
                     <div className="flex items-center justify-center py-4">
                       <div className="flex items-center gap-2 text-blue-600">
                         <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-sm">Chargement des projets...</span>
+                        <span className="text-sm">
+                          Chargement des projets...
+                        </span>
                       </div>
                     </div>
                   ) : (
@@ -509,12 +580,17 @@ export default function Dashboard() {
                           key={project.id}
                           title={project.name}
                           description={`${project.progress}% terminé`}
-                          onClick={() => router.push(`/projects/${project.id}/details`)}
+                          onClick={() =>
+                            router.push(`/projects/${project.id}/details`)
+                          }
                           isClickable={true}
                         />
                       ))}
                       {dashboardProjects.length === 0 && (
-                        <DashboardCard title="Aucun projet" description="Aucun projet actif" />
+                        <DashboardCard
+                          title="Aucun projet"
+                          description="Aucun projet actif"
+                        />
                       )}
                     </div>
                   )}
@@ -522,42 +598,6 @@ export default function Dashboard() {
               </section>
             </div>
           </div>
-
-          {/* Rappels & notifications (échantillon + stats semaine) */}
-          <DevelopmentBadge>
-            <section className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-              <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200">
-                <h2 className="font-bold text-lg text-orange-900 flex items-center gap-2">
-                  <div className="p-1.5 bg-gradient-to-br from-orange-200 to-orange-300 rounded-lg">
-                    <div className="w-4 h-4 bg-orange-600 rounded-full flex items-center justify-center text-white text-xs font-bold"></div>
-                  </div>
-                  Rappels & notifications
-                </h2>
-              </div>
-              <div className="p-6">
-                <div className="flex flex-wrap gap-3">
-                  <DashboardCard title="NOUVEAU" description="Document reçu" />
-                  <DashboardCard title="EMARGEMENT" description="13:00 / 17:15" />
-                </div>
-              </div>
-            </section>
-          </DevelopmentBadge>
-
-          <section className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-            <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200">
-              <h2 className="font-bold text-lg text-orange-900 flex items-center gap-2">
-                <div className="p-1.5 bg-gradient-to-br from-orange-200 to-orange-300 rounded-lg">
-                  <div className="w-4 h-4 bg-orange-600 rounded-full flex items-center justify-center text-white text-xs font-bold">🔔</div>
-                </div>
-                Rappels & notifications
-              </h2>
-            </div>
-            <div className="p-6">
-              <div className="flex flex-wrap gap-3">
-                <DashboardCard title="Calendrier" description={`${weekStats.count} événement(s) cette semaine`} />
-              </div>
-            </div>
-          </section>
         </div>
 
         {/* Colonne droite */}
@@ -582,17 +622,21 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="p-6">
-              {todayEventsLoading ? (
+              {loading ? (
                 <div className="flex items-center justify-center py-4">
                   <div className="flex items-center gap-2 text-indigo-600">
                     <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-sm">Chargement des événements...</span>
+                    <span className="text-sm">
+                      Chargement des événements...
+                    </span>
                   </div>
                 </div>
               ) : todayEvents.length === 0 ? (
                 <div className="text-center py-6">
                   <Calendar className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600 text-sm">Aucun événement aujourd'hui</p>
+                  <p className="text-gray-600 text-sm">
+                    Aucun événement aujourd'hui
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -647,28 +691,120 @@ export default function Dashboard() {
                         <div className="flex items-center gap-2 mb-1">
                           <Clock className="w-3 h-3 text-gray-500" />
                           <span className="text-xs text-gray-600 font-medium">
-                            {new Date(event.event_datetime).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                            {new Date(event.event_datetime).toLocaleTimeString(
+                              "fr-FR",
+                              { hour: "2-digit", minute: "2-digit" }
+                            )}
                           </span>
                         </div>
-                        <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate">{event.title}</h4>
+                        <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate">
+                          {event.title}
+                        </h4>
                         {event.description && (
-                          <p className="text-xs text-gray-600 line-clamp-2">{event.description}</p>
+                          <p className="text-xs text-gray-600 line-clamp-2">
+                            {event.description}
+                          </p>
                         )}
                       </div>
                     </div>
                   ))}
                   {todayEvents.length > 3 && (
                     <div className="text-center pt-2">
-                      <span className="text-xs text-indigo-600">+{todayEvents.length - 3} autres événements</span>
+                      <button
+                        onClick={() => router.push("/calendar")}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-200 cursor-pointer"
+                      >
+                        +{todayEvents.length - 3} autres événements
+                      </button>
                     </div>
                   )}
                 </div>
               )}
             </div>
           </section>
+          <section className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+            <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200">
+              <h2 className="font-bold text-lg text-orange-900 flex items-center gap-2">
+                <div className="p-1.5 bg-gradient-to-br from-orange-200 to-orange-300 rounded-lg">
+                  <div className="w-4 h-4 bg-orange-600 rounded-full flex items-center justify-center text-white text-xs font-bold"></div>
+                </div>
+                Vue d'ensemble
+              </h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Calendrier - Événements de la semaine */}
+                <DashboardCard
+                  title="Cette semaine"
+                  description={`${weekStats.count} événement(s) programmé(s)`}
+                  icon={<Calendar className="w-5 h-5" />}
+                  onClick={() => router.push("/calendar")}
+                  isClickable={true}
+                />
+
+                {/* Projets actifs */}
+                <DashboardCard
+                  title="Projets actifs"
+                  description={`${dashboardProjects.length} projet(s) en cours`}
+                  icon={<Megaphone className="w-5 h-5" />}
+                  onClick={() => router.push("/projects")}
+                  isClickable={true}
+                />
+
+                {/* Prochain événement */}
+                <DashboardCard
+                  title="Prochain événement"
+                  description={
+                    upcomingEvents.length > 0
+                      ? upcomingEvents[0]?.title || "Aucun événement"
+                      : "Aucun événement"
+                  }
+                  icon={<Clock className="w-5 h-5" />}
+                  onClick={() => router.push("/calendar")}
+                  isClickable={true}
+                />
+
+                {/* Nouvelles annonces */}
+                <DashboardCard
+                  title="Annonces"
+                  description={`${recentAnnouncements.length} annonce(s) récente(s)`}
+                  icon={<Wallet className="w-5 h-5" />}
+                  onClick={() => router.push("/informations")}
+                  isClickable={true}
+                />
+              </div>
+
+              {/* Détail du prochain événement si disponible */}
+              {upcomingEvents.length > 0 && (
+                <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <h4 className="font-semibold text-orange-900 text-sm mb-2">
+                    Prochain événement :
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-orange-600" />
+                    <span className="text-orange-800 text-sm font-medium">
+                      {upcomingEvents[0]?.title}
+                    </span>
+                    <span className="text-orange-600 text-xs">
+                      {upcomingEvents[0]?.startIso
+                        ? new Date(
+                            upcomingEvents[0].startIso
+                          ).toLocaleDateString("fr-FR", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : ""}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
 
           {/* Événements clés */}
-          <DevelopmentBadge>
+          {/* <DevelopmentBadge>
             <section className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
               <div className="px-6 py-4 bg-gradient-to-r from-red-50 to-red-100 border-b border-red-200">
                 <h2 className="font-bold text-lg text-red-900 flex items-center gap-2">
@@ -690,10 +826,10 @@ export default function Dashboard() {
                 </div>
               </div>
             </section>
-          </DevelopmentBadge>
+          </DevelopmentBadge> */}
 
           {/* Réunions & rendez-vous */}
-          <DevelopmentBadge>
+          {/* <DevelopmentBadge>
             <section className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
               <div className="px-6 py-4 bg-gradient-to-r from-teal-50 to-teal-100 border-b border-teal-200">
                 <h2 className="font-bold text-lg text-teal-900 flex items-center gap-2">
@@ -718,7 +854,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </section>
-          </DevelopmentBadge>
+          </DevelopmentBadge> */}
         </div>
       </div>
     </div>
