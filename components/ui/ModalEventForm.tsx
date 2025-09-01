@@ -165,7 +165,7 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
       description: description.trim(),
       location: location.trim(),
       event_type: eventType as 'follow-up' | 'kick-off' | 'keynote' | 'hub-talk' | 'other',
-      target_promotions: targetPromotion ? selectedPromotionIds : [],
+      target_promotions: targetPromotion && selectedPromotionIds.length > 0 ? selectedPromotionIds : null,
       slot_duration: slotDuration,
       slots: slots.map(slot => ({
         start: slot.start,

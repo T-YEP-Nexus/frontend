@@ -203,6 +203,33 @@ export default function Dashboard() {
     setExpandedAnnouncement(null);
   }, [currentAnnouncementIndex]);
 
+  // Fonction pour filtrer les événements du jour
+  const getTodayEvents = (events: any[]) => {
+    const today = new Date();
+    const todayStart = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const todayEnd = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + 1
+    );
+
+    return events
+      .filter((event) => {
+        if (!event.event_datetime) return false;
+        const eventDate = new Date(event.event_datetime);
+        return eventDate >= todayStart && eventDate < todayEnd;
+      })
+      .sort(
+        (a, b) =>
+          new Date(a.event_datetime).getTime() -
+          new Date(b.event_datetime).getTime()
+      );
+  };
+
   // Mettre à jour les événements du jour à partir des événements globaux
   useEffect(() => {
     if (!eventsLoading && allEvents.length > 0) {
