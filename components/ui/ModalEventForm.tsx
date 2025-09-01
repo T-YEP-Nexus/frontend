@@ -3,8 +3,8 @@ import React, { useState, useEffect } from "react";
 import MultiPromotionSelector from "./MultiPromotionSelector";
 import EventTypeSelector from "./EventTypeSelector";
 import SlotManager from "./SlotManager";
+import ModalDeleteEvent from "./ModalDeleteEvent";
 import usePromotionsData from "@/hooks/usePromotionsData";
-import { useCalendarData } from "@/hooks/useCalendarData";
 import { getUserIdFromToken } from "@/lib/auth";
 import { 
   X, 
@@ -21,7 +21,6 @@ import {
 interface ModalEventFormProps {
   open: boolean;
   onClose: () => void;
-  // La soumission est maintenant gérée en interne
   defaultStart?: string;
   defaultEnd?: string;
   eventToEdit?: any | null;
@@ -30,21 +29,20 @@ interface ModalEventFormProps {
   deleteEvent: (id: number) => Promise<void>;
 }
 
-const ModalEventForm: React.FC<ModalEventFormProps> = ({ 
-  open, 
-  onClose, 
-  defaultStart, 
-  defaultEnd, 
+const ModalEventForm: React.FC<ModalEventFormProps> = ({
+  open,
+  onClose,
+  defaultStart,
+  defaultEnd,
   eventToEdit,
   createEvent,
   updateEvent,
-  deleteEvent 
+  deleteEvent,
 }) => {
   const [title, setTitle] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [slotDuration, setSlotDuration] = useState(30);
-  const [promotion, setPromotion] = useState("");
   const [targetPromotion, setTargetPromotion] = useState(false);
   const [slots, setSlots] = useState<{id: string, start: string, end: string, user: string | null, maxUsers?: number, currentUsers?: number}[]>([]);
   const [eventType, setEventType] = useState('other');
@@ -55,120 +53,51 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [selectedPromotionIds, setSelectedPromotionIds] = useState<string[]>([]);
   const [allowMultipleUsers, setAllowMultipleUsers] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  const {
+    promotions,
+    loading: promotionsLoading,
+    error: promotionsError,
+  } = usePromotionsData();
 
-  const { promotions, loading: promotionsLoading, error: promotionsError } = usePromotionsData();
-  
   useEffect(() => {
     if (open) {
       setFormError(null);
       if (eventToEdit) {
-        // Pré-remplir le formulaire avec les données existantes de l'événement
-        console.log("Pré-remplissage du formulaire avec:", eventToEdit);
-        console.log("Détails des champs:", {
-          title: eventToEdit.title,
-          description: eventToEdit.description,
-          event_type: eventToEdit.event_type,
-          location: eventToEdit.location,
-          target_promotions: eventToEdit.target_promotions,
-          id_prom: eventToEdit.id_prom,
-          slots: eventToEdit.slots,
-          slot_duration: eventToEdit.slot_duration,
-          allow_multiple_users: eventToEdit.allow_multiple_users
-        });
-        
         // Gestion des dates
-        if (eventToEdit.event_datetime) {
-          const utcDate = new Date(eventToEdit.event_datetime);
-          const localDateString = new Date(utcDate.getTime() - (utcDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-          setStart(localDateString);
-          
-          if (eventToEdit.duration_minutes) {
-            const endDate = new Date(utcDate.getTime() + eventToEdit.duration_minutes * 60000);
-            const localEndDateString = new Date(endDate.getTime() - (endDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-            setEnd(localEndDateString);
-          } else {
-            setEnd("");
-          }
-        } else if (eventToEdit.start) {
-          // Fallback pour les événements avec start/end
-          const startDate = new Date(eventToEdit.start);
-          const localStartString = new Date(startDate.getTime() - (startDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-          setStart(localStartString);
-          
-          if (eventToEdit.end) {
+        if (eventToEdit.start) {
+            const startDate = new Date(eventToEdit.start);
+            const localStartString = new Date(startDate.getTime() - (startDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            setStart(localStartString);
+        } else {
+            setStart(defaultStart || "");
+        }
+
+        if (eventToEdit.end) {
             const endDate = new Date(eventToEdit.end);
             const localEndString = new Date(endDate.getTime() - (endDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
             setEnd(localEndString);
-          }
+        } else {
+            setEnd(defaultEnd || "");
         }
 
-        // Pré-remplir tous les autres champs avec gestion des valeurs undefined/null
         setTitle(eventToEdit.title || "");
         setDescription(eventToEdit.description || '');
         setEventType(eventToEdit.event_type || 'other');
-        
-        // Gestion du lieu - vérifier si c'est undefined, null ou chaîne vide
-        const eventLocation = eventToEdit.location;
-        if (eventLocation !== undefined && eventLocation !== null && eventLocation !== '') {
-          console.log("Lieu trouvé:", eventLocation);
-          setLocation(eventLocation);
-        } else {
-          console.log("Lieu non défini, utilisation de la valeur par défaut: ''");
-          setLocation('');
-        }
-        
-        // Gestion des promotions - Vérifier la structure exacte
-        console.log("Vérification des promotions:", {
-          target_promotions: eventToEdit.target_promotions,
-          id_prom: eventToEdit.id_prom,
-          hasTargetPromotions: eventToEdit.target_promotions && eventToEdit.target_promotions.length > 0,
-          hasIdProm: !!eventToEdit.id_prom
-        });
-        
-        if (eventToEdit.target_promotions && Array.isArray(eventToEdit.target_promotions) && eventToEdit.target_promotions.length > 0) {
-          console.log("Utilisation de target_promotions:", eventToEdit.target_promotions);
-          setTargetPromotion(true);
-          setSelectedPromotionIds(eventToEdit.target_promotions);
-        } else if (eventToEdit.id_prom && eventToEdit.id_prom !== null && eventToEdit.id_prom !== undefined) {
-          console.log("Utilisation de id_prom:", eventToEdit.id_prom);
-          setTargetPromotion(true);
-          setSelectedPromotionIds([eventToEdit.id_prom]);
-        } else {
-          console.log("Aucune promotion ciblée");
-          setTargetPromotion(false);
-          setSelectedPromotionIds([]);
-        }
+        setLocation(eventToEdit.location || '');
 
-        // Gestion des créneaux existants - vérifier si c'est undefined, null ou array vide
+        const hasTargetPromotions = eventToEdit.target_promotions && Array.isArray(eventToEdit.target_promotions) && eventToEdit.target_promotions.length > 0;
+        setTargetPromotion(hasTargetPromotions);
+        setSelectedPromotionIds(hasTargetPromotions ? eventToEdit.target_promotions : []);
+
         const eventSlots = eventToEdit.slots;
-        if (eventSlots && Array.isArray(eventSlots) && eventSlots.length > 0) {
-          console.log("Créneaux trouvés:", eventSlots);
-          setSlots(eventSlots);
-        } else {
-          console.log("Aucun créneau trouvé ou slots undefined/null");
-          setSlots([]);
-        }
+        setSlots(eventSlots && Array.isArray(eventSlots) ? eventSlots : []);
 
-        // Gestion de la durée des créneaux - vérifier si c'est undefined, null ou 0
         const eventSlotDuration = eventToEdit.slot_duration;
-        if (eventSlotDuration !== undefined && eventSlotDuration !== null && eventSlotDuration > 0) {
-          console.log("Durée des créneaux:", eventSlotDuration);
-          setSlotDuration(eventSlotDuration);
-        } else {
-          console.log("Durée des créneaux non définie, utilisation de la valeur par défaut: 30");
-          setSlotDuration(30);
-        }
-
-        // Gestion des utilisateurs multiples - vérifier si c'est undefined, null ou false
-        const eventAllowMultipleUsers = eventToEdit.allow_multiple_users;
-        if (eventAllowMultipleUsers !== undefined && eventAllowMultipleUsers !== null) {
-          console.log("Utilisateurs multiples:", eventAllowMultipleUsers);
-          setAllowMultipleUsers(Boolean(eventAllowMultipleUsers));
-        } else {
-          console.log("Utilisateurs multiples non défini, utilisation de la valeur par défaut: false");
-          setAllowMultipleUsers(false);
-        }
+        setSlotDuration(eventSlotDuration > 0 ? eventSlotDuration : 30);
+        
+        setAllowMultipleUsers(!!eventToEdit.allow_multiple_users);
 
       } else {
         // Reset form for new event
@@ -187,8 +116,6 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
     }
   }, [open, eventToEdit, defaultStart, defaultEnd]);
 
-  // Les créneaux sont maintenant gérés par le composant SlotManager
-
   useEffect(() => {
     if (start && end) {
       const startDate = new Date(start);
@@ -197,9 +124,9 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
       if (endDate <= startDate) {
         setSlotDurationError("La date de fin doit être après la date de début.");
       } else {
-        const totalDuration = (endDate.getTime() - startDate.getTime()) / 60000; // en minutes
+        const totalDuration = (endDate.getTime() - startDate.getTime()) / 60000;
         if (slotDuration > totalDuration) {
-          setSlotDurationError("La durée d'un créneau ne peut pas dépasser la durée totale de l'événement.");
+          setSlotDurationError("La durée d'un créneau ne peut pas dépasser la durée totale.");
         } else {
           setSlotDurationError(null);
         }
@@ -212,29 +139,15 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Validation des erreurs de créneaux
     if (slotDurationError) {
       setFormError("Veuillez corriger les erreurs indiquées avant de soumettre.");
       return;
     }
-
-    // Validation de base
-    if (!title.trim()) {
-      setFormError("Le titre de l'événement est obligatoire.");
+    if (!title.trim() || !start || !end) {
+      setFormError("Le titre, la date de début et la date de fin sont obligatoires.");
       return;
     }
 
-    if (!start) {
-      setFormError("La date de début est obligatoire.");
-      return;
-    }
-
-    if (!end) {
-      setFormError("La date de fin est obligatoire.");
-      return;
-    }
-
-    // Validation des dates
     const startDate = new Date(start);
     const endDate = new Date(end);
     
@@ -243,13 +156,11 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
       return;
     }
 
-    // Calcul de la durée
     const duration_minutes = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
 
-    // Préparation des données de l'événement
     const eventData = {
       title: title.trim(),
-      event_datetime: startDate.toISOString(), // Utiliser directement l'ISO string
+      event_datetime: startDate.toISOString(),
       duration_minutes,
       description: description.trim(),
       location: location.trim(),
@@ -260,353 +171,180 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
         start: slot.start,
         end: slot.end,
         user: slot.user,
-        maxUsers: allowMultipleUsers ? (slot.maxUsers || 5) : 1, // Assigner maxUsers
+        maxUsers: allowMultipleUsers ? (slot.maxUsers || 5) : 1,
         currentUsers: slot.currentUsers || 0
       })),
       allow_multiple_users: allowMultipleUsers,
     };
-
-    console.log("Données formatées pour l'API:", eventData);
     
-      try {
-        setLoading(true); 
-        setFormError(null);
-
-        if (eventToEdit) {
-          await updateEvent(eventToEdit.id, eventData);
-        } else {
-          const userId = getUserIdFromToken();
-          if (!userId) {
-            throw new Error("Impossible de récupérer l'ID de l'utilisateur. Veuillez vous reconnecter.");
-          }
-          await createEvent({ ...eventData, id_creator: userId!, report: '' });
-        }
-        onClose();
-      } catch (error: any) {
-        setFormError(error.message || "Une erreur est survenue.");
-      } finally {
-        setLoading(false);
+    try {
+      setLoading(true);
+      setFormError(null);
+      if (eventToEdit) {
+        await updateEvent(eventToEdit.id, eventData);
+      } else {
+        const userId = getUserIdFromToken();
+        if (!userId) throw new Error("ID utilisateur introuvable. Reconnectez-vous.");
+        await createEvent({ ...eventData, id_creator: userId, report: "" });
       }
+      onClose();
+    } catch (error: any) {
+      setFormError(error.message || "Une erreur est survenue.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!eventToEdit) return;
+    setShowDeleteModal(true);
+  };
 
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet événement ? Cette action est irréversible.")) {
-      try {
-        setLoading(true);
-        setFormError(null);
-        await deleteEvent(eventToEdit.id);
-        onClose();
-      } catch (error: any) {
-        setFormError(error.message || "Une erreur est survenue lors de la suppression.");
-      } finally {
-        setLoading(false);
-      }
+  const confirmDelete = async () => {
+    if (!eventToEdit) return;
+    try {
+      setLoading(true);
+      setFormError(null);
+      await deleteEvent(eventToEdit.id);
+      setShowDeleteModal(false);
+      onClose();
+    } catch (error: any) {
+      setFormError(error.message || "Erreur lors de la suppression.");
+    } finally {
+      setLoading(false);
     }
   };
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl w-full max-w-5xl max-h-[95vh] shadow-2xl relative overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 text-white relative">
-          <button 
-            className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 text-xl p-2 rounded-full transition-all duration-200" 
-            onClick={onClose}
-          >
-            <X size={20} />
-          </button>
-          <div className="flex items-center gap-3">
-            <Calendar className="w-8 h-8" />
-            <div>
-              <h2 className="text-2xl font-bold">
-                {eventToEdit ? "Modifier l'événement" : "Créer un nouvel événement"}
-              </h2>
-              <p className="text-blue-100 text-sm mt-1">
-                {eventToEdit ? "Modifiez les détails de votre événement" : "Remplissez les informations pour créer votre événement"}
-              </p>
+    <>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-3xl w-full max-w-5xl max-h-[95vh] shadow-2xl relative overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 text-white relative flex-shrink-0">
+            <button 
+              className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 text-xl p-2 rounded-full transition-all duration-200" 
+              onClick={onClose}
+            >
+              <X size={20} />
+            </button>
+            <div className="flex items-center gap-3">
+              <Calendar className="w-8 h-8" />
+              <div>
+                <h2 className="text-2xl font-bold">
+                  {eventToEdit ? "Modifier l'événement" : "Créer un nouvel événement"}
+                </h2>
+                <p className="text-blue-100 text-sm mt-1">
+                  {eventToEdit ? "Modifiez les détails de votre événement" : "Remplissez les informations pour créer votre événement"}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Body - Scrollable content */}
-        <div className="overflow-y-auto max-h-[calc(95vh-180px)]">
-          <form id="event-form" onSubmit={handleSubmit} className="p-8 space-y-8">
-            
-            {/* Section 1: Informations de base */}
-            <div className="bg-gray-50 rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Informations de base</h3>
-              </div>
+          {/* Body - Scrollable content */}
+          <div className="overflow-y-auto flex-grow">
+            <form id="event-form" onSubmit={handleSubmit} className="p-8 space-y-8">
               
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Titre de l'événement *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Réunion d'équipe, Formation React..."
-                    className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
-                    required
-                  />
+              <div className="bg-gray-50 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-blue-100 rounded-lg"><FileText className="w-5 h-5 text-blue-600" /></div>
+                  <h3 className="text-lg font-semibold text-gray-900">Informations de base</h3>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    placeholder="Décrivez votre événement, objectifs, prérequis..."
-                    className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
-                    value={description}
-                    onChange={e => setDescription(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-                
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                    <MapPin className="w-4 h-4" />
-                    Lieu
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Salle 101, Visioconférence, En ligne..."
-                    className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    value={location}
-                    onChange={e => setLocation(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Section 2: Type d'événement */}
-            <div className="bg-gray-50 rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Settings className="w-5 h-5 text-purple-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Type d'événement</h3>
-              </div>
-              
-              <EventTypeSelector
-                value={eventType}
-                onChange={setEventType}
-                required
-              />
-            </div>
-
-            {/* Section 3: Ciblage et promotions */}
-            <div className="bg-gray-50 rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Users className="w-5 h-5 text-green-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Public cible</h3>
-              </div>
-              
-              <div className="space-y-4">
-                <label className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200 cursor-pointer hover:border-green-300 transition-colors duration-200">
-                  <input
-                    type="checkbox"
-                    checked={targetPromotion}
-                    onChange={e => setTargetPromotion(e.target.checked)}
-                    className="form-checkbox h-5 w-5 text-green-600 rounded focus:ring-green-500"
-                  />
+                <div className="space-y-4">
                   <div>
-                    <div className="text-base font-medium text-gray-900">Cibler une promotion spécifique</div>
-                    <div className="text-sm text-gray-500">Limiter l'accès à certaines promotions uniquement</div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Titre *</label>
+                    <input type="text" placeholder="Ex: Réunion d'équipe..." className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" value={title} onChange={e => setTitle(e.target.value)} required />
                   </div>
-                </label>
-                
-                {targetPromotion && (
-                  <div className="mt-4">
-                    <MultiPromotionSelector
-                      promotions={promotions}
-                      selectedPromotions={selectedPromotionIds}
-                      onPromotionsChange={setSelectedPromotionIds}
-                      loading={promotionsLoading}
-                      error={promotionsError || undefined}
-                      placeholder="Sélectionner des promotions"
-                      required
-                    />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea placeholder="Décrivez votre événement..." className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" value={description} onChange={e => setDescription(e.target.value)} rows={3} />
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Section 4: Horaires */}
-            <div className="bg-gray-50 rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Clock className="w-5 h-5 text-orange-600" />
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2"><MapPin className="w-4 h-4" />Lieu</label>
+                    <input type="text" placeholder="Ex: Salle 101, Visioconférence..." className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" value={location} onChange={e => setLocation(e.target.value)} />
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Horaires</h3>
+              </div>
+
+              <div className="bg-gray-50 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-6"><div className="p-2 bg-purple-100 rounded-lg"><Settings className="w-5 h-5 text-purple-600" /></div><h3 className="text-lg font-semibold text-gray-900">Type d'événement</h3></div>
+                <EventTypeSelector value={eventType} onChange={setEventType} required />
+              </div>
+
+              <div className="bg-gray-50 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-6"><div className="p-2 bg-green-100 rounded-lg"><Users className="w-5 h-5 text-green-600" /></div><h3 className="text-lg font-semibold text-gray-900">Public cible</h3></div>
+                <div className="space-y-4">
+                  <label className="flex items-center gap-3 p-4 bg-white rounded-xl border-2 border-gray-200 cursor-pointer hover:border-green-300 transition-colors duration-200"><input type="checkbox" checked={targetPromotion} onChange={e => setTargetPromotion(e.target.checked)} className="form-checkbox h-5 w-5 text-green-600 rounded focus:ring-green-500" /><div><div className="font-medium">Cibler des promotions</div><div className="text-sm text-gray-500">Limiter l'accès à certaines promotions</div></div></label>
+                  {targetPromotion && <MultiPromotionSelector promotions={promotions} selectedPromotions={selectedPromotionIds} onPromotionsChange={setSelectedPromotionIds} loading={promotionsLoading} error={promotionsError || undefined} required />}
+                </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date et heure de début *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
-                    value={start}
-                    onChange={e => setStart(e.target.value)}
-                    required
-                  />
+              <div className="bg-gray-50 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-6"><div className="p-2 bg-orange-100 rounded-lg"><Clock className="w-5 h-5 text-orange-600" /></div><h3 className="text-lg font-semibold text-gray-900">Horaires</h3></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Début *</label>
+                    <input type="datetime-local" className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500" value={start} onChange={e => setStart(e.target.value)} required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Fin *</label>
+                    <input type="datetime-local" className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500" value={end} onChange={e => setEnd(e.target.value)} required />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date et heure de fin *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
-                    value={end}
-                    onChange={e => setEnd(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Section 5: Configuration des créneaux */}
-            <div className="bg-gray-50 rounded-2xl p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Settings className="w-5 h-5 text-indigo-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Configuration des créneaux</h3>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Durée d'un créneau (minutes) *
-                  </label>
-                  <input
-                    type="number"
-                    min={5}
-                    max={240}
-                    step={5}
-                    className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-                    value={slotDuration}
-                    onChange={e => setSlotDuration(Number(e.target.value))}
-                    required
-                  />
-                  {slotDurationError && (
-                    <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                      <span className="w-4 h-4 text-red-500">⚠</span>
-                      {slotDurationError}
-                    </p>
-                  )}
+              <div className="bg-gray-50 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-6"><div className="p-2 bg-indigo-100 rounded-lg"><Settings className="w-5 h-5 text-indigo-600" /></div><h3 className="text-lg font-semibold text-gray-900">Configuration des créneaux</h3></div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Durée d'un créneau (minutes) *</label>
+                    <input type="number" min={5} max={240} step={5} className="w-full border border-gray-300 bg-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" value={slotDuration} onChange={e => setSlotDuration(Number(e.target.value))} required />
+                    {slotDurationError && <p className="text-red-500 text-sm mt-2">⚠ {slotDurationError}</p>}
+                  </div>
+                  <div className="flex items-center">
+                    <label className="flex items-center gap-3 p-4 bg-white rounded-xl border-2 border-gray-200 cursor-pointer hover:border-indigo-300 transition-colors duration-200 w-full"><input type="checkbox" checked={allowMultipleUsers} onChange={e => setAllowMultipleUsers(e.target.checked)} className="form-checkbox h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500" /><div><div className="font-medium">Créneaux partagés</div><div className="text-sm text-gray-500">Permettre plusieurs utilisateurs par créneau</div></div></label>
+                  </div>
                 </div>
-                
-                <div className="flex items-center">
-                  <label className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200 cursor-pointer hover:border-indigo-300 transition-colors duration-200 w-full">
-                    <input
-                      type="checkbox"
-                      id="allowMultipleUsers"
-                      checked={allowMultipleUsers}
-                      onChange={e => setAllowMultipleUsers(e.target.checked)}
-                      className="form-checkbox h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500"
-                    />
-                    <div>
-                      <div className="text-base font-medium text-gray-900">Créneaux partagés</div>
-                      <div className="text-sm text-gray-500">Permettre plusieurs utilisateurs par créneau</div>
-                    </div>
-                  </label>
-                </div>
+                <SlotManager slots={slots} onSlotsChange={setSlots} eventStart={start} eventEnd={end} slotDuration={slotDuration} allowMultipleUsers={allowMultipleUsers} />
               </div>
-
-              {/* Gestionnaire de créneaux */}
-              <SlotManager
-                slots={slots}
-                onSlotsChange={setSlots}
-                eventStart={start}
-                eventEnd={end}
-                slotDuration={slotDuration}
-                allowMultipleUsers={allowMultipleUsers}
-                maxUsersPerSlot={allowMultipleUsers ? 5 : 1}
-              />
-            </div>
-
-            {/* Messages d'erreur */}
-            {formError && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-red-500 text-xl">⚠</span>
-                  <p className="text-red-700 font-medium">{formError}</p>
-                </div>
-              </div>
-            )}
-          </form>
-        </div>
-
-        {/* Footer avec boutons d'action */}
-        <div className="bg-gray-50 px-8 py-6 border-t border-gray-200 flex justify-between items-center">
-          <div>
-            {eventToEdit && (
-              <button 
-                type="button" 
-                onClick={handleDelete}
-                disabled={loading}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="w-4 h-4" />
-                Supprimer
-              </button>
-            )}
+              
+              {formError && <div className="bg-red-50 border border-red-200 rounded-xl p-4"><p className="text-red-700 font-medium">⚠ {formError}</p></div>}
+            </form>
           </div>
-          
-          <div className="flex gap-3">
-            <button 
-              type="button" 
-              onClick={onClose} 
-              className="px-6 py-3 rounded-xl bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
-            >
-              Annuler
-            </button>
-            <button 
-              type="submit" 
-              form="event-form"
-              disabled={loading} 
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              onClick={(e) => {
-                e.preventDefault();
-                const form = document.querySelector('form');
-                if (form) {
-                  const submitEvent = new Event('submit', { bubbles: true });
-                  form.dispatchEvent(submitEvent);
-                }
-              }}
-            >
-              <Save className="w-4 h-4" />
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  {eventToEdit ? "Mise à jour..." : "Création..."}
-                </span>
-              ) : (
-                <span>{eventToEdit ? "Mettre à jour" : "Créer l'événement"}</span>
-              )}
-            </button>
+
+          {/* Footer */}
+          <div className="bg-gray-50 px-8 py-6 border-t border-gray-200 flex justify-between items-center flex-shrink-0">
+            <div>
+              {eventToEdit && <button type="button" onClick={handleDelete} disabled={loading} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 transition-all disabled:opacity-50"><Trash2 className="w-4 h-4" /> Supprimer</button>}
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={onClose} className="px-6 py-3 rounded-xl bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all">Annuler</button>
+              <button type="submit" form="event-form" disabled={loading} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all disabled:opacity-50 disabled:transform-none">
+                <Save className="w-4 h-4" />
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    {eventToEdit ? "Mise à jour..." : "Création..."}
+                  </>
+                ) : (
+                  <span>{eventToEdit ? "Mettre à jour" : "Créer l'événement"}</span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      
+      <ModalDeleteEvent
+        open={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        event={eventToEdit}
+        loading={loading}
+      />
+    </>
   );
 };
 
-export default ModalEventForm; 
+export default ModalEventForm;

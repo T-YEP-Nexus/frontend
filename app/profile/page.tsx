@@ -486,14 +486,15 @@ const ProfilePage = () => {
                   <Edit className="w-4 h-4 mr-2 text-white" />
                   Modifier le profil
                 </Button>
-                <Button
-                  className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-sm text-white cursor-pointer"
-                  variant="default"
-                >
-                  <BookOpen className="w-4 h-4 mr-2 text-white" />
-                  Exporter mes données
-                  <DevelopmentBadge size="xs" className="ml-2" />
-                </Button>
+                <DevelopmentBadge>
+                  <Button
+                    className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-sm text-white cursor-pointer"
+                    variant="default"
+                  >
+                    <BookOpen className="w-4 h-4 mr-2 text-white" />
+                    Exporter mes données
+                  </Button>
+                </DevelopmentBadge>
                 <Button
                   onClick={handleLogout}
                   className="w-full h-12 text-sm font-medium hover:scale-102 transition-transform duration-300 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-sm text-white cursor-pointer"

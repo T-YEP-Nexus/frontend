@@ -381,6 +381,7 @@ export default function TrombinoscopePage() {
         setIsLoading(false);
       }
     };
+    console.log("Fetching students for promotion:", selectedPromotion);
 
     fetchStudents();
   }, [selectedPromotion, promotions, userPromotion, userRole]);
@@ -476,8 +477,16 @@ export default function TrombinoscopePage() {
               {students.map((student) => (
                 <div
                   key={student.id}
-                  className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 group cursor-pointer"
-                  onClick={() => handleViewStudent(student)}
+                  className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 group ${
+                    userRole === "student"
+                      ? ""
+                      : "hover:shadow-xl hover:scale-105 cursor-pointer"
+                  }`}
+                  onClick={
+                    userRole === "student"
+                      ? undefined
+                      : () => handleViewStudent(student)
+                  }
                 >
                   <div className="flex flex-col items-center text-center">
                     {/* Avatar */}
@@ -491,7 +500,13 @@ export default function TrombinoscopePage() {
                     </div>
 
                     {/* Informations */}
-                    <h3 className="font-semibold text-gray-800 text-lg mb-1 group-hover:text-blue-600 transition-colors">
+                    <h3
+                      className={`font-semibold text-gray-800 text-lg mb-1 transition-colors ${
+                        userRole === "student"
+                          ? ""
+                          : "group-hover:text-blue-600"
+                      }`}
+                    >
                       {student.first_name} {student.last_name}
                     </h3>
 
@@ -761,22 +776,26 @@ export default function TrombinoscopePage() {
                 <Button
                   onClick={handleCloseModal}
                   variant="outline"
-                  className="flex-1 border-gray-300 hover:bg-gray-100 hover:border-gray-400 hover:shadow-md transition-all duration-300 ease-in-out cursor-pointer"
+                  className={`border-gray-300 hover:bg-gray-100 hover:border-gray-400 hover:shadow-md transition-all duration-300 ease-in-out cursor-pointer ${
+                    userRole === "student" ? "flex-1" : ""
+                  }`}
                 >
                   Fermer
                 </Button>
-                <Button
-                  onClick={() => {
-                    handleCloseModal();
-                    router.push(
-                      `/admin/profile?studentId=${selectedStudent.id}&showOtherUsers=true`
-                    );
-                  }}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer border-0 flex items-center gap-2"
-                >
-                  <User size={20} />
-                  Voir le profil complet
-                </Button>
+                {(userRole === "admin" || userRole === "advisor") && (
+                  <Button
+                    onClick={() => {
+                      handleCloseModal();
+                      router.push(
+                        `/admin/profile?studentId=${selectedStudent.id}&showOtherUsers=true`
+                      );
+                    }}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer border-0 flex items-center gap-2"
+                  >
+                    <User size={20} />
+                    Voir le profil complet
+                  </Button>
+                )}
               </div>
             </div>
           </div>

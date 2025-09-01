@@ -45,13 +45,13 @@ interface CreateFormData {
   name: string;
   description: string;
   promotion: string;
-  // startDate: string;
-  // endDate: string;
+  startDate: string;
+  endDate: string;
   // teamSize: string;
   // kickOffDate: string;
   // followUpDate: string;
   // keynoteDate: string;
-  // medals: Medal[];
+  medals: Medal[];
   resources: Resource[];
   // hotTopics: string;
   // skills: string;
@@ -64,13 +64,13 @@ export default function CreateProjectPage() {
     name: "",
     description: "",
     promotion: "",
-    // startDate: "",
-    // endDate: "",
+    startDate: "",
+    endDate: "",
     // teamSize: "",
     // kickOffDate: "",
     // followUpDate: "",
     // keynoteDate: "",
-    // medals: [{ name: "", description: "" }],
+    medals: [{ name: "", description: "" }],
     resources: [
       {
         name: "",
@@ -172,49 +172,49 @@ export default function CreateProjectPage() {
   }, []);
 
   // Gestion des médailles
-  // const addMedal = () => {
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     medals: [...prev.medals, { name: "", description: "" }],
-  //   }));
+  const addMedal = () => {
+    setFormData((prev) => ({
+      ...prev,
+      medals: [...prev.medals, { name: "", description: "" }],
+    }));
 
-  //   // Scroll vers la nouvelle médaille après un court délai
-  //   setTimeout(() => {
-  //     if (medalsContainerRef.current) {
-  //       medalsContainerRef.current.scrollIntoView({
-  //         behavior: "smooth",
-  //         block: "center",
-  //       });
-  //       // Scroll supplémentaire pour aller plus bas
-  //       setTimeout(() => {
-  //         window.scrollBy({
-  //           top: 100,
-  //           behavior: "smooth",
-  //         });
-  //       }, 300);
-  //     }
-  //   }, 100);
-  // };
+    // Scroll vers la nouvelle médaille après un court délai
+    setTimeout(() => {
+      if (medalsContainerRef.current) {
+        medalsContainerRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        // Scroll supplémentaire pour aller plus bas
+        setTimeout(() => {
+          window.scrollBy({
+            top: 100,
+            behavior: "smooth",
+          });
+        }, 300);
+      }
+    }, 100);
+  };
 
-  // const removeMedal = (index: number) => {
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     medals: prev.medals.filter((_, i) => i !== index),
-  //   }));
-  // };
+  const removeMedal = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      medals: prev.medals.filter((_, i) => i !== index),
+    }));
+  };
 
-  // const updateMedal = (
-  //   index: number,
-  //   field: "name" | "description",
-  //   value: string
-  // ) => {
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     medals: prev.medals.map((medal, i) =>
-  //       i === index ? { ...medal, [field]: value } : medal
-  //     ),
-  //   }));
-  // };
+  const updateMedal = (
+    index: number,
+    field: "name" | "description",
+    value: string
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      medals: prev.medals.map((medal, i) =>
+        i === index ? { ...medal, [field]: value } : medal
+      ),
+    }));
+  };
 
   // Gestion des ressources
   const addResource = (category: "kickoff" | "bootstrap" | "project") => {
@@ -270,30 +270,30 @@ export default function CreateProjectPage() {
       setError("La promotion est requise");
       return false;
     }
-    // if (!formData.startDate) {
-    //   setError("La date de début est requise");
-    //   return false;
-    // }
-    // if (!formData.endDate) {
-    //   setError("La date de fin est requise");
-    //   return false;
-    // }
-    // if (new Date(formData.startDate) >= new Date(formData.endDate)) {
-    //   setError("La date de fin doit être postérieure à la date de début");
-    //   return false;
-    // }
+    if (!formData.startDate) {
+      setError("La date de début est requise");
+      return false;
+    }
+    if (!formData.endDate) {
+      setError("La date de fin est requise");
+      return false;
+    }
+    if (new Date(formData.startDate) >= new Date(formData.endDate)) {
+      setError("La date de fin doit être postérieure à la date de début");
+      return false;
+    }
     // if (!formData.teamSize.trim()) {
     //   setError("La taille de l'équipe est requise");
     //   return false;
     // }
-    // if (
-    //   formData.medals.some(
-    //     (medal) => !medal.name.trim() || !medal.description.trim()
-    //   )
-    // ) {
-    //   setError("Toutes les médailles doivent avoir un nom et une description");
-    //   return false;
-    // }
+    if (
+      formData.medals.some(
+        (medal) => !medal.name.trim() || !medal.description.trim()
+      )
+    ) {
+      setError("Toutes les médailles doivent avoir un nom et une description");
+      return false;
+    }
     return true;
   };
 
@@ -338,10 +338,16 @@ export default function CreateProjectPage() {
         id_promotion: promotionId,
       });
       setSuccess("Projet créé avec succès !");
-      console.log("PROJECTZEBI", formData);
+      console.log("Projet créé avec les données:", formData);
+      console.log(
+        "Dates du projet - Début:",
+        formData.startDate,
+        "Fin:",
+        formData.endDate
+      );
       // Rediriger après 2 secondes
       setTimeout(() => {
-        // router.push("/admin/projects");
+        router.push("/admin/projects");
       }, 2000);
     } catch (err) {
       console.error("Erreur lors de la création:", err);
@@ -501,6 +507,48 @@ export default function CreateProjectPage() {
                   required
                 />
               </div>
+
+              {/* Dates du projet */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Date de début */}
+                <div className="group">
+                  <label
+                    htmlFor="startDate"
+                    className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer"
+                  >
+                    Date de début *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="startDate"
+                    name="startDate"
+                    value={formData.startDate}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-pointer"
+                    required
+                  />
+                </div>
+
+                {/* Date de fin */}
+                <div className="group">
+                  <label
+                    htmlFor="endDate"
+                    className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer"
+                  >
+                    Date de fin *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="endDate"
+                    name="endDate"
+                    value={formData.endDate}
+                    onChange={handleInputChange}
+                    min={formData.startDate}
+                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-pointer"
+                    required
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -532,56 +580,56 @@ export default function CreateProjectPage() {
               </div>
               Ressources du projet
             </h3>
-              <div className="space-y-4">
+            <div className="space-y-4">
               {formData.resources.map((resource, index) => (
                 <div
                   key={index}
                   className="space-y-3 p-4 border-2 border-emerald-200 rounded-xl bg-emerald-50/50 group"
-                        >
-                          <div className="flex items-center justify-between">
+                >
+                  <div className="flex items-center justify-between">
                     <h5 className="text-sm font-semibold text-emerald-900">
                       Ressource {index + 1}
-                            </h5>
-                            <Button
-                              type="button"
+                    </h5>
+                    <Button
+                      type="button"
                       onClick={() => removeResource(index)}
-                              className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
+                      className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="group">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="group">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                                Nom de la ressource *
-                              </label>
-                              <input
-                                type="text"
-                                value={resource.name}
-                                onChange={(e) =>
+                        Nom de la ressource *
+                      </label>
+                      <input
+                        type="text"
+                        value={resource.name}
+                        onChange={(e) =>
                           updateResource(index, "name", e.target.value)
                         }
                         className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
                         placeholder="Ex: Documentation du projet"
-                                required
-                              />
-                            </div>
+                        required
+                      />
+                    </div>
 
-                            <div className="group">
+                    <div className="group">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                                URL de la ressource
-                              </label>
-                              <input
-                                type="url"
-                                value={resource.url}
-                                onChange={(e) =>
+                        URL de la ressource
+                      </label>
+                      <input
+                        type="url"
+                        value={resource.url}
+                        onChange={(e) =>
                           updateResource(index, "url", e.target.value)
                         }
                         className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
-                                placeholder="https://..."
-                              />
-                            </div>
+                        placeholder="https://..."
+                      />
+                    </div>
 
                     {/* <div className="group">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
@@ -605,14 +653,14 @@ export default function CreateProjectPage() {
                               )}
                     </div> */}
 
-                            <div className="group">
+                    <div className="group">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                                Type de fichier accepté
-                              </label>
+                        Type de fichier accepté
+                      </label>
                       <div className="px-4 py-3 border-2 border-emerald-200 rounded-xl bg-emerald-50/30 text-emerald-700 text-xs">
-                                PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
-                              </div>
-                            </div>
+                        PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
+                      </div>
+                    </div>
 
                     {/* <div className="group md:col-span-2">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
@@ -629,18 +677,18 @@ export default function CreateProjectPage() {
                                 required
                               />
                     </div> */}
-                            </div>
-                          </div>
+                  </div>
+                </div>
               ))}
 
-                <div className="flex justify-center">
-                  <AdminButton
-                    type="button"
-                    onClick={() => addResource("project")}
-                  >
-                    <Plus className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+              <div className="flex justify-center">
+                <AdminButton
+                  type="button"
+                  onClick={() => addResource("project")}
+                >
+                  <Plus className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
                   Ajouter une ressource
-                  </AdminButton>
+                </AdminButton>
               </div>
             </div>
           </div>
@@ -722,7 +770,7 @@ export default function CreateProjectPage() {
             </div>
           </div> */}
 
-          {/* Section Médailles - COMMENTÉE
+          {/* Section Médailles */}
           <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-2xl p-6 border-2 border-pink-200/50">
             <h3 className="text-xl font-bold text-pink-900 flex items-center gap-3 mb-6">
               <div className="p-2 bg-gradient-to-br from-pink-200 to-pink-300 rounded-xl">
@@ -735,10 +783,10 @@ export default function CreateProjectPage() {
                 {formData.medals.map((medal, index) => (
                   <div
                     key={index}
-                    className="space-y-3 p-4 border-2 border-blue-200 rounded-xl bg-blue-50/50 group"
+                    className="space-y-3 p-4 border-2 border-pink-200 rounded-xl bg-pink-50/50 group"
                   >
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-semibold text-blue-900">
+                      <h4 className="text-sm font-semibold text-pink-900">
                         Médaille {index + 1}
                       </h4>
                       {formData.medals.length > 1 && (
@@ -754,7 +802,7 @@ export default function CreateProjectPage() {
 
                     <div className="space-y-3">
                       <div className="group">
-                        <label className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer">
+                        <label className="block text-sm font-semibold text-pink-900 mb-2 group-hover:text-pink-700 transition-colors duration-300 cursor-pointer">
                           Nom de la médaille *
                         </label>
                         <input
@@ -763,14 +811,14 @@ export default function CreateProjectPage() {
                           onChange={(e) =>
                             updateMedal(index, "name", e.target.value)
                           }
-                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 placeholder-blue-400 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-text"
+                          className="w-full px-4 py-3 border-2 border-pink-200 rounded-xl focus:ring-4 focus:ring-pink-100 focus:border-pink-500 bg-white text-pink-900 placeholder-pink-400 transition-all duration-300 hover:border-pink-400 hover:shadow-md focus:shadow-lg cursor-text"
                           placeholder="Ex: Médaille d'or"
                           required
                         />
                       </div>
 
                       <div className="group">
-                        <label className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer">
+                        <label className="block text-sm font-semibold text-pink-900 mb-2 group-hover:text-pink-700 transition-colors duration-300 cursor-pointer">
                           Description de la médaille *
                         </label>
                         <textarea
@@ -779,7 +827,7 @@ export default function CreateProjectPage() {
                             updateMedal(index, "description", e.target.value)
                           }
                           rows={2}
-                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 placeholder-blue-400 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
+                          className="w-full px-4 py-3 border-2 border-pink-200 rounded-xl focus:ring-4 focus:ring-pink-100 focus:border-pink-500 bg-white text-pink-900 placeholder-pink-400 transition-all duration-300 hover:border-pink-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
                           placeholder="Description de la médaille..."
                           required
                         />
@@ -796,7 +844,7 @@ export default function CreateProjectPage() {
                 </AdminButton>
               </div>
             </div>
-          </div> */}
+          </div>
 
           {/* Section Statut */}
           <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-2xl p-6 border-2 border-teal-200/50">

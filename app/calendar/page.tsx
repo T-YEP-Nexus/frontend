@@ -52,7 +52,7 @@ const CalendarPage = () => {
       {/* Calendrier ou Agenda */}
       <div className="w-full flex flex-col items-center">
         <div className="w-full bg-transparent flex justify-center">
-          <div className="w-full max-w-5xl">
+          <div className="w-full max-w-7xl">
             {isClient && selected === "calendrier" ? <Calendar /> : <AgendaPlaceholder />}
           </div>
         </div>

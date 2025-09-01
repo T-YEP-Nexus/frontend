@@ -2,50 +2,35 @@ import React from "react";
 import { Wrench } from "lucide-react";
 
 interface DevelopmentBadgeProps {
+  children: React.ReactNode;
   className?: string;
-  size?: "xxs" | "xs" | "sm" | "md" | "lg";
-  variant?: "default" | "outline" | "ghost";
 }
 
 const DevelopmentBadge: React.FC<DevelopmentBadgeProps> = ({
+  children,
   className = "",
-  size = "md",
-  variant = "default",
 }) => {
-  const sizeClasses = {
-    xxs: "px-1 py-0.5 text-xs",
-    xs: "px-1.5 py-1 text-xs",
-    sm: "px-2 py-1 text-xs",
-    md: "px-3 py-1.5 text-sm",
-    lg: "px-4 py-2 text-base",
-  };
-
-  const variantClasses = {
-    default: "bg-orange-100 text-orange-700 border border-orange-200",
-    outline: "bg-transparent text-orange-600 border border-orange-300",
-    ghost: "bg-orange-50 text-orange-600 border-0",
-  };
-
-  const iconSizes = {
-    xxs: 8,
-    xs: 10,
-    sm: 12,
-    md: 14,
-    lg: 16,
-  };
-
   return (
-    <div
-      className={`
-        inline-flex items-center gap-1.5 rounded-full font-medium
-        transition-all duration-200 hover:scale-105 cursor-default
-        ${sizeClasses[size]}
-        ${variantClasses[variant]}
-        ${className}
-      `}
-    >
-      <Wrench size={iconSizes[size]} className="flex-shrink-0" />
-      {size !== "xxs" && size !== "xs" && <span>En développement</span>}
+    <div className={`relative ${className}`}>
+      {/* Badge "En développement" - juste l'icône en rond */}
+      <div className="absolute top-2 right-2 z-20 bg-gray-800 text-white w-6 h-6 rounded-full flex items-center justify-center">
+        <Wrench size={12} />
+      </div>
+
+      {/* Contenu barré en noir et blanc */}
+      <div className="grayscale opacity-50 pointer-events-none select-none">
+        <div className="relative">
+          {children}
+          {/* Ligne de barré diagonale - moins de traits */}
+          <div
+            className="absolute inset-0 bg-gradient-to-br from-transparent via-gray-400 to-transparent opacity-30"
+            style={{
+              background:
+                "repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.2) 4px, rgba(0,0,0,0.2) 8px)",
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 };

@@ -20,26 +20,48 @@ import { faMedal } from "@fortawesome/free-solid-svg-icons";
 import ResourceSection from "@/components/Projects/Details/Ressources/ResourceSection";
 import MainCard from "@/components/Projects/Details/MainCard/MainCard";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
+import { Project, getProjectResources } from "@/lib/projectData";
 import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
-export default function ProjectDetails({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const resolvedParams = React.use(params);
+export default function ProjectDetails({ params }: { params: { id: string } }) {
+  // Récupération de l'id depuis les params
+  const projectId = parseInt(params.id);
+
+  // Récupération du projet
   const project = getProjectById(
-    parseInt(resolvedParams.id)
+    projectId
   ) as typeof import("@/lib/projectsData").projects[number] & {
     hotTopics?: { title: string; description: string }[];
     skills?: string[];
-    resources?: {
-      bootstrap: { name: string; action: string; url: string }[];
-      kickOff: { name: string; action: string; url: string }[];
-      projet: { name: string; action: string; url: string }[];
-    };
   };
 
+  // State pour les ressources
+  type ProjectResource = {
+    filename: string;
+    url: string;
+    uploaded_at: string;
+  };
+
+  type ProjectData = {
+    project_name: string;
+    description: string;
+    resources: ProjectResource[];
+    resources_count: number;
+  };
+
+  const [resourcesData, setResourcesData] = React.useState<ProjectData | null>(
+    null
+  );
+
+  React.useEffect(() => {
+    const fetchResources = async () => {
+      const data = await getProjectResources(params.id);
+      setResourcesData(data);
+    };
+
+    fetchResources();
+  }, [params.id]);
+  console.log("Ressources Data:", resourcesData);
   // État local pour les tâches
   const [tasks, setTasks] = React.useState<string[]>([]);
   const [newTask, setNewTask] = React.useState("");
@@ -115,7 +137,7 @@ export default function ProjectDetails({
       <div className="px-4 sm:px-8 lg:px-16 py-6">
         <div className="flex items-center gap-4 mb-8">
           <ProjectHeader
-            title={project.name}
+            title={resourcesData?.project_name}
             description="Détails du projet"
             backIcon={<ArrowLeft size={20} />}
           />
@@ -128,7 +150,6 @@ export default function ProjectDetails({
               <h2 className="text-white text-xl font-semibold">
                 Progression globale
               </h2>
-              <DevelopmentBadge size="xs" />
             </div>
             <span className="text-white font-bold text-2xl">
               {project.progress}%
@@ -154,63 +175,73 @@ export default function ProjectDetails({
               icon={<FileText className="w-8 h-8 text-blue-400" />}
             >
               <p className="text-gray-600 leading-relaxed">
-                {project.longDescription}
+                {resourcesData?.description}
               </p>
             </MainCard>
 
-            {/* ===================== RESSOURCES ===================== */}
-            {/* Pour passer en dynamique, il suffira de remplacer le tableau ci-dessous par les données de l'API */}
+            {/* ===================== RESSOURCES DYNAMIQUES ===================== */}
             <MainCard
               title="Ressources"
               icon={<Download className="w-6 h-6 text-blue-400" />}
             >
-              {/* Tableau statique pour les ressources, à remplacer par un fetch plus tard */}
-              {/**
-               * Pour passer en dynamique :
-               * 1. Remplacer le tableau 'ressources' par les données de l'API
-               * 2. Adapter les propriétés (nom, description, couleur, url, etc.)
-               */}
-              {(() => {
-                // Toutes les ressources sont bleues (icône et bouton)
-                const ressources = [
-                  {
-                    nom: "Guide de démarrage",
-                    description: "Documentation complète du projet",
-                  },
-                  {
-                    nom: "Template de présentation",
-                    description: "Modèle PowerPoint pour la soutenance",
-                  },
-                  {
-                    nom: "Cahier des charges",
-                    description: "Spécifications détaillées du projet",
-                  },
-                ];
-                // Pour changer la couleur, modifier ici :
-                const iconClass = "text-blue-500";
-                const buttonClass = "bg-blue-500 hover:bg-blue-600";
-                return ressources.map((res, idx) => (
-                  <div
-                    key={res.nom}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 mb-2"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Download className={`w-5 h-5 ${iconClass}`} />
-                      <div>
-                        <h4 className="font-semibold text-gray-800">
-                          {res.nom}
-                        </h4>
+              {resourcesData?.resources &&
+              Array.isArray(resourcesData?.resources) &&
+              resourcesData?.resources.length > 0 ? (
+                <div className="space-y-2">
+                  {resourcesData?.resources.map((resource, index) => {
+                    const resObj =
+                      typeof resource === "string"
+                        ? JSON.parse(resource)
+                        : resource;
+                    const isValidUrl =
+                      resObj.url &&
+                      (resObj.url.startsWith("http") ||
+                        resObj.url.startsWith("/"));
+                    return (
+                      <div
+                        key={`resource-${index}-${resObj.filename}`}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <Download className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-gray-800 truncate">
+                              {resObj.filename || `Ressource ${index + 1}`}
+                            </h4>
+                          </div>
+                        </div>
+                        {isValidUrl ? (
+                          <a
+                            href={resObj.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-medium flex items-center gap-2 cursor-pointer flex-shrink-0 ml-4"
+                            title={`Télécharger ${resObj.filename}`}
+                          >
+                            <ArrowDownToLine className="w-4 h-4" />
+                            Télécharger
+                          </a>
+                        ) : (
+                          <div className="px-4 py-2 bg-gray-300 text-gray-600 rounded-lg font-medium flex items-center gap-2 flex-shrink-0 ml-4">
+                            <ArrowDownToLine className="w-4 h-4" />
+                            Indisponible
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <button
-                      className={`px-4 py-2 text-white rounded-lg transition-colors font-medium flex items-center gap-2 cursor-pointer ${buttonClass}`}
-                    >
-                      <ArrowDownToLine className="w-4 h-4" />
-                      Télécharger
-                    </button>
-                  </div>
-                ));
-              })()}
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 font-medium mb-2">
+                    Aucune ressource disponible
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    Les ressources du projet apparaîtront ici une fois ajoutées.
+                  </p>
+                </div>
+              )}
             </MainCard>
 
             {/* Médailles */}
@@ -254,109 +285,113 @@ export default function ProjectDetails({
             </MainCard>
 
             {/* Hot Topics & Compétences */}
-            <MainCard
-              title="Hot Topics & Compétences mobilisées"
-              icon={<AlertCircle className="w-8 h-8 text-blue-400" />}
-            >
-              <div className="space-y-4">
-                {project.hotTopics && project.hotTopics.length > 0 && (
-                  <div className="mb-4">
-                    <h3 className="font-semibold text-blue-700 mb-2">
-                      Hot Topics
-                    </h3>
-                    {project.hotTopics.map((topic, idx) => (
-                      <div
-                        key={idx}
-                        className="p-4 border-l-4 border-yellow-400 bg-yellow-50 rounded-lg mb-2"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <AlertCircle className="w-5 h-5 text-yellow-500" />
-                          <span className="font-semibold text-yellow-700">
-                            {topic.title}
-                          </span>
-                        </div>
-                        <p className="text-gray-700 text-sm">
-                          {topic.description}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {project.skills && project.skills.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-blue-700 mb-2">
-                      Compétences impliquées
-                    </h3>
-                    <ul className="flex flex-wrap gap-2">
-                      {project.skills.map((skill, idx) => (
-                        <li
+            <DevelopmentBadge>
+              <MainCard
+                title="Hot Topics & Compétences mobilisées"
+                icon={<AlertCircle className="w-8 h-8 text-blue-400" />}
+              >
+                <div className="space-y-4">
+                  {project.hotTopics && project.hotTopics.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="font-semibold text-blue-700 mb-2">
+                        Hot Topics
+                      </h3>
+                      {project.hotTopics.map((topic, idx) => (
+                        <div
                           key={idx}
-                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                          className="p-4 border-l-4 border-yellow-400 bg-yellow-50 rounded-lg mb-2"
                         >
-                          {skill}
-                        </li>
+                          <div className="flex items-center gap-2 mb-1">
+                            <AlertCircle className="w-5 h-5 text-yellow-500" />
+                            <span className="font-semibold text-yellow-700">
+                              {topic.title}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 text-sm">
+                            {topic.description}
+                          </p>
+                        </div>
                       ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </MainCard>
+                    </div>
+                  )}
+                  {project.skills && project.skills.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-blue-700 mb-2">
+                        Compétences impliquées
+                      </h3>
+                      <ul className="flex flex-wrap gap-2">
+                        {project.skills.map((skill, idx) => (
+                          <li
+                            key={idx}
+                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                          >
+                            {skill}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </MainCard>
+            </DevelopmentBadge>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-8">
             {/* Bloc Tâches & Jalons éditable */}
-            <MainCard
-              title="Tâches"
-              icon={<CheckCircle className="w-6 h-6 text-blue-400" />}
-            >
-              <div className="space-y-4">
-                {/* Zone de saisie */}
-                <div>
-                  <input
-                    type="text"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
-                    placeholder="Tapez une tâche et appuyez sur Entrée..."
-                    value={newTask}
-                    onChange={(e) => setNewTask(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                        addTask();
-                      }
-                    }}
-                  />
-                </div>
-                {/* Liste des tâches */}
-                <div
-                  ref={tasksContainerRef}
-                  className="space-y-2 max-h-64 overflow-y-auto"
-                >
-                  {tasks.length === 0 ? (
-                    <p className="text-gray-500 text-sm italic">
-                      Aucune tâche pour le moment
-                    </p>
-                  ) : (
-                    tasks.map((task, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-3 p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
-                      >
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span className="text-gray-700 text-sm flex-1">
-                          {task}
-                        </span>
-                        <button
-                          onClick={() => removeTask(index)}
-                          className="text-red-400 hover:text-red-600 text-sm font-bold w-6 h-6 rounded-full hover:bg-red-50 transition-all duration-200 cursor-pointer flex items-center justify-center"
+            <DevelopmentBadge>
+              <MainCard
+                title="Tâches"
+                icon={<CheckCircle className="w-6 h-6 text-blue-400" />}
+              >
+                <div className="space-y-4">
+                  {/* Zone de saisie */}
+                  <div>
+                    <input
+                      type="text"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
+                      placeholder="Tapez une tâche et appuyez sur Entrée..."
+                      value={newTask}
+                      onChange={(e) => setNewTask(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                          addTask();
+                        }
+                      }}
+                    />
+                  </div>
+                  {/* Liste des tâches */}
+                  <div
+                    ref={tasksContainerRef}
+                    className="space-y-2 max-h-64 overflow-y-auto"
+                  >
+                    {tasks.length === 0 ? (
+                      <p className="text-gray-500 text-sm italic">
+                        Aucune tâche pour le moment
+                      </p>
+                    ) : (
+                      tasks.map((task, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
                         >
-                          ×
-                        </button>
-                      </div>
-                    ))
-                  )}
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <span className="text-gray-700 text-sm flex-1">
+                            {task}
+                          </span>
+                          <button
+                            onClick={() => removeTask(index)}
+                            className="text-red-400 hover:text-red-600 text-sm font-bold w-6 h-6 rounded-full hover:bg-red-50 transition-all duration-200 cursor-pointer flex items-center justify-center"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            </MainCard>
+              </MainCard>
+            </DevelopmentBadge>
             <MainCard
               title="Informations générales"
               icon={<Users className="w-6 h-6 text-blue-400" />}
@@ -422,26 +457,28 @@ export default function ProjectDetails({
                 </div>
               </div>
             </MainCard>
-            <MainCard
-              title="Équipe"
-              icon={<Users className="w-6 h-6 text-blue-400" />}
-            >
-              <div className="space-y-3">
-                {project.team.map((member, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-lg">
-                      {member.avatar}
+            <DevelopmentBadge>
+              <MainCard
+                title="Équipe"
+                icon={<Users className="w-6 h-6 text-blue-400" />}
+              >
+                <div className="space-y-3">
+                  {project.team.map((member, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-lg">
+                        {member.avatar}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">
+                          {member.name}
+                        </p>
+                        <p className="text-sm text-gray-500">{member.role}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-800">
-                        {member.name}
-                      </p>
-                      <p className="text-sm text-gray-500">{member.role}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </MainCard>
+                  ))}
+                </div>
+              </MainCard>
+            </DevelopmentBadge>
           </div>
         </div>
       </div>

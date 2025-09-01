@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from "react";
 import { Loader2, X, Calendar, Clock, FileText, Users, CheckCircle } from "lucide-react";
 import { getUserIdFromToken } from "@/lib/auth";
@@ -41,11 +42,10 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
   onUnregister,
   onUnregisterSlot,
 }) => {
-  const [loading, setLoading] = useState<number | null>(null); // index du créneau en cours d'inscription
+  const [loading, setLoading] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [userSlotIndex, setUserSlotIndex] = useState<number | null>(null); // index du créneau réservé par l'utilisateur
+  const [userSlotIndex, setUserSlotIndex] = useState<number | null>(null);
 
-  // Détecter le créneau réservé par l'utilisateur actuel
   useEffect(() => {
     if (event && event.slots && Array.isArray(event.slots)) {
       const userId = getUserIdFromToken();
@@ -100,9 +100,9 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[95vh] shadow-2xl relative overflow-hidden">
+      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[95vh] shadow-2xl relative overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-6 text-white relative">
+        <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-6 text-white relative flex-shrink-0">
           <button 
             className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 text-xl p-2 rounded-full transition-all duration-200" 
             onClick={onClose}
@@ -123,7 +123,7 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
         </div>
 
         {/* Body - Scrollable content */}
-        <div className="overflow-y-auto max-h-[calc(95vh-180px)] p-8">
+        <div className="overflow-y-auto flex-grow p-8">
 
           <div className="space-y-6">
             {/* Informations de l'événement */}
@@ -165,142 +165,108 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
                   <h3 className="text-lg font-semibold text-gray-900">Créneaux disponibles</h3>
                 </div>
                 
-                                 {/* Message si l'utilisateur est déjà inscrit ou assigné automatiquement */}
-                 {(userSlotIndex !== null || isRegistered) && (
+                {(userSlotIndex !== null || (isRegistered && userSlotIndex === null)) && (
                    <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                      <div className="flex items-center gap-2 text-blue-700">
                        <CheckCircle className="w-5 h-5" />
                        <span className="font-medium">
                          {userSlotIndex !== null 
-                           ? "Vous êtes déjà inscrit à cet événement !" 
-                           : "Vous êtes automatiquement assigné à cet événement !"
+                           ? "Vous êtes déjà inscrit sur un créneau !" 
+                           : "Vous êtes assigné à cet événement !"
                          }
                        </span>
                      </div>
                      <p className="text-blue-600 text-sm mt-1">
                        {userSlotIndex !== null 
-                         ? "Vous pouvez vous désinscrire en utilisant le bouton \"Se désinscrire\" sur votre créneau réservé."
-                         : "Vous êtes inscrit automatiquement grâce à votre promotion. Vous pouvez choisir un créneau spécifique ci-dessous."
+                         ? "Vous pouvez vous désinscrire via le bouton sur votre créneau."
+                         : "Vous pouvez choisir un créneau spécifique ci-dessous."
                        }
                      </p>
                    </div>
                  )}
                 
-                <div className="space-y-3 max-h-60 overflow-y-auto">
-                  {event.slots.map((slot, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 ${
-                        slot.user 
-                          ? "bg-green-50 border-green-200" 
-                          : "bg-white border-gray-200 hover:border-green-300 hover:shadow-md"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${
-                          slot.user ? "bg-green-100" : "bg-gray-100"
-                        }`}>
-                          <Clock className={`w-4 h-4 ${
-                            slot.user ? "text-green-600" : "text-gray-600"
-                          }`} />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {new Date(slot.start).toLocaleTimeString("fr-FR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}{" "}
-                            -{" "}
-                            {new Date(slot.end).toLocaleTimeString("fr-FR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </div>
-                          {slot.user && (
-                            <div className="text-sm text-green-600 flex items-center gap-1">
-                              <CheckCircle className="w-3 h-3" />
-                              Réservé par {slot.user}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                                             {!slot.user && (userSlotIndex === null && !isRegistered) && (
-                         <button
-                           className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                           onClick={() => handleRegisterSlot(idx)}
-                           disabled={loading === idx}
-                         >
-                           {loading === idx ? (
-                             <span className="flex items-center gap-2">
-                               <Loader2 className="w-4 h-4 animate-spin" />
-                               Inscription...
-                             </span>
-                           ) : (
-                             "S'inscrire"
-                           )}
-                         </button>
-                       )}
-                       
-                       {!slot.user && isRegistered && userSlotIndex === null && (
-                         <button
-                           className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                           onClick={() => handleRegisterSlot(idx)}
-                           disabled={loading === idx}
-                         >
-                           {loading === idx ? (
-                             <span className="flex items-center gap-2">
-                               <Loader2 className="w-4 h-4 animate-spin" />
-                               Réservation...
-                             </span>
-                           ) : (
-                             "Réserver ce créneau"
-                           )}
-                         </button>
-                       )}
-                      
-                      {slot.user === getUserIdFromToken() && (
-                        <button
-                          className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                          onClick={() => handleUnregisterSlot()}
-                          disabled={loading === idx}
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                  {event.slots.map((slot, idx) => {
+                    const isMySlot = slot.user === getUserIdFromToken();
+                    return (
+                        <div
+                        key={idx}
+                        className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 ${
+                            isMySlot
+                            ? "bg-green-50 border-green-300 shadow-md"
+                            : slot.user
+                            ? "bg-gray-100 border-gray-200 opacity-70"
+                            : "bg-white border-gray-200 hover:border-green-300 hover:shadow-md"
+                        }`}
                         >
-                          {loading === idx ? (
-                            <span className="flex items-center gap-2">
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              Désinscription...
-                            </span>
-                          ) : (
-                            "Se désinscrire"
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                        <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${
+                                isMySlot ? "bg-green-100" : "bg-gray-100"
+                            }`}>
+                            <Clock className={`w-4 h-4 ${
+                                isMySlot ? "text-green-600" : "text-gray-600"
+                            }`} />
+                            </div>
+                            <div>
+                            <div className="font-medium text-gray-900">
+                                {new Date(slot.start).toLocaleTimeString("fr-FR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                })}{" "}
+                                -{" "}
+                                {new Date(slot.end).toLocaleTimeString("fr-FR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                })}
+                            </div>
+                            {slot.user && (
+                                <div className={`text-sm flex items-center gap-1 ${isMySlot ? "text-green-700" : "text-gray-500"}`}>
+                                {isMySlot && <CheckCircle className="w-3 h-3" />}
+                                {isMySlot ? "Votre créneau" : "Réservé"}
+                                </div>
+                            )}
+                            </div>
+                        </div>
+                        
+                        {isMySlot ? (
+                             <button
+                                className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50"
+                                onClick={handleUnregisterSlot}
+                                disabled={loading !== null}
+                            >
+                                {loading === idx ? <Loader2 className="w-4 h-4 animate-spin" /> : "Se désinscrire"}
+                            </button>
+                        ) : !slot.user ? (
+                            <button
+                                className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50"
+                                onClick={() => handleRegisterSlot(idx)}
+                                disabled={loading !== null || userSlotIndex !== null}
+                            >
+                                {loading === idx ? <Loader2 className="w-4 h-4 animate-spin" /> : (isRegistered && userSlotIndex === null) ? "Réserver" : "S'inscrire"}
+                            </button>
+                        ) : null}
+                        </div>
+                    );
+                    })}
                 </div>
               </div>
             )}
-
-            {/* Message d'erreur */}
+            
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-red-500 text-xl">⚠</span>
-                  <p className="text-red-700 font-medium">{error}</p>
-                </div>
+                <p className="text-red-700 font-medium">⚠ {error}</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Footer avec bouton d'annulation */}
-        <div className="bg-gray-50 px-8 py-6 border-t border-gray-200 flex justify-center">
+        <div className="bg-gray-50 px-8 py-6 border-t border-gray-200 flex justify-end flex-shrink-0">
           <button
             onClick={onClose}
             className="px-8 py-3 rounded-xl bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-medium"
             disabled={loading !== null}
           >
-            Annuler
+            Fermer
           </button>
         </div>
       </div>

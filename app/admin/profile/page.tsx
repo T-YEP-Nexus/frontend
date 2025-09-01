@@ -780,9 +780,7 @@ const AdminProfilePage = () => {
                         {statsData.totalPromotions}
                       </div>
                     )}
-                    <div className="text-sm text-blue-600">
-                      Promotions
-                    </div>
+                    <div className="text-sm text-blue-600">Promotions</div>
                   </div>
                   {/* <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
                     <div className="text-2xl font-bold text-blue-900">24</div>
@@ -1014,8 +1012,7 @@ const AdminProfilePage = () => {
                 Promotion *
               </label>
               <div className="relative" ref={promotionDropdownRef}>
-                <button
-                  type="button"
+                <div
                   onClick={() => {
                     if (
                       !promotionDropdownOpen &&
@@ -1023,37 +1020,50 @@ const AdminProfilePage = () => {
                     ) {
                       const rect =
                         promotionDropdownRef.current.getBoundingClientRect();
+                      const dropdownHeight = 200; // Hauteur approximative de la dropdown
+                      const spaceBelow = window.innerHeight - rect.bottom;
+                      const spaceAbove = rect.top;
+
+                      // Si il y a plus d'espace en haut qu'en bas, ouvrir au-dessus
+                      const shouldOpenAbove =
+                        spaceAbove > spaceBelow && spaceAbove > dropdownHeight;
+
                       setDropdownPosition({
-                        top: rect.bottom + 5,
+                        top: shouldOpenAbove
+                          ? rect.top - dropdownHeight - 5
+                          : rect.bottom + 5,
                         left: rect.left,
                         width: rect.width,
                       });
                     }
                     setPromotionDropdownOpen(!promotionDropdownOpen);
                   }}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-pointer flex items-center justify-between"
-                  disabled={promotionsLoading}
+                  className="flex items-center justify-between px-4 py-3 border-2 border-blue-200 rounded-xl bg-white cursor-pointer transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg"
                 >
                   <span
                     className={
-                      selectedPromotion ? "text-blue-900" : "text-white"
+                      promotionsLoading
+                        ? "text-blue-400"
+                        : selectedPromotion
+                        ? "text-blue-900 font-medium"
+                        : "text-blue-400"
                     }
                   >
                     {promotionsLoading
                       ? "Chargement des promotions..."
-                      : selectedPromotion || "Sélectionnez une promotion"}
+                      : selectedPromotion || "Sélectionner une promotion"}
                   </span>
                   <ChevronDown
-                    size={20}
+                    size={18}
                     className={`text-blue-400 transition-transform duration-300 ${
                       promotionDropdownOpen ? "rotate-180" : ""
                     }`}
                   />
-                </button>
+                </div>
 
                 {promotionDropdownOpen && !promotionsLoading && promotions && (
                   <div
-                    className="fixed z-50 bg-white border-2 border-blue-200 rounded-xl shadow-xl max-h-80 overflow-y-auto"
+                    className="fixed z-50 bg-white border-2 border-blue-200 rounded-xl shadow-xl max-h-[200px] overflow-y-auto"
                     style={{
                       top: `${dropdownPosition.top}px`,
                       left: `${dropdownPosition.left}px`,
@@ -1061,14 +1071,23 @@ const AdminProfilePage = () => {
                     }}
                   >
                     {promotions.map((promotion) => (
-                      <button
+                      <div
                         key={promotion.id}
-                        type="button"
                         onClick={() => handlePromotionSelect(promotion.name)}
-                        className="w-full px-6 py-4 text-left hover:bg-blue-50 transition-colors duration-300 cursor-pointer border-b border-blue-100 last:border-b-0 text-base"
+                        className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-200 border-b border-blue-100 last:border-b-0"
                       >
-                        {promotion.name}
-                      </button>
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <GraduationCap
+                              className="text-blue-600"
+                              size={16}
+                            />
+                          </div>
+                          <span className="text-blue-900 font-medium">
+                            {promotion.name}
+                          </span>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -1087,38 +1106,38 @@ const AdminProfilePage = () => {
                   Étudiant *
                 </label>
 
-                {/* Barre de recherche */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Rechercher un étudiant..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 placeholder-blue-400 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-text"
-                  />
-                </div>
-
                 <div className="relative" ref={studentDropdownRef}>
-                  <button
-                    type="button"
+                  <div
                     onClick={() => {
                       if (!studentDropdownOpen && studentDropdownRef.current) {
                         const rect =
                           studentDropdownRef.current.getBoundingClientRect();
+                        const dropdownHeight = 300; // Hauteur approximative de la dropdown
+                        const spaceBelow = window.innerHeight - rect.bottom;
+                        const spaceAbove = rect.top;
+
+                        // Si il y a plus d'espace en haut qu'en bas, ouvrir au-dessus
+                        const shouldOpenAbove =
+                          spaceAbove > spaceBelow &&
+                          spaceAbove > dropdownHeight;
+
                         setDropdownPosition({
-                          top: rect.bottom + 5,
+                          top: shouldOpenAbove
+                            ? rect.top - dropdownHeight - 5
+                            : rect.bottom + 5,
                           left: rect.left,
                           width: rect.width,
                         });
                       }
                       setStudentDropdownOpen(!studentDropdownOpen);
                     }}
-                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-pointer flex items-center justify-between"
+                    className="flex items-center justify-between px-4 py-3 border-2 border-blue-200 rounded-xl bg-white cursor-pointer transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg"
                   >
                     <span
                       className={
-                        selectedStudent ? "text-blue-900" : "text-white"
+                        selectedStudent
+                          ? "text-blue-900 font-medium"
+                          : "text-blue-400"
                       }
                     >
                       {selectedStudent
@@ -1127,57 +1146,80 @@ const AdminProfilePage = () => {
                           " " +
                           students.find((s) => s.id === selectedStudent)
                             ?.lastName
-                        : "Sélectionnez un étudiant"}
+                        : "Sélectionner un étudiant"}
                     </span>
                     <ChevronDown
-                      size={20}
+                      size={18}
                       className={`text-blue-400 transition-transform duration-300 ${
                         studentDropdownOpen ? "rotate-180" : ""
                       }`}
                     />
-                  </button>
-
+                  </div>
                   {studentDropdownOpen && (
                     <div
-                      className="fixed z-50 bg-white border-2 border-blue-200 rounded-xl shadow-xl max-h-80 overflow-y-auto"
+                      className="fixed z-50 bg-white border-2 border-blue-200 rounded-xl shadow-xl max-h-[300px] overflow-hidden"
                       style={{
                         top: `${dropdownPosition.top}px`,
                         left: `${dropdownPosition.left}px`,
                         width: `${dropdownPosition.width}px`,
                       }}
                     >
-                      {studentsLoading ? (
-                        <div className="px-6 py-4 flex items-center justify-center">
-                          <Loader2 className="w-5 h-5 animate-spin text-blue-600 mr-2" />
-                          <span className="text-blue-600">
-                            Chargement des étudiants...
-                          </span>
+                      {/* Barre de recherche */}
+                      <div className="p-4 border-b border-blue-100">
+                        <div className="relative">
+                          <Search
+                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400"
+                            size={16}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Rechercher un étudiant..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            onClick={(e) => e.stopPropagation()}
+                          />
                         </div>
-                      ) : filteredStudents.length > 0 ? (
-                        filteredStudents.map((student) => (
-                          <button
-                            key={student.id}
-                            type="button"
-                            onClick={() => handleStudentSelect(student.id)}
-                            className="w-full px-6 py-4 text-left hover:bg-blue-50 transition-colors duration-300 cursor-pointer border-b border-blue-100 last:border-b-0"
-                          >
-                            <div className="flex flex-col">
-                              <span className="font-medium text-blue-900 text-base">
-                                {student.firstName} {student.lastName}
-                              </span>
-                              <span className="text-sm text-blue-600 mt-1">
-                                {student.email}
-                              </span>
+                      </div>
+                      {/* Liste des étudiants */}
+                      <div className="max-h-[220px] overflow-y-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-blue-100">
+                        {studentsLoading ? (
+                          <div className="px-4 py-3 text-center">
+                            <Loader2 className="w-4 h-4 animate-spin mx-auto text-blue-600" />
+                            <p className="text-sm text-blue-600 mt-1">
+                              Chargement...
+                            </p>
+                          </div>
+                        ) : filteredStudents.length > 0 ? (
+                          filteredStudents.map((student) => (
+                            <div
+                              key={student.id}
+                              onClick={() => handleStudentSelect(student.id)}
+                              className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-200 border-b border-blue-100 last:border-b-0"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-100 rounded-lg">
+                                  <User className="text-blue-600" size={16} />
+                                </div>
+                                <div className="flex-1">
+                                  <span className="text-blue-900 font-medium">
+                                    {student.firstName} {student.lastName}
+                                  </span>
+                                  <p className="text-xs text-blue-600">
+                                    {student.email}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="px-6 py-4 text-blue-600 text-base">
-                          {selectedPromotion
-                            ? "Aucun étudiant trouvé dans cette promotion"
-                            : "Sélectionnez d'abord une promotion"}
-                        </div>
-                      )}
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-center text-sm text-blue-600">
+                            {selectedPromotion
+                              ? "Aucun étudiant trouvé dans cette promotion"
+                              : "Sélectionnez d'abord une promotion"}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1469,20 +1511,22 @@ const AdminProfilePage = () => {
                 >
                   Modifier le profil
                 </AdminButton>
-                <Button
-                  className="w-full !border-blue-600 !text-blue-600 hover:!bg-blue-50 hover:!text-blue-700 cursor-pointer flex items-center gap-2"
-                  variant="outline"
-                >
-                  Exporter les données
-                  <DevelopmentBadge size="xs" />
-                </Button>
-                <Button
-                  className="w-full !border-green-600 !text-green-600 hover:!bg-green-50 hover:!text-green-700 cursor-pointer flex items-center gap-2"
-                  variant="outline"
-                >
-                  Voir les projets
-                  <DevelopmentBadge size="xs" />
-                </Button>
+                <DevelopmentBadge>
+                  <Button
+                    className="w-full !border-blue-600 !text-blue-600 hover:!bg-blue-50 hover:!text-blue-700 cursor-pointer flex items-center gap-2"
+                    variant="outline"
+                  >
+                    Exporter les données
+                  </Button>
+                </DevelopmentBadge>
+                <DevelopmentBadge>
+                  <Button
+                    className="w-full !border-green-600 !text-green-600 hover:!bg-green-50 hover:!text-green-700 cursor-pointer flex items-center gap-2"
+                    variant="outline"
+                  >
+                    Voir les projets
+                  </Button>
+                </DevelopmentBadge>
               </div>
             </ProfileSection>
           </div>

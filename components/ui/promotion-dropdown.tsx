@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, GraduationCap, Loader2 } from "lucide-react";
 
 interface Promotion {
-  id: string; 
+  id: string;
   name: string;
   created_at: string;
 }
@@ -76,7 +76,9 @@ const PromotionDropdown: React.FC<PromotionDropdownProps> = ({
           }`}
         >
           <span
-            className={selectedPromotionData ? "text-gray-900" : "text-gray-500"}
+            className={
+              selectedPromotionData ? "text-gray-900" : "text-gray-500"
+            }
           >
             {selectedPromotionData?.name || placeholder}
           </span>
