@@ -1,6 +1,14 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Loader2, X, Calendar, Clock, FileText, Users, CheckCircle } from "lucide-react";
+import {
+  Loader2,
+  X,
+  Calendar,
+  Clock,
+  FileText,
+  Users,
+  CheckCircle,
+} from "lucide-react";
 import { getUserIdFromToken } from "@/lib/auth";
 
 interface Slot {
@@ -50,7 +58,9 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
     if (event && event.slots && Array.isArray(event.slots)) {
       const userId = getUserIdFromToken();
       if (userId) {
-        const userSlotIdx = event.slots.findIndex(slot => slot.user === userId);
+        const userSlotIdx = event.slots.findIndex(
+          (slot) => slot.user === userId
+        );
         setUserSlotIndex(userSlotIdx >= 0 ? userSlotIdx : null);
       }
     }
@@ -102,9 +112,9 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[95vh] shadow-2xl relative overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-8 py-6 text-white relative flex-shrink-0">
-          <button 
-            className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 text-xl p-2 rounded-full transition-all duration-200" 
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white relative flex-shrink-0">
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 text-xl p-2 rounded-full transition-all duration-200"
             onClick={onClose}
           >
             <X size={20} />
@@ -115,7 +125,7 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
             </div>
             <div>
               <h2 className="text-2xl font-bold">Inscription à l'événement</h2>
-              <p className="text-green-100 text-sm mt-1">
+              <p className="text-blue-100 text-sm mt-1">
                 Choisissez un créneau pour vous inscrire
               </p>
             </div>
@@ -124,7 +134,6 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
 
         {/* Body - Scrollable content */}
         <div className="overflow-y-auto flex-grow p-8">
-
           <div className="space-y-6">
             {/* Informations de l'événement */}
             <div className="bg-gray-50 rounded-2xl p-6">
@@ -132,12 +141,16 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <FileText className="w-5 h-5 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Détails de l'événement</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Détails de l'événement
+                </h3>
               </div>
-              
+
               <div className="space-y-3">
-                <div className="text-xl font-bold text-gray-900">{event.title}</div>
-                
+                <div className="text-xl font-bold text-gray-900">
+                  {event.title}
+                </div>
+
                 {event.start && (
                   <div className="flex items-center gap-3 text-gray-700">
                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -146,7 +159,7 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
                     <span>{formatDate(event.start)}</span>
                   </div>
                 )}
-                
+
                 {event.description && (
                   <div className="text-gray-600 leading-relaxed">
                     {event.description}
@@ -159,99 +172,125 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
             {Array.isArray(event.slots) && event.slots.length > 0 && (
               <div className="bg-gray-50 rounded-2xl p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <Clock className="w-5 h-5 text-green-600" />
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Clock className="w-5 h-5 text-blue-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Créneaux disponibles</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Créneaux disponibles
+                  </h3>
                 </div>
-                
-                {(userSlotIndex !== null || (isRegistered && userSlotIndex === null)) && (
-                   <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                     <div className="flex items-center gap-2 text-blue-700">
-                       <CheckCircle className="w-5 h-5" />
-                       <span className="font-medium">
-                         {userSlotIndex !== null 
-                           ? "Vous êtes déjà inscrit sur un créneau !" 
-                           : "Vous êtes assigné à cet événement !"
-                         }
-                       </span>
-                     </div>
-                     <p className="text-blue-600 text-sm mt-1">
-                       {userSlotIndex !== null 
-                         ? "Vous pouvez vous désinscrire via le bouton sur votre créneau."
-                         : "Vous pouvez choisir un créneau spécifique ci-dessous."
-                       }
-                     </p>
-                   </div>
-                 )}
-                
+
+                {(userSlotIndex !== null ||
+                  (isRegistered && userSlotIndex === null)) && (
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                    <div className="flex items-center gap-2 text-blue-700">
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="font-medium">
+                        {userSlotIndex !== null
+                          ? "Vous êtes déjà inscrit sur un créneau !"
+                          : "Vous êtes assigné à cet événement !"}
+                      </span>
+                    </div>
+                    <p className="text-blue-600 text-sm mt-1">
+                      {userSlotIndex !== null
+                        ? "Vous pouvez vous désinscrire via le bouton sur votre créneau."
+                        : "Vous pouvez choisir un créneau spécifique ci-dessous."}
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                   {event.slots.map((slot, idx) => {
                     const isMySlot = slot.user === getUserIdFromToken();
                     return (
-                        <div
+                      <div
                         key={idx}
                         className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 ${
-                            isMySlot
-                            ? "bg-green-50 border-green-300 shadow-md"
+                          isMySlot
+                            ? "bg-blue-50 border-blue-300 shadow-md"
                             : slot.user
                             ? "bg-gray-100 border-gray-200 opacity-70"
-                            : "bg-white border-gray-200 hover:border-green-300 hover:shadow-md"
+                            : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-md"
                         }`}
-                        >
+                      >
                         <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${
-                                isMySlot ? "bg-green-100" : "bg-gray-100"
-                            }`}>
-                            <Clock className={`w-4 h-4 ${
-                                isMySlot ? "text-green-600" : "text-gray-600"
-                            }`} />
-                            </div>
-                            <div>
+                          <div
+                            className={`p-2 rounded-lg ${
+                              isMySlot ? "bg-blue-100" : "bg-gray-100"
+                            }`}
+                          >
+                            <Clock
+                              className={`w-4 h-4 ${
+                                isMySlot ? "text-blue-600" : "text-gray-600"
+                              }`}
+                            />
+                          </div>
+                          <div>
                             <div className="font-medium text-gray-900">
-                                {new Date(slot.start).toLocaleTimeString("fr-FR", {
+                              {new Date(slot.start).toLocaleTimeString(
+                                "fr-FR",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}{" "}
+                              -{" "}
+                              {new Date(slot.end).toLocaleTimeString("fr-FR", {
                                 hour: "2-digit",
                                 minute: "2-digit",
-                                })}{" "}
-                                -{" "}
-                                {new Date(slot.end).toLocaleTimeString("fr-FR", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                })}
+                              })}
                             </div>
                             {slot.user && (
-                                <div className={`text-sm flex items-center gap-1 ${isMySlot ? "text-green-700" : "text-gray-500"}`}>
-                                {isMySlot && <CheckCircle className="w-3 h-3" />}
+                              <div
+                                className={`text-sm flex items-center gap-1 ${
+                                  isMySlot ? "text-blue-700" : "text-gray-500"
+                                }`}
+                              >
+                                {isMySlot && (
+                                  <CheckCircle className="w-3 h-3" />
+                                )}
                                 {isMySlot ? "Votre créneau" : "Réservé"}
-                                </div>
+                              </div>
                             )}
-                            </div>
+                          </div>
                         </div>
-                        
+
                         {isMySlot ? (
-                             <button
-                                className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50"
-                                onClick={handleUnregisterSlot}
-                                disabled={loading !== null}
-                            >
-                                {loading === idx ? <Loader2 className="w-4 h-4 animate-spin" /> : "Se désinscrire"}
-                            </button>
+                          <button
+                            className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50"
+                            onClick={handleUnregisterSlot}
+                            disabled={loading !== null}
+                          >
+                            {loading === idx ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              "Se désinscrire"
+                            )}
+                          </button>
                         ) : !slot.user ? (
-                            <button
-                                className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50"
-                                onClick={() => handleRegisterSlot(idx)}
-                                disabled={loading !== null || userSlotIndex !== null}
-                            >
-                                {loading === idx ? <Loader2 className="w-4 h-4 animate-spin" /> : (isRegistered && userSlotIndex === null) ? "Réserver" : "S'inscrire"}
-                            </button>
+                          <button
+                            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50"
+                            onClick={() => handleRegisterSlot(idx)}
+                            disabled={
+                              loading !== null || userSlotIndex !== null
+                            }
+                          >
+                            {loading === idx ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : isRegistered && userSlotIndex === null ? (
+                              "Réserver"
+                            ) : (
+                              "S'inscrire"
+                            )}
+                          </button>
                         ) : null}
-                        </div>
+                      </div>
                     );
-                    })}
+                  })}
                 </div>
               </div>
             )}
-            
+
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                 <p className="text-red-700 font-medium">⚠ {error}</p>
