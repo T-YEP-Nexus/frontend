@@ -307,11 +307,17 @@ const Sidebar = () => {
       {/* Espace sous le header pour décaler le contenu (mobile/tablette) */}
       <div className="lg:hidden h-14" />
 
-      {/* Sidebar desktop */}
-      <div className="hidden lg:flex fixed top-0 left-0 h-screen w-72 z-30 flex-col justify-between bg-gradient-to-b from-[#1971FF] to-[#1971FF]/80 px-4 py-6 transition-all duration-300 overflow-hidden">
+      {/* Sidebar desktop (sticky dans la colonne grid) */}
+      <div
+        className={`hidden lg:flex sticky top-0 h-[100dvh] w-fit z-30 flex-col justify-between bg-gradient-to-b from-[#1971FF] to-[#1971FF]/80 px-4 py-6 overflow-hidden`}
+      >
         {/* Logo + nom */}
         <div className="flex-1 overflow-y-auto">
-          <div className="flex flex-col items-center md:flex-row md:items-center gap-2 mb-6 md:mb-10">
+          <div
+            className={`flex flex-col items-center md:flex-row md:items-center gap-2 mb-6 md:mb-10${
+              userRole === "student" ? " md:-ml-3" : ""
+            }`}
+          >
             <Image
               src="/images/Nexus.png"
               alt="Nexus"
