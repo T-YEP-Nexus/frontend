@@ -477,16 +477,8 @@ export default function TrombinoscopePage() {
               {students.map((student) => (
                 <div
                   key={student.id}
-                  className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 group ${
-                    userRole === "student"
-                      ? ""
-                      : "hover:shadow-xl hover:scale-105 cursor-pointer"
-                  }`}
-                  onClick={
-                    userRole === "student"
-                      ? undefined
-                      : () => handleViewStudent(student)
-                  }
+                  className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 group hover:shadow-xl hover:scale-105 cursor-pointer`}
+                  onClick={() => handleViewStudent(student)}
                 >
                   <div className="flex flex-col items-center text-center">
                     {/* Avatar */}
@@ -637,6 +629,11 @@ export default function TrombinoscopePage() {
                       Étudiant
                     </span>
                   </div>
+                  {selectedStudent.promotion && (
+                    <div className="text-blue-600 font-medium mb-1">
+                      Promotion: {selectedStudent.promotion}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -654,7 +651,7 @@ export default function TrombinoscopePage() {
                       <p className="text-blue-900">{selectedStudent.email}</p>
                     </div>
                   </div>
-                  {selectedStudent.phone && (
+                  {userRole !== "student" && selectedStudent.phone && (
                     <div className="flex items-center gap-3">
                       <Phone size={16} className="text-blue-500" />
                       <div>
@@ -665,7 +662,7 @@ export default function TrombinoscopePage() {
                       </div>
                     </div>
                   )}
-                  {selectedStudent.campus && (
+                  {userRole !== "student" && selectedStudent.campus && (
                     <div className="flex items-center gap-3">
                       <MapPin size={16} className="text-blue-500" />
                       <div>
@@ -678,7 +675,7 @@ export default function TrombinoscopePage() {
                       </div>
                     </div>
                   )}
-                  {selectedStudent.address && (
+                  {userRole !== "student" && selectedStudent.address && (
                     <div className="flex items-center gap-3">
                       <Home size={16} className="text-blue-500" />
                       <div>
@@ -694,67 +691,71 @@ export default function TrombinoscopePage() {
                 </div>
               </div>
 
-              {/* Informations académiques */}
-              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 md:p-6">
-                <h4 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
-                  <BookOpen size={20} className="text-blue-600" />
-                  Informations académiques
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                  {selectedStudent.promotion && (
-                    <div className="flex items-center gap-3">
-                      <GraduationCap size={16} className="text-blue-500" />
-                      <div>
-                        <p className="text-sm text-blue-600 font-medium">
-                          Promotion
-                        </p>
-                        <p className="text-blue-900">
-                          {selectedStudent.promotion}
-                        </p>
+              {/* Informations académiques (cachées pour les étudiants) */}
+              {userRole !== "student" && (
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 md:p-6">
+                  <h4 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                    <BookOpen size={20} className="text-blue-600" />
+                    Informations académiques
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                    {selectedStudent.promotion && (
+                      <div className="flex items-center gap-3">
+                        <GraduationCap size={16} className="text-blue-500" />
+                        <div>
+                          <p className="text-sm text-blue-600 font-medium">
+                            Promotion
+                          </p>
+                          <p className="text-blue-900">
+                            {selectedStudent.promotion}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {selectedStudent.major && (
-                    <div className="flex items-center gap-3">
-                      <BookOpen size={16} className="text-blue-500" />
-                      <div>
-                        <p className="text-sm text-blue-600 font-medium">
-                          Spécialité
-                        </p>
-                        <p className="text-blue-900">{selectedStudent.major}</p>
+                    )}
+                    {selectedStudent.major && (
+                      <div className="flex items-center gap-3">
+                        <BookOpen size={16} className="text-blue-500" />
+                        <div>
+                          <p className="text-sm text-blue-600 font-medium">
+                            Spécialité
+                          </p>
+                          <p className="text-blue-900">
+                            {selectedStudent.major}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {selectedStudent.student_number && (
-                    <div className="flex items-center gap-3">
-                      <Calendar size={16} className="text-blue-500" />
-                      <div>
-                        <p className="text-sm text-blue-600 font-medium">
-                          Numéro étudiant
-                        </p>
-                        <p className="text-blue-900">
-                          {selectedStudent.student_number}
-                        </p>
+                    )}
+                    {selectedStudent.student_number && (
+                      <div className="flex items-center gap-3">
+                        <Calendar size={16} className="text-blue-500" />
+                        <div>
+                          <p className="text-sm text-blue-600 font-medium">
+                            Numéro étudiant
+                          </p>
+                          <p className="text-blue-900">
+                            {selectedStudent.student_number}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {selectedStudent.created_at && (
-                    <div className="flex items-center gap-3">
-                      <Calendar size={16} className="text-blue-500" />
-                      <div>
-                        <p className="text-sm text-blue-600 font-medium">
-                          Date de création
-                        </p>
-                        <p className="text-blue-900">
-                          {new Date(
-                            selectedStudent.created_at
-                          ).toLocaleDateString("fr-FR")}
-                        </p>
+                    )}
+                    {selectedStudent.created_at && (
+                      <div className="flex items-center gap-3">
+                        <Calendar size={16} className="text-blue-500" />
+                        <div>
+                          <p className="text-sm text-blue-600 font-medium">
+                            Date de création
+                          </p>
+                          <p className="text-blue-900">
+                            {new Date(
+                              selectedStudent.created_at
+                            ).toLocaleDateString("fr-FR")}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Boutons d'action */}
               <div className="flex gap-4 pt-6 border-t border-blue-200">
