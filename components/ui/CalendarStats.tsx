@@ -91,7 +91,9 @@ const CalendarStats: React.FC<CalendarStatsProps> = ({
 
       <div
         className={`grid gap-3 ${
-          isStudent ? "grid-cols-3" : "grid-cols-4"
+          isStudent
+            ? "grid-cols-1 sm:grid-cols-3"
+            : "grid-cols-1 sm:grid-cols-4"
         } items-stretch auto-rows-fr flex-1`}
       >
         {/* Total des événements */}

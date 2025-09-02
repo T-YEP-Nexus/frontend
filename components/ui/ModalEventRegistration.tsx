@@ -110,9 +110,9 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[95vh] shadow-2xl relative overflow-hidden flex flex-col">
+      <div className="bg-white rounded-3xl w-full max-w-full sm:max-w-xl lg:max-w-2xl max-h-[95vh] shadow-2xl relative overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white relative flex-shrink-0">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-4 sm:px-8 sm:py-6 text-white relative flex-shrink-0">
           <button
             className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 text-xl p-2 rounded-full transition-all duration-200"
             onClick={onClose}
@@ -121,11 +121,13 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
           </button>
           <div className="flex items-center gap-4">
             <div className="p-3 bg-white/20 rounded-2xl">
-              <Users className="w-8 h-8" />
+              <Users className="w-5 h-5 sm:w-7 sm:h-7" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">Inscription à l'événement</h2>
-              <p className="text-blue-100 text-sm mt-1">
+              <h2 className="text-lg sm:text-2xl font-bold">
+                Inscription à l'événement
+              </h2>
+              <p className="text-blue-100 text-[11px] sm:text-sm mt-1">
                 Choisissez un créneau pour vous inscrire
               </p>
             </div>
@@ -133,26 +135,26 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
         </div>
 
         {/* Body - Scrollable content */}
-        <div className="overflow-y-auto flex-grow p-8">
+        <div className="overflow-y-auto flex-grow p-4 sm:p-6">
           <div className="space-y-6">
             {/* Informations de l'événement */}
-            <div className="bg-gray-50 rounded-2xl p-6">
+            <div className="bg-gray-50 rounded-2xl p-3 sm:p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <FileText className="w-5 h-5 text-blue-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-sm sm:text-lg font-semibold text-gray-900">
                   Détails de l'événement
                 </h3>
               </div>
 
               <div className="space-y-3">
-                <div className="text-xl font-bold text-gray-900">
+                <div className="text-lg sm:text-xl font-bold text-gray-900">
                   {event.title}
                 </div>
 
                 {event.start && (
-                  <div className="flex items-center gap-3 text-gray-700">
+                  <div className="flex items-center gap-2 text-gray-700 text-sm">
                     <div className="p-2 bg-blue-100 rounded-lg">
                       <Calendar className="w-4 h-4 text-blue-600" />
                     </div>
@@ -161,7 +163,7 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
                 )}
 
                 {event.description && (
-                  <div className="text-gray-600 leading-relaxed">
+                  <div className="text-gray-600 leading-relaxed text-sm">
                     {event.description}
                   </div>
                 )}
@@ -170,28 +172,28 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
 
             {/* Liste des créneaux disponibles */}
             {Array.isArray(event.slots) && event.slots.length > 0 && (
-              <div className="bg-gray-50 rounded-2xl p-6">
+              <div className="bg-gray-50 rounded-2xl p-3 sm:p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-blue-100 rounded-lg">
                     <Clock className="w-5 h-5 text-blue-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-sm sm:text-lg font-semibold text-gray-900">
                     Créneaux disponibles
                   </h3>
                 </div>
 
                 {(userSlotIndex !== null ||
                   (isRegistered && userSlotIndex === null)) && (
-                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                    <div className="flex items-center gap-2 text-blue-700">
-                      <CheckCircle className="w-5 h-5" />
+                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                    <div className="flex items-center gap-2 text-blue-700 text-sm">
+                      <CheckCircle className="w-4 h-4" />
                       <span className="font-medium">
                         {userSlotIndex !== null
                           ? "Vous êtes déjà inscrit sur un créneau !"
                           : "Vous êtes assigné à cet événement !"}
                       </span>
                     </div>
-                    <p className="text-blue-600 text-sm mt-1">
+                    <p className="text-blue-600 text-xs mt-1">
                       {userSlotIndex !== null
                         ? "Vous pouvez vous désinscrire via le bouton sur votre créneau."
                         : "Vous pouvez choisir un créneau spécifique ci-dessous."}
@@ -199,13 +201,13 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
                   </div>
                 )}
 
-                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                <div className="space-y-2 sm:space-y-3 max-h-44 sm:max-h-60 overflow-y-auto pr-2">
                   {event.slots.map((slot, idx) => {
                     const isMySlot = slot.user === getUserIdFromToken();
                     return (
                       <div
                         key={idx}
-                        className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 ${
+                        className={`flex items-center justify-between p-2.5 sm:p-4 rounded-xl border-2 transition-all duration-200 ${
                           isMySlot
                             ? "bg-blue-50 border-blue-300 shadow-md"
                             : slot.user
@@ -226,7 +228,7 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
                             />
                           </div>
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-gray-900 text-sm">
                               {new Date(slot.start).toLocaleTimeString(
                                 "fr-FR",
                                 {
@@ -242,7 +244,7 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
                             </div>
                             {slot.user && (
                               <div
-                                className={`text-sm flex items-center gap-1 ${
+                                className={`text-xs flex items-center gap-1 ${
                                   isMySlot ? "text-blue-700" : "text-gray-500"
                                 }`}
                               >
@@ -257,7 +259,7 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
 
                         {isMySlot ? (
                           <button
-                            className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50"
+                            className="w-full sm:w-auto px-4 py-2 text-sm bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-semibold shadow-md hover:shadow-lg hover:scale-105 transform transition-all duration-200 disabled:opacity-50"
                             onClick={handleUnregisterSlot}
                             disabled={loading !== null}
                           >
@@ -269,7 +271,7 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
                           </button>
                         ) : !slot.user ? (
                           <button
-                            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50"
+                            className="w-fit sm:w-auto px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-md sm:rounded-lg font-semibold shadow hover:shadow-md sm:shadow-md hover:scale-105 transform transition-all duration-200 disabled:opacity-50"
                             onClick={() => handleRegisterSlot(idx)}
                             disabled={
                               loading !== null || userSlotIndex !== null
@@ -299,10 +301,10 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
           </div>
         </div>
 
-        <div className="bg-gray-50 px-8 py-6 border-t border-gray-200 flex justify-end flex-shrink-0">
+        <div className="bg-gray-50 px-4 py-3 sm:px-8 sm:py-5 border-t border-gray-200 flex flex-col sm:flex-row justify-end gap-3 flex-shrink-0">
           <button
             onClick={onClose}
-            className="px-8 py-3 rounded-xl bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-medium"
+            className="w-full sm:w-auto px-6 py-2 text-sm rounded-lg bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-medium"
             disabled={loading !== null}
           >
             Fermer

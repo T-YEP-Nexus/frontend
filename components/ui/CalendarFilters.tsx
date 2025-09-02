@@ -156,14 +156,6 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
       {/* Résumé des filtres actifs */}
       {hasActiveFilters && !isExpanded && (
         <div className="flex flex-wrap gap-1 pt-2 border-t border-gray-100">
-          {selectedEventTypes.map((type) => (
-            <span
-              key={type}
-              className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-medium"
-            >
-              {type}
-            </span>
-          ))}
           {/* Afficher les promotions uniquement pour admins/advisors */}
           {(userRole === "admin" || userRole === "advisor") &&
             selectedPromotions.map((promoId) => {
