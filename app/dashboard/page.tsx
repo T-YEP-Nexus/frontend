@@ -1,10 +1,12 @@
 "use client";
 
 import Sidebar from "@/components/Sidebar/Sidebar";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header/Header";
 import { useRoleRedirect } from "@/hooks/useRoleRedirect";
 import AdminLoading from "@/components/admin/AdminLoading";
+import { getUserIdFromToken } from "@/lib/auth";
+import { getUserData } from "@/lib/userData";
 import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 import { useProjectsData } from "@/hooks/useProjectsData";
 import { useRouter } from "next/navigation";
@@ -15,6 +17,8 @@ import {
   ChevronDown,
   Calendar,
   Clock,
+  Megaphone,
+  Wallet,
 } from "lucide-react";
 import {
   getActiveInformations,
@@ -37,10 +41,12 @@ function DashboardCard({
 }) {
   return (
     <div
-      className={`flex items-center gap-3 bg-white rounded-lg shadow p-3 min-w-[180px] max-w-full w-full transition-all duration-200 ${
-        isClickable ? "hover:shadow-md hover:scale-105 cursor-pointer" : ""
+      className={`flex items-center gap-3 bg-white rounded-lg shadow p-3 min-w-[180px] max-w-full w-full ${
+        isClickable
+          ? "hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-102"
+          : ""
       }`}
-      onClick={onClick}
+      onClick={isClickable ? onClick : undefined}
     >
       {icon && <div className="text-blue-700 text-2xl">{icon}</div>}
       <div className="flex flex-col">
@@ -53,6 +59,25 @@ function DashboardCard({
       </div>
     </div>
   );
+}
+
+interface BackendEvent {
+  id: number;
+  title: string;
+  event_datetime?: string;
+  duration_minutes?: number;
+  start?: string;
+  end?: string;
+  description?: string;
+  event_type?: string;
+  location?: string;
+}
+
+interface BackendProject {
+  id: number | string;
+  title?: string;
+  name?: string;
+  created_at?: string;
 }
 
 export default function Dashboard() {
@@ -69,53 +94,144 @@ export default function Dashboard() {
     number | null
   >(null);
 
-  // États pour les événements du jour
+  // États pour les événements du jour (vue condensée)
   const [todayEvents, setTodayEvents] = useState<any[]>([]);
   const [todayEventsLoading, setTodayEventsLoading] = useState(true);
 
-  // Utiliser le hook pour récupérer les projets
+  // Projets (actifs) via hook
   const {
-    projects,
+    projects: activeProjects,
     loading: projectsLoading,
     error: projectsError,
     fetchActiveProjects,
   } = useProjectsData();
 
-  // Utiliser le hook pour récupérer les événements
+  // Événements globaux via hook (pour panneau "Calendrier du jour")
   const {
     events: allEvents,
     loading: eventsLoading,
     fetchAllEvents,
   } = useCalendarData();
 
-  // Transformer les données du backend vers le format attendu par DashboardCard
-  const transformProjectData = (project: any) => {
-    // Calculer la progression basée sur les ressources ou autres critères
-    const progress = project.ressources
-      ? Math.min(project.ressources.length * 10, 100)
-      : 0;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [role, setRole] = useState<"admin" | "advisor" | "student" | null>(
+    null
+  );
+  const [events, setEvents] = useState<BackendEvent[]>([]);
+  const [projects, setProjects] = useState<BackendProject[]>([]);
 
-    return {
-      id: project.id,
-      name: project.name,
-      progress: progress,
-      description: project.description,
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const userId = getUserIdFromToken();
+        if (!userId) {
+          setError("Utilisateur non authentifié");
+          setLoading(false);
+          return;
+        }
+
+        // Rôle via userData util (déjà robuste aux profils sans données student)
+        const user = await getUserData(userId);
+        const detectedRole = (user.role || "student").toLowerCase();
+        const finalRole: "admin" | "advisor" | "student" = [
+          "admin",
+          "advisor",
+        ].includes(detectedRole)
+          ? (detectedRole as any)
+          : "student";
+        setRole(finalRole);
+
+        // Charger événements
+        let fetchedEvents: BackendEvent[] = [];
+        if (finalRole === "student") {
+          const res = await fetch(
+            `http://localhost:3002/events/student/${userId}`
+          );
+          if (res.ok) {
+            const json = await res.json();
+            fetchedEvents = Array.isArray(json.data) ? json.data : [];
+          }
+        } else {
+          const res = await fetch("http://localhost:3002/events");
+          if (res.ok) {
+            const json = await res.json();
+            fetchedEvents = Array.isArray(json.data) ? json.data : [];
+          }
+        }
+        setEvents(fetchedEvents);
+
+        // Charger projets (liste simple)
+        try {
+          const pr = await fetch("http://localhost:3003/projects");
+          if (pr.ok) {
+            const pj = await pr.json();
+            setProjects(Array.isArray(pj.data) ? pj.data : []);
+          } else {
+            setProjects([]);
+          }
+        } catch {
+          setProjects([]);
+        }
+      } catch (e: any) {
+        setError(e?.message || "Erreur de chargement du dashboard");
+      } finally {
+        setLoading(false);
+      }
     };
-  };
+    load();
+  }, []);
 
-  // Récupérer les 3 premiers projets actifs
-  const dashboardProjects = projects.slice(0, 3).map(transformProjectData);
+  // Charger projets actifs, annonces et événements globaux pour le panneau droit
+  useEffect(() => {
+    const loadData = async () => {
+      // Projets actifs
+      fetchActiveProjects();
 
-  // Fonction pour formater le temps écoulé
-  const timeAgo = (dateString: string) => {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-    if (diff < 60) return `il y a ${diff} sec`;
-    if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`;
-    if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} h`;
-    return `il y a ${Math.floor(diff / 86400)} j`;
-  };
+      // Événements globaux (utilisés pour le "Calendrier du jour")
+      try {
+        setTodayEventsLoading(true);
+        await fetchAllEvents();
+      } catch (err) {
+        console.error("Erreur lors du chargement des événements:", err);
+      } finally {
+        setTodayEventsLoading(false);
+      }
+
+      // Annonces récentes
+      try {
+        setAnnouncementsLoading(true);
+        const activeInformations = await getActiveInformations();
+        const recent = activeInformations.slice(0, 5);
+        setRecentAnnouncements(recent);
+      } catch (err) {
+        console.error("Erreur lors du chargement des annonces:", err);
+      } finally {
+        setAnnouncementsLoading(false);
+      }
+    };
+
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Défilement auto des annonces
+  useEffect(() => {
+    if (recentAnnouncements.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentAnnouncementIndex((prev) =>
+        prev === recentAnnouncements.length - 1 ? 0 : prev + 1
+      );
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [recentAnnouncements.length]);
+
+  // Réinitialiser l'expansion quand l'annonce change
+  useEffect(() => {
+    setExpandedAnnouncement(null);
+  }, [currentAnnouncementIndex]);
 
   // Fonction pour filtrer les événements du jour
   const getTodayEvents = (events: any[]) => {
@@ -133,6 +249,7 @@ export default function Dashboard() {
 
     return events
       .filter((event) => {
+        if (!event.event_datetime) return false;
         const eventDate = new Date(event.event_datetime);
         return eventDate >= todayStart && eventDate < todayEnd;
       })
@@ -143,122 +260,90 @@ export default function Dashboard() {
       );
   };
 
-  // Charger les projets, annonces et événements au montage du composant
+  // Mettre à jour les événements du jour à partir des événements de la promotion
   useEffect(() => {
-    const loadData = async () => {
-      // Charger les projets
-      fetchActiveProjects();
-
-      // Charger les événements
-      try {
-        setTodayEventsLoading(true);
-        await fetchAllEvents();
-      } catch (err) {
-        console.error("Erreur lors du chargement des événements:", err);
-      } finally {
-        setTodayEventsLoading(false);
-      }
-
-      // Charger les annonces récentes
-      try {
-        setAnnouncementsLoading(true);
-        const activeInformations = await getActiveInformations();
-        // Prendre les 5 dernières annonces
-        const recent = activeInformations.slice(0, 5);
-        setRecentAnnouncements(recent);
-      } catch (err) {
-        console.error("Erreur lors du chargement des annonces:", err);
-      } finally {
-        setAnnouncementsLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  // Défilement automatique des annonces toutes les 10 secondes
-  useEffect(() => {
-    if (recentAnnouncements.length <= 1) return;
-
-    const interval = setInterval(() => {
-      setCurrentAnnouncementIndex((prev) =>
-        prev === recentAnnouncements.length - 1 ? 0 : prev + 1
-      );
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [recentAnnouncements.length]);
-
-  // Réinitialiser l'expansion quand on change d'annonce
-  useEffect(() => {
-    setExpandedAnnouncement(null);
-  }, [currentAnnouncementIndex]);
-
-  // Mettre à jour les événements du jour quand les événements changent
-  useEffect(() => {
-    if (!eventsLoading && allEvents.length > 0) {
-      const today = getTodayEvents(allEvents);
+    if (!loading && events.length > 0) {
+      const today = getTodayEvents(events);
       setTodayEvents(today);
     }
-  }, [allEvents, eventsLoading]);
+  }, [events, loading]);
 
-  const handleProjectClick = (projectId: string) => {
-    router.push(`/projects/${projectId}/details`);
-  };
-
-  const handleViewAllProjects = () => {
-    router.push("/projects");
-  };
-
-  const handlePreviousAnnouncement = () => {
-    setCurrentAnnouncementIndex((prev) =>
-      prev === 0 ? recentAnnouncements.length - 1 : prev - 1
-    );
-  };
-
-  const handleNextAnnouncement = () => {
-    setCurrentAnnouncementIndex((prev) =>
-      prev === recentAnnouncements.length - 1 ? 0 : prev + 1
-    );
-  };
-
-  // Fonction pour formater l'heure
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("fr-FR", {
-      hour: "2-digit",
-      minute: "2-digit",
+  // Prochains événements (triés par date, prochains 3)
+  const upcomingEvents = useMemo(() => {
+    const now = Date.now();
+    const normalized = events.map((e) => {
+      const startIso = e.event_datetime || e.start || null;
+      const endIso =
+        e.end ||
+        (e.event_datetime && e.duration_minutes
+          ? new Date(
+              new Date(e.event_datetime).getTime() +
+                (e.duration_minutes || 0) * 60000
+            ).toISOString()
+          : null);
+      const startTs = startIso ? new Date(startIso).getTime() : NaN;
+      return { ...e, startIso, endIso, startTs };
     });
+    return normalized
+      .filter((e) => !isNaN(e.startTs) && e.startTs >= now)
+      .sort((a, b) => a.startTs - b.startTs)
+      .slice(0, 3);
+  }, [events]);
+
+  // Stats calendrier (semaine courante)
+  const weekStats = useMemo(() => {
+    const startOfWeek = new Date();
+    startOfWeek.setHours(0, 0, 0, 0);
+    const day = startOfWeek.getDay();
+    const diff = (day === 0 ? -6 : 1) - day; // lundi début de semaine
+    startOfWeek.setDate(startOfWeek.getDate() + diff);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+    const inWeek = events.filter((e) => {
+      const iso = e.event_datetime || e.start;
+      if (!iso) return false;
+      const d = new Date(iso);
+      return d >= startOfWeek && d < endOfWeek;
+    });
+    return { count: inWeek.length };
+  }, [events]);
+
+  // Projets simplifiés (3 premiers) à partir de la liste complète
+  const topProjects = useMemo(() => {
+    return (projects || []).slice(0, 3);
+  }, [projects]);
+
+  // Transformer et limiter les projets actifs pour la section "Projets"
+  const transformProjectData = (project: any) => {
+    const progress = project.ressources
+      ? Math.min(project.ressources.length * 10, 100)
+      : 0;
+    return {
+      id: project.id,
+      name: project.name,
+      progress: progress,
+      description: project.description,
+    };
   };
+  const dashboardProjects = (activeProjects || [])
+    .slice(0, 3)
+    .map(transformProjectData);
 
-  // Fonction pour obtenir la couleur selon le type d'événement
-  const getEventColor = (eventType: string) => {
-    switch (eventType) {
-      case "follow-up":
-        return "#10b981"; // vert émeraude
-      case "kick-off":
-        return "#f59e0b"; // orange
-      case "keynote":
-        return "#8b5cf6"; // violet
-      case "hub-talk":
-        return "#06b6d4"; // cyan
-      case "other":
-        return "#3b82f6"; // bleu
-      default:
-        return "#6b7280"; // gris
-    }
-  };
+  if (isLoading || loading) {
+    return <AdminLoading message="Chargement du tableau de bord..." />;
+  }
 
-  const MIN_LENGTH_FOR_PLUS = 120;
-  const currentAnnouncement = recentAnnouncements[currentAnnouncementIndex];
-  const isExpanded = expandedAnnouncement === currentAnnouncementIndex;
-  const shouldShowExpandButton =
-    currentAnnouncement?.message &&
-    currentAnnouncement.message.length > MIN_LENGTH_FOR_PLUS;
-
-  // Afficher un loader pendant la vérification
-  if (isLoading) {
-    return <AdminLoading message="Vérification des droits d'accès..." />;
+  if (error) {
+    return (
+      <div className="min-h-screen px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-red-600 mb-2">Erreur de chargement</p>
+            <p className="text-gray-600 text-sm">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -266,7 +351,11 @@ export default function Dashboard() {
       {/* Header */}
       <Header
         title="Tableau de bord"
-        description="Vue d'ensemble de votre journée"
+        description={
+          role === "student"
+            ? "Vos prochaines échéances"
+            : "Vue d'ensemble de la semaine"
+        }
       />
 
       <div className="w-full grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-x-8 gap-y-6 items-start">
@@ -297,64 +386,90 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="relative">
-                  {/* Annonce actuelle avec transition */}
                   <div
                     key={currentAnnouncementIndex}
                     className="transition-all duration-500 ease-in-out animate-in fade-in slide-in-from-right-2"
                   >
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-200 to-blue-300 flex items-center justify-center font-bold text-blue-900 shadow-md">
-                        {currentAnnouncement?.creator_full_name?.charAt(0) ||
-                          "A"}
+                        {recentAnnouncements[
+                          currentAnnouncementIndex
+                        ]?.creator_full_name?.charAt(0) || "A"}
                       </div>
                       <div>
                         <div className="font-semibold text-blue-900">
-                          {currentAnnouncement?.creator_full_name || "Anonyme"}
+                          {recentAnnouncements[currentAnnouncementIndex]
+                            ?.creator_full_name || "Anonyme"}
                         </div>
                         <div className="text-xs text-blue-600">
-                          {timeAgo(currentAnnouncement?.created_at || "")}
+                          {(() => {
+                            const date =
+                              recentAnnouncements[currentAnnouncementIndex]
+                                ?.created_at || "";
+                            const now = new Date();
+                            const d = new Date(date);
+                            const diff = Math.floor(
+                              (now.getTime() - d.getTime()) / 1000
+                            );
+                            if (diff < 60) return `il y a ${diff} sec`;
+                            if (diff < 3600)
+                              return `il y a ${Math.floor(diff / 60)} min`;
+                            if (diff < 86400)
+                              return `il y a ${Math.floor(diff / 3600)} h`;
+                            return `il y a ${Math.floor(diff / 86400)} j`;
+                          })()}
                         </div>
                       </div>
                     </div>
 
                     <h3 className="font-bold text-blue-900 text-lg mb-3">
-                      {currentAnnouncement?.title}
+                      {recentAnnouncements[currentAnnouncementIndex]?.title}
                     </h3>
 
                     <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-3 sm:p-4 mb-4">
                       <span
                         className={`text-blue-800 text-sm sm:text-base leading-relaxed break-words transition-all duration-300 ${
-                          isExpanded ? "" : "line-clamp-3"
+                          expandedAnnouncement === currentAnnouncementIndex
+                            ? ""
+                            : "line-clamp-3"
                         }`}
                       >
-                        {currentAnnouncement?.message}
+                        {recentAnnouncements[currentAnnouncementIndex]?.message}
                       </span>
                     </div>
 
-                    {/* Bouton Voir plus/moins */}
-                    {shouldShowExpandButton && (
-                      <div className="flex justify-start mb-4">
-                        <button
-                          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl px-4 py-2 transition-all duration-300 text-sm flex items-center gap-2 hover:scale-105 shadow-lg hover:shadow-xl"
-                          onClick={() =>
-                            setExpandedAnnouncement(
-                              isExpanded ? null : currentAnnouncementIndex
-                            )
-                          }
-                        >
-                          {isExpanded ? "Voir moins" : "Voir plus"}
-                          <ChevronDown
-                            size={16}
-                            className={`transition-transform duration-300 ${
-                              isExpanded ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    )}
+                    {recentAnnouncements[currentAnnouncementIndex]?.message &&
+                      recentAnnouncements[currentAnnouncementIndex]!.message
+                        .length > 120 && (
+                        <div className="flex justify-start mb-4">
+                          <button
+                            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl px-4 py-2 transition-all duration-300 text-sm flex items-center gap-2 hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer"
+                            onClick={() =>
+                              setExpandedAnnouncement(
+                                expandedAnnouncement ===
+                                  currentAnnouncementIndex
+                                  ? null
+                                  : currentAnnouncementIndex
+                              )
+                            }
+                          >
+                            {expandedAnnouncement === currentAnnouncementIndex
+                              ? "Voir moins"
+                              : "Voir plus"}
+                            <ChevronDown
+                              size={16}
+                              className={`transition-transform duration-300 ${
+                                expandedAnnouncement ===
+                                currentAnnouncementIndex
+                                  ? "rotate-180"
+                                  : ""
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      )}
                   </div>
 
-                  {/* Contrôles de navigation */}
                   {recentAnnouncements.length > 1 && (
                     <div className="flex items-center justify-between">
                       <div className="flex gap-2">
@@ -373,14 +488,26 @@ export default function Dashboard() {
 
                       <div className="flex gap-2">
                         <button
-                          onClick={handlePreviousAnnouncement}
-                          className="p-2 bg-blue-100 hover:bg-blue-200 rounded-lg transition-all duration-200"
+                          onClick={() =>
+                            setCurrentAnnouncementIndex((prev) =>
+                              prev === 0
+                                ? recentAnnouncements.length - 1
+                                : prev - 1
+                            )
+                          }
+                          className="p-2 bg-blue-100 hover:bg-blue-200 rounded-lg transition-all duration-200 cursor-pointer"
                         >
                           <ChevronLeft className="w-4 h-4 text-blue-600" />
                         </button>
                         <button
-                          onClick={handleNextAnnouncement}
-                          className="p-2 bg-blue-100 hover:bg-blue-200 rounded-lg transition-all duration-200"
+                          onClick={() =>
+                            setCurrentAnnouncementIndex((prev) =>
+                              prev === recentAnnouncements.length - 1
+                                ? 0
+                                : prev + 1
+                            )
+                          }
+                          className="p-2 bg-blue-100 hover:bg-blue-200 rounded-lg transition-all duration-200 cursor-pointer"
                         >
                           <ChevronRight className="w-4 h-4 text-blue-600" />
                         </button>
@@ -394,7 +521,7 @@ export default function Dashboard() {
 
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Devoirs & rendus */}
-            <div className="flex-1">
+            {/* <div className="flex-1">
               <DevelopmentBadge>
                 <section className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300 w-full">
                   <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200">
@@ -407,23 +534,14 @@ export default function Dashboard() {
                   </div>
                   <div className="p-6">
                     <div className="flex flex-wrap gap-3">
-                      <DashboardCard
-                        title="Maths"
-                        description="DM à rendre le 15/04"
-                      />
-                      <DashboardCard
-                        title="Anglais"
-                        description="Rédaction à finir"
-                      />
-                      <DashboardCard
-                        title="Physique"
-                        description="TP à préparer"
-                      />
+                      <DashboardCard title="Maths" description="DM à rendre le 15/04" />
+                      <DashboardCard title="Anglais" description="Rédaction à finir" />
+                      <DashboardCard title="Physique" description="TP à préparer" />
                     </div>
                   </div>
                 </section>
               </DevelopmentBadge>
-            </div>
+            </div> */}
 
             {/* Projets */}
             <div className="flex-1">
@@ -437,7 +555,7 @@ export default function Dashboard() {
                       Projets
                     </h2>
                     <button
-                      onClick={handleViewAllProjects}
+                      onClick={() => router.push("/projects")}
                       className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 cursor-pointer"
                     >
                       <Plus className="w-4 h-4" />
@@ -462,7 +580,9 @@ export default function Dashboard() {
                           key={project.id}
                           title={project.name}
                           description={`${project.progress}% terminé`}
-                          onClick={() => handleProjectClick(project.id)}
+                          onClick={() =>
+                            router.push(`/projects/${project.id}/details`)
+                          }
                           isClickable={true}
                         />
                       ))}
@@ -478,34 +598,11 @@ export default function Dashboard() {
               </section>
             </div>
           </div>
-
-          {/* Rappels & notifications */}
-          <DevelopmentBadge>
-            <section className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
-              <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200">
-                <h2 className="font-bold text-lg text-orange-900 flex items-center gap-2">
-                  <div className="p-1.5 bg-gradient-to-br from-orange-200 to-orange-300 rounded-lg">
-                    <div className="w-4 h-4 bg-orange-600 rounded-full flex items-center justify-center text-white text-xs font-bold"></div>
-                  </div>
-                  Rappels & notifications
-                </h2>
-              </div>
-              <div className="p-6">
-                <div className="flex flex-wrap gap-3">
-                  <DashboardCard title="NOUVEAU" description="Document reçu" />
-                  <DashboardCard
-                    title="EMARGEMENT"
-                    description="13:00 / 17:15"
-                  />
-                </div>
-              </div>
-            </section>
-          </DevelopmentBadge>
         </div>
 
         {/* Colonne droite */}
         <div className="flex flex-col gap-6">
-          {/* Calendrier */}
+          {/* Calendrier du jour */}
           <section className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
             <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 to-indigo-100 border-b border-indigo-200">
               <div className="flex items-center justify-between">
@@ -525,7 +622,7 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="p-6">
-              {todayEventsLoading ? (
+              {loading ? (
                 <div className="flex items-center justify-center py-4">
                   <div className="flex items-center gap-2 text-indigo-600">
                     <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
@@ -548,7 +645,22 @@ export default function Dashboard() {
                       key={event.id}
                       className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 transition-all duration-200"
                       style={{
-                        borderLeftColor: getEventColor(event.event_type),
+                        borderLeftColor: ((): string => {
+                          switch (event.event_type) {
+                            case "follow-up":
+                              return "#10b981";
+                            case "kick-off":
+                              return "#f59e0b";
+                            case "keynote":
+                              return "#8b5cf6";
+                            case "hub-talk":
+                              return "#06b6d4";
+                            case "other":
+                              return "#3b82f6";
+                            default:
+                              return "#6b7280";
+                          }
+                        })(),
                         borderLeftWidth: "4px",
                       }}
                     >
@@ -556,7 +668,22 @@ export default function Dashboard() {
                         <div
                           className="w-3 h-3 rounded-full"
                           style={{
-                            backgroundColor: getEventColor(event.event_type),
+                            backgroundColor: ((): string => {
+                              switch (event.event_type) {
+                                case "follow-up":
+                                  return "#10b981";
+                                case "kick-off":
+                                  return "#f59e0b";
+                                case "keynote":
+                                  return "#8b5cf6";
+                                case "hub-talk":
+                                  return "#06b6d4";
+                                case "other":
+                                  return "#3b82f6";
+                                default:
+                                  return "#6b7280";
+                              }
+                            })(),
                           }}
                         />
                       </div>
@@ -564,7 +691,10 @@ export default function Dashboard() {
                         <div className="flex items-center gap-2 mb-1">
                           <Clock className="w-3 h-3 text-gray-500" />
                           <span className="text-xs text-gray-600 font-medium">
-                            {formatTime(event.event_datetime)}
+                            {new Date(event.event_datetime).toLocaleTimeString(
+                              "fr-FR",
+                              { hour: "2-digit", minute: "2-digit" }
+                            )}
                           </span>
                         </div>
                         <h4 className="font-semibold text-gray-900 text-sm mb-1 truncate">
@@ -580,18 +710,101 @@ export default function Dashboard() {
                   ))}
                   {todayEvents.length > 3 && (
                     <div className="text-center pt-2">
-                      <span className="text-xs text-indigo-600">
+                      <button
+                        onClick={() => router.push("/calendar")}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors duration-200 cursor-pointer"
+                      >
                         +{todayEvents.length - 3} autres événements
-                      </span>
+                      </button>
                     </div>
                   )}
                 </div>
               )}
             </div>
           </section>
+          <section className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
+            <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200">
+              <h2 className="font-bold text-lg text-orange-900 flex items-center gap-2">
+                <div className="p-1.5 bg-gradient-to-br from-orange-200 to-orange-300 rounded-lg">
+                  <div className="w-4 h-4 bg-orange-600 rounded-full flex items-center justify-center text-white text-xs font-bold"></div>
+                </div>
+                Vue d'ensemble
+              </h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Calendrier - Événements de la semaine */}
+                <DashboardCard
+                  title="Cette semaine"
+                  description={`${weekStats.count} événement(s) programmé(s)`}
+                  icon={<Calendar className="w-5 h-5" />}
+                  onClick={() => router.push("/calendar")}
+                  isClickable={true}
+                />
+
+                {/* Projets actifs */}
+                <DashboardCard
+                  title="Projets actifs"
+                  description={`${dashboardProjects.length} projet(s) en cours`}
+                  icon={<Megaphone className="w-5 h-5" />}
+                  onClick={() => router.push("/projects")}
+                  isClickable={true}
+                />
+
+                {/* Prochain événement */}
+                <DashboardCard
+                  title="Prochain événement"
+                  description={
+                    upcomingEvents.length > 0
+                      ? upcomingEvents[0]?.title || "Aucun événement"
+                      : "Aucun événement"
+                  }
+                  icon={<Clock className="w-5 h-5" />}
+                  onClick={() => router.push("/calendar")}
+                  isClickable={true}
+                />
+
+                {/* Nouvelles annonces */}
+                <DashboardCard
+                  title="Annonces"
+                  description={`${recentAnnouncements.length} annonce(s) récente(s)`}
+                  icon={<Wallet className="w-5 h-5" />}
+                  onClick={() => router.push("/informations")}
+                  isClickable={true}
+                />
+              </div>
+
+              {/* Détail du prochain événement si disponible */}
+              {upcomingEvents.length > 0 && (
+                <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <h4 className="font-semibold text-orange-900 text-sm mb-2">
+                    Prochain événement :
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-orange-600" />
+                    <span className="text-orange-800 text-sm font-medium">
+                      {upcomingEvents[0]?.title}
+                    </span>
+                    <span className="text-orange-600 text-xs">
+                      {upcomingEvents[0]?.startIso
+                        ? new Date(
+                            upcomingEvents[0].startIso
+                          ).toLocaleDateString("fr-FR", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : ""}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
 
           {/* Événements clés */}
-          <DevelopmentBadge>
+          {/* <DevelopmentBadge>
             <section className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
               <div className="px-6 py-4 bg-gradient-to-r from-red-50 to-red-100 border-b border-red-200">
                 <h2 className="font-bold text-lg text-red-900 flex items-center gap-2">
@@ -603,18 +816,20 @@ export default function Dashboard() {
               </div>
               <div className="p-6">
                 <div className="flex flex-wrap gap-3">
-                  <DashboardCard title="T-DEV-600" description="18/06/2025" />
-                  <DashboardCard
-                    title="SUMMER FESTIVAL"
-                    description="18/06/2025"
-                  />
+                  {upcomingEvents.map((ev) => (
+                    <DashboardCard
+                      key={ev.id}
+                      title={ev.title}
+                      description={ev.startIso ? new Date(ev.startIso).toLocaleDateString("fr-FR") : ""}
+                    />
+                  ))}
                 </div>
               </div>
             </section>
-          </DevelopmentBadge>
+          </DevelopmentBadge> */}
 
           {/* Réunions & rendez-vous */}
-          <DevelopmentBadge>
+          {/* <DevelopmentBadge>
             <section className="bg-white rounded-xl shadow-md border border-blue-200/50 overflow-hidden hover:shadow-lg transition-all duration-300">
               <div className="px-6 py-4 bg-gradient-to-r from-teal-50 to-teal-100 border-b border-teal-200">
                 <h2 className="font-bold text-lg text-teal-900 flex items-center gap-2">
@@ -626,15 +841,20 @@ export default function Dashboard() {
               </div>
               <div className="p-6">
                 <div className="flex flex-wrap gap-3">
-                  <DashboardCard title="FOLLOW UP" description="18/06/2025" />
-                  <DashboardCard
-                    title="KICK OFF T-CEN-100"
-                    description="18/06/2025"
-                  />
+                  {upcomingEvents.slice(0, 2).map((ev) => (
+                    <DashboardCard
+                      key={`meet-${ev.id}`}
+                      title={ev.title}
+                      description={ev.startIso ? new Date(ev.startIso).toLocaleString("fr-FR") : ""}
+                    />
+                  ))}
+                  {upcomingEvents.length === 0 && (
+                    <DashboardCard title="Aucun rendez-vous" description="Planifiez vos suivis" />
+                  )}
                 </div>
               </div>
             </section>
-          </DevelopmentBadge>
+          </DevelopmentBadge> */}
         </div>
       </div>
     </div>

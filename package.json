@@ -7,6 +7,7 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
+
         "test": "jest",
         "test:watch": "jest --watch",
         "test:coverage": "jest --coverage",
@@ -15,6 +16,9 @@
         "test:advisor": "jest advisorAccess.test.tsx",
         "test:student": "jest studentAccess.test.tsx",
         "test:roles": "jest adminAccess.test.tsx advisorAccess.test.tsx studentAccess.test.tsx"
+
+        "test:e2e": "playwright test"
+
     },
     "dependencies": {
         "@fortawesome/fontawesome-svg-core": "^6.7.2",
@@ -37,6 +41,7 @@
         "tailwind-merge": "^3.3.1"
     },
     "devDependencies": {
+        "@playwright/test": "^1.47.2",
         "@tailwindcss/postcss": "^4",
         "@testing-library/dom": "^10.4.1",
         "@testing-library/jest-dom": "^6.6.3",
