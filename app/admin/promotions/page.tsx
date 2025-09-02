@@ -388,7 +388,7 @@ export default function AdminPromotionsPage() {
                               {promotion.name}
                             </h3>
                           </div>
-                          <div className="flex items-center gap-6 text-sm text-blue-600">
+                          <div className="flex max-lg:flex-col max-lg:gap-4 max-lg:items-start items-center gap-6 text-sm text-blue-600">
                             <div className="flex items-center gap-2">
                               <Users size={16} />
                               <span>
