@@ -7,7 +7,6 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-
         "test": "jest",
         "test:watch": "jest --watch",
         "test:coverage": "jest --coverage",
@@ -15,8 +14,7 @@
         "test:admin": "jest adminAccess.test.tsx",
         "test:advisor": "jest advisorAccess.test.tsx",
         "test:student": "jest studentAccess.test.tsx",
-        "test:roles": "jest adminAccess.test.tsx advisorAccess.test.tsx studentAccess.test.tsx"
-
+        "test:roles": "jest adminAccess.test.tsx advisorAccess.test.tsx studentAccess.test.tsx",
         "test:e2e": "playwright test"
 
     },
