@@ -159,7 +159,10 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
             !typedEvent.event_datetime ||
             !typedEvent.duration_minutes
           ) {
-            console.warn("Événement invalide ou incomplet détecté:", typedEvent);
+            console.warn(
+              "Événement invalide ou incomplet détecté:",
+              typedEvent
+            );
             return null;
           }
 
@@ -176,7 +179,11 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
             return null;
           }
 
-          if (isStudent && typedEvent.slots && Array.isArray(typedEvent.slots)) {
+          if (
+            isStudent &&
+            typedEvent.slots &&
+            Array.isArray(typedEvent.slots)
+          ) {
             const userId = getUserIdFromToken();
             const mySlot = typedEvent.slots.find(
               (slot: any) => slot.user === userId
@@ -236,8 +243,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
         const userId = getUserIdFromToken();
         filteredEvents = filteredEvents.filter(
           (event) =>
-            event.slots &&
-            event.slots.some((slot: any) => slot.user === userId)
+            event.slots && event.slots.some((slot: any) => slot.user === userId)
         );
       }
 
@@ -278,9 +284,9 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
   const openModal = (start: Date, end: Date) => {
     const pad = (n: number) => n.toString().padStart(2, "0");
     const toInput = (d: Date) =>
-      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
-        d.getDate()
-      )}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+        d.getHours()
+      )}:${pad(d.getMinutes())}`;
     setModalData({ start: toInput(start), end: toInput(end) });
     setModalOpen(true);
   };
@@ -408,113 +414,161 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
 
   return (
     <div
-      className={`bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden w-full ${
+      className={`bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden w-full transition-all duration-300 hover:shadow-2xl ${
         isAdmin ? "admin-calendar" : ""
       }`}
     >
-      <CalendarStats
-        totalEvents={events.length}
-        eventsByType={events.reduce((acc, event) => {
-          const type = event.event_type || "other";
-          acc[type] = (acc[type] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>)}
-        upcomingEvents={
-          events.filter(
-            (event) => event.start && new Date(event.start) > new Date()
-          ).length
-        }
-        myEvents={
-          events.filter(
-            (event) =>
-              event.slots &&
-              event.slots.some(
-                (slot: any) => slot.user === getUserIdFromToken()
-              )
-          ).length
-        }
-        totalSlots={events.reduce(
-          (total, event) => total + (event.slots?.length || 0),
-          0
-        )}
-        availableSlots={events.reduce(
-          (total, event) =>
-            total + (event.slots?.filter((slot: any) => !slot.user).length || 0),
-          0
-        )}
-      />
+      {/* Stats et Filtres sur la même ligne */}
+      <div className="flex flex-col lg:flex-row gap-4 p-4 border-b border-gray-100">
+        <div className="flex-1">
+          <CalendarStats
+            totalEvents={events.length}
+            eventsByType={events.reduce((acc, event) => {
+              const type = event.event_type || "other";
+              acc[type] = (acc[type] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>)}
+            upcomingEvents={
+              events.filter(
+                (event) => event.start && new Date(event.start) > new Date()
+              ).length
+            }
+            myEvents={
+              events.filter(
+                (event) =>
+                  event.slots &&
+                  event.slots.some(
+                    (slot: any) => slot.user === getUserIdFromToken()
+                  )
+              ).length
+            }
+            totalSlots={events.reduce(
+              (total, event) => total + (event.slots?.length || 0),
+              0
+            )}
+            availableSlots={events.reduce(
+              (total, event) =>
+                total +
+                (event.slots?.filter((slot: any) => !slot.user).length || 0),
+              0
+            )}
+            userRole={effectiveRole || undefined}
+          />
+        </div>
 
-      <CalendarFilters
-        eventTypes={["follow-up", "kick-off", "keynote", "hub-talk", "other"]}
-        selectedEventTypes={selectedEventTypes}
-        onEventTypesChange={setSelectedEventTypes}
-        promotions={promotions || []}
-        selectedPromotions={selectedPromotions}
-        onPromotionsChange={(promotions) => {
-          if (effectiveRole === "admin" || effectiveRole === "advisor") {
-            setSelectedPromotions(promotions);
-          } else {
-            setSelectedPromotions([]);
-          }
-        }}
-        showOnlyMyEvents={showOnlyMyEvents}
-        onShowOnlyMyEventsChange={setShowOnlyMyEvents}
-        onClearFilters={() => {
-          setSelectedEventTypes([]);
-          if (effectiveRole === "admin" || effectiveRole === "advisor") {
-            setSelectedPromotions([]);
-          }
-          setShowOnlyMyEvents(false);
-        }}
-        userRole={effectiveRole || undefined}
-      />
+        <div className="lg:w-80">
+          <CalendarFilters
+            eventTypes={[
+              "follow-up",
+              "kick-off",
+              "keynote",
+              "hub-talk",
+              "other",
+            ]}
+            selectedEventTypes={selectedEventTypes}
+            onEventTypesChange={setSelectedEventTypes}
+            promotions={promotions || []}
+            selectedPromotions={selectedPromotions}
+            onPromotionsChange={(promotions) => {
+              if (effectiveRole === "admin" || effectiveRole === "advisor") {
+                setSelectedPromotions(promotions);
+              } else {
+                setSelectedPromotions([]);
+              }
+            }}
+            showOnlyMyEvents={showOnlyMyEvents}
+            onShowOnlyMyEventsChange={setShowOnlyMyEvents}
+            onClearFilters={() => {
+              setSelectedEventTypes([]);
+              if (effectiveRole === "admin" || effectiveRole === "advisor") {
+                setSelectedPromotions([]);
+              }
+              setShowOnlyMyEvents(false);
+            }}
+            userRole={effectiveRole || undefined}
+          />
+        </div>
+      </div>
 
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
-        initialView={currentView}
-        locale={frLocale}
-        headerToolbar={{
-          left: "prev today",
-          center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay next",
-        }}
-        views={{
-          timeGridDay: {
-            titleFormat: { year: "numeric", month: "long", day: "numeric" },
-            slotMinTime: "06:00:00",
-            slotMaxTime: "22:00:00",
-            slotDuration: "01:00:00",
-            slotLabelInterval: "02:00:00",
-            allDaySlot: false,
-          },
-          timeGridWeek: {
-            titleFormat: { year: "numeric", month: "long", day: "numeric" },
-            slotMinTime: "06:00:00",
-            slotMaxTime: "22:00:00",
-            slotDuration: "01:00:00",
-            slotLabelInterval: "02:00:00",
-            allDaySlot: false,
-          },
-          dayGridMonth: {
-            titleFormat: { year: "numeric", month: "long" },
-            dayHeaderFormat: { weekday: "short" },
-          },
-        }}
-        height={800}
-        events={events}
-        nowIndicator={true}
-        dayHeaderFormat={{ weekday: "short", day: "numeric", month: "short" }}
-        slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
-        eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
-        expandRows={true}
-        selectable={permissions.canCreateEvents}
-        editable={permissions.canEditEvents}
-        eventDrop={handleEventDrop}
-        select={handleDateSelect}
-        dateClick={handleDateClick}
-        eventClick={handleEventClick}
-      />
+      {/* Calendrier avec plus d'espacement */}
+      <div className="p-6">
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+          initialView={currentView}
+          locale={frLocale}
+          headerToolbar={{
+            left: "prev today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek,timeGridDay next",
+          }}
+          views={{
+            timeGridDay: {
+              titleFormat: { year: "numeric", month: "long", day: "numeric" },
+              slotMinTime: "06:00:00",
+              slotMaxTime: "22:00:00",
+              slotDuration: "01:00:00",
+              slotLabelInterval: "02:00:00",
+              allDaySlot: false,
+            },
+            timeGridWeek: {
+              titleFormat: { year: "numeric", month: "long", day: "numeric" },
+              slotMinTime: "06:00:00",
+              slotMaxTime: "22:00:00",
+              slotDuration: "01:00:00",
+              slotLabelInterval: "02:00:00",
+              allDaySlot: false,
+            },
+            dayGridMonth: {
+              titleFormat: { year: "numeric", month: "long" },
+              dayHeaderFormat: { weekday: "short" },
+            },
+          }}
+          height={910}
+          events={events}
+          nowIndicator={true}
+          dayHeaderFormat={{ weekday: "short", day: "numeric", month: "short" }}
+          slotLabelFormat={{
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }}
+          eventTimeFormat={{
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }}
+          eventDisplay="block"
+          eventContent={(eventInfo) => {
+            const event = eventInfo.event;
+
+            // Tronquer le titre si trop long
+            const title =
+              event.title.length > 20
+                ? event.title.substring(0, 20) + "..."
+                : event.title;
+
+            return (
+              <div className="event-content p-1 h-full flex flex-col justify-between">
+                <div className="event-title font-semibold text-xs leading-tight text-white">
+                  {title}
+                </div>
+
+                <div className="event-time text-xs text-white/70 mt-auto">
+                  {eventInfo.timeText}
+                </div>
+              </div>
+            );
+          }}
+          expandRows={true}
+          selectable={permissions.canCreateEvents}
+          editable={permissions.canEditEvents}
+          eventDrop={handleEventDrop}
+          select={handleDateSelect}
+          dateClick={handleDateClick}
+          eventClick={handleEventClick}
+        />
+      </div>
 
       {permissions.canCreateEvents && (
         <ModalEventForm
@@ -580,92 +634,254 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
       )}
 
       <style jsx global>{`
-        /* ... (tous les styles de la branche develop) ... */
+        /* Styles modernisés pour le calendrier */
         .fc {
           font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
             Roboto, sans-serif;
           background: white;
-          border-radius: 1rem;
+          border-radius: 1.5rem;
           overflow: hidden;
           width: 100% !important;
           max-width: 100% !important;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
+
         .fc .fc-toolbar {
-          padding: 2rem 3rem 1.5rem 3rem;
+          padding: 1.5rem 2rem 1rem 2rem;
           margin: 0;
           background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
           border-bottom: 1px solid #e2e8f0;
         }
+
         .fc .fc-button {
           background: white;
           color: #3b82f6;
           border: 2px solid #e2e8f0;
           border-radius: 0.75rem;
-          font-size: 0.875rem;
+          font-size: 0.75rem;
           font-weight: 600;
           padding: 0.5rem 1rem;
           margin: 0 0.25rem;
           min-width: 40px;
           min-height: 40px;
-          transition: all 0.2s ease;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
         .fc .fc-button:hover {
           background: #3b82f6;
           color: white;
           border-color: #3b82f6;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
         }
+
         .fc .fc-button-group .fc-button.fc-button-active {
           background: #3b82f6 !important;
           color: white !important;
           border-color: #3b82f6 !important;
-          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+          box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3) !important;
           z-index: 1;
         }
+
         .fc .fc-button.fc-today-button {
           background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
           color: white;
           border: none;
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+          box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
         }
+
+        .fc .fc-button.fc-today-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+        }
+
         .fc .fc-toolbar-title {
           font-size: 1.5rem;
-          font-weight: 700;
+          font-weight: 800;
           color: #1e293b;
+          letter-spacing: -0.025em;
         }
+
         .fc .fc-col-header-cell-cushion {
-          font-weight: 600;
+          font-weight: 700;
           color: #475569;
+          font-size: 0.75rem;
+          padding: 1rem 0.5rem;
         }
+
         .fc .fc-daygrid-day.fc-day-today {
-          background: rgba(59, 130, 246, 0.05);
+          background: linear-gradient(
+            135deg,
+            rgba(59, 130, 246, 0.08) 0%,
+            rgba(59, 130, 246, 0.03) 100%
+          );
         }
+
         .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
-          background: #3b82f6;
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
           color: white;
           border-radius: 50%;
-          width: 2rem;
-          height: 2rem;
+          width: 2.75rem;
+          height: 2.75rem;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin: 0.25rem;
+          margin: 0.375rem;
+          font-weight: 700;
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
+
         .fc .fc-event {
           border: none;
-          border-radius: 0.5rem;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          border-radius: 0.875rem;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          font-weight: 600;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          margin: 0.0625rem;
+          min-height: 2rem;
+          height: 95% !important;
         }
+
+        .fc .fc-event .event-content {
+          height: 100% !important;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 0.0625rem;
+        }
+
+        .fc .fc-event .event-title {
+          font-weight: 700;
+          line-height: 1.2;
+        }
+
+        .fc .fc-event .event-type {
+          font-weight: 600;
+          text-transform: capitalize;
+        }
+
+        .fc .fc-event .event-description {
+          line-height: 1.3;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
+
+        .fc .fc-event .event-location {
+          font-weight: 500;
+        }
+
+        .fc .fc-event .event-time {
+          font-weight: 600;
+          opacity: 0.9;
+        }
+
+        /* Forcer la hauteur des événements pour qu'ils prennent tout l'espace disponible */
+        .fc .fc-timegrid-event {
+          height: 95% !important;
+          min-height: 2rem;
+        }
+
+        .fc .fc-timegrid-event .fc-event-main {
+          height: 100% !important;
+        }
+
+        .fc .fc-timegrid-event .fc-event-main-frame {
+          height: 100% !important;
+        }
+
+        /* Ajuster l'espacement vertical des créneaux */
+        .fc .fc-timegrid-slot {
+          height: auto !important;
+        }
+
+        .fc .fc-timegrid-slot-lane {
+          height: auto !important;
+        }
+
+        .fc .fc-event:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .fc .fc-event-main {
+          padding: 0.125rem 0.375rem;
+          height: 100% !important;
+        }
+
         .admin-calendar .fc .fc-timegrid-slot-lane:hover {
-          background-color: rgba(59, 130, 246, 0.05) !important;
+          background: linear-gradient(
+            135deg,
+            rgba(59, 130, 246, 0.08) 0%,
+            rgba(59, 130, 246, 0.03) 100%
+          ) !important;
+          transition: background 0.3s ease;
         }
+
         .admin-calendar .fc .fc-daygrid-day:hover {
-           background-color: rgba(59, 130, 246, 0.05) !important;
+          background: linear-gradient(
+            135deg,
+            rgba(59, 130, 246, 0.08) 0%,
+            rgba(59, 130, 246, 0.03) 100%
+          ) !important;
+          transition: background 0.3s ease;
         }
+
         .fc .fc-event {
           cursor: pointer;
+        }
+
+        .fc .fc-daygrid-day {
+          transition: background 0.3s ease;
+        }
+
+        .fc .fc-timegrid-slot {
+          transition: background 0.3s ease;
+        }
+
+        .fc .fc-timegrid-slot-lane {
+          transition: background 0.3s ease;
+        }
+
+        .fc .fc-col-header {
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .fc .fc-timegrid-axis {
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          border-right: 1px solid #e2e8f0;
+        }
+
+        .fc .fc-timegrid-slot-label {
+          font-weight: 600;
+          color: #64748b;
+          font-size: 0.75rem;
+          padding: 0.5rem 0.75rem;
+        }
+
+        .fc .fc-daygrid-day {
+          padding: 0.5rem;
+        }
+
+        .fc .fc-daygrid-day-number {
+          font-weight: 600;
+          color: #374151;
+          font-size: 0.875rem;
+        }
+
+        .fc .fc-daygrid-day.fc-day-other .fc-daygrid-day-number {
+          color: #9ca3af;
+        }
+
+        .fc .fc-daygrid-day.fc-day-past .fc-daygrid-day-number {
+          color: #6b7280;
+        }
+
+        .fc .fc-daygrid-day.fc-day-future .fc-daygrid-day-number {
+          color: #374151;
         }
       `}</style>
     </div>
