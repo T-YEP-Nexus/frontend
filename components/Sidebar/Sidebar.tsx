@@ -559,7 +559,7 @@ const Sidebar = () => {
                         key={link.label}
                         href={link.href}
                         onClick={() => setIsOpen(false)}
-                        className={`group flex items-center justify-center md:justify-start cursor-pointer text-lg md:text-xl gap-4 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                        className={`group grid grid-cols-3 items-center text-center cursor-pointer text-lg md:text-xl gap-2 px-3 md:px-3 py-3 rounded-xl text-white transition-all
                           ${
                             pathname === link.href
                               ? "bg-[#0e357a]/70 font-semibold shadow-inner"
@@ -567,10 +567,15 @@ const Sidebar = () => {
                           }
                         `}
                       >
-                        <span className="shrink-0 transition-transform group-hover:scale-110">
-                          {link.icon}
+                        <span className="justify-self-start flex items-center">
+                          <span className="shrink-0 transition-transform group-hover:scale-110">
+                            {link.icon}
+                          </span>
                         </span>
-                        <span className="hidden md:inline">{link.label}</span>
+                        <span className="justify-self-center inline whitespace-nowrap">
+                          {link.label}
+                        </span>
+                        <span className="justify-self-end w-6" />
                       </Link>
                     ))}
                   </>
