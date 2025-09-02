@@ -418,7 +418,7 @@ export default function TrombinoscopePage() {
     <div className="min-h-screen px-3 sm:px-4 lg:px-16 py-4 sm:py-6 lg:py-8">
       <Header title="Trombinoscope" />
 
-      <div className="max-w-7xl mx-auto">
+      <div className=" mx-auto">
         {/* Sélecteur de promotion pour admin/advisor */}
         {(userRole === "admin" || userRole === "advisor") && (
           <div className="mb-8">

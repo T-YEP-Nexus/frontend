@@ -31,8 +31,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased relative min-h-screen`}
       >
         <BackgroundBubbles />
-        <ConditionalSidebar />
-        <ConditionalMain>{children}</ConditionalMain>
+        <div className="lg:grid lg:grid-cols-[auto_1fr] lg:gap-0">
+          <ConditionalSidebar />
+          <ConditionalMain>{children}</ConditionalMain>
+        </div>
       </body>
     </html>
   );
