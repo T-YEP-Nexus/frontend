@@ -16,9 +16,7 @@ const ConditionalMain = ({ children }: ConditionalMainProps) => {
   return (
     <main
       className={`min-h-screen overflow-y-auto transition-all duration-300 ${
-        isHomePage || isLoginPage || isForgotPasswordPage
-          ? ""
-          : "ml-20 md:ml-64"
+        isHomePage || isLoginPage || isForgotPasswordPage ? "" : "lg:ml-72"
       }`}
     >
       {children}

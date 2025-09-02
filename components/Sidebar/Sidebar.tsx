@@ -17,6 +17,9 @@ import {
   BarChart3,
   GraduationCap,
   UserCheck,
+  Menu,
+  X,
+  ChevronRight,
 } from "lucide-react";
 
 import { Russo_One } from "next/font/google";
@@ -57,6 +60,7 @@ const Sidebar = () => {
   const [userCampus, setUserCampus] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Fonction utilitaire pour extraire le message d'erreur
   const getErrorMessage = (error: any): string => {
@@ -256,225 +260,547 @@ const Sidebar = () => {
     }
   }, [pathname]);
 
+  // Fermer le menu mobile/tablette lors d'un changement de route et via Échap
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    if (isOpen) window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
+
   return (
-    <div className="fixed top-0 left-0 h-screen w-20 md:w-72 z-30 flex flex-col justify-between bg-gradient-to-b from-[#1971FF] to-[#1971FF]/80 px-2 md:px-4 py-6 transition-all duration-300 overflow-hidden">
-      {/* Logo + nom */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="flex flex-col items-center md:flex-row md:items-center gap-2 mb-6 md:mb-10">
+    <>
+      {/* Header mobile/tablette */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 w-full bg-[#0E58D8] h-14 grid grid-cols-3 items-center px-4">
+        <div className="flex items-center">
+          <button
+            type="button"
+            aria-label={isOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            onClick={() => setIsOpen((v) => !v)}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white backdrop-blur-sm shadow-sm transition hover:bg-white/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+          >
+            {isOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+        <div className="flex items-center justify-center">
           <Image
             src="/images/Nexus.png"
             alt="Nexus"
-            width={48}
-            height={48}
-            className="w-12 h-12 md:w-[90px] md:h-[90px]"
+            width={32}
+            height={32}
+            className="w-8 h-8"
           />
+        </div>
+        <div className="flex items-center justify-end">
           <span
-            className={`hidden md:inline text-white font-extrabold text-3xl tracking-wide ${russo.className}`}
+            className={`text-white font-extrabold text-xl tracking-wide ${russo.className}`}
           >
             Nexus
           </span>
         </div>
+      </div>
+      {/* Espace sous le header pour décaler le contenu (mobile/tablette) */}
+      <div className="lg:hidden h-14" />
 
-        {/* Liens */}
-        <nav className="flex flex-col gap-2 md:gap-4">
-          {/* Liens visibles pour tous les utilisateurs sauf advisor/admin */}
-          {userRole !== "admin" && userRole !== "advisor" && (
-            <>
-              {links.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
+      {/* Sidebar desktop */}
+      <div className="hidden lg:flex fixed top-0 left-0 h-screen w-72 z-30 flex-col justify-between bg-gradient-to-b from-[#1971FF] to-[#1971FF]/80 px-4 py-6 transition-all duration-300 overflow-hidden">
+        {/* Logo + nom */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="flex flex-col items-center md:flex-row md:items-center gap-2 mb-6 md:mb-10">
+            <Image
+              src="/images/Nexus.png"
+              alt="Nexus"
+              width={48}
+              height={48}
+              className="w-12 h-12 md:w-[90px] md:h-[90px]"
+            />
+            <span
+              className={`hidden md:inline text-white font-extrabold text-3xl tracking-wide ${russo.className}`}
+            >
+              Nexus
+            </span>
+          </div>
+
+          {/* Liens */}
+          <nav className="flex flex-col gap-2 md:gap-4">
+            {/* Liens visibles pour tous les utilisateurs sauf advisor/admin */}
+            {userRole !== "admin" && userRole !== "advisor" && (
+              <>
+                {links.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    className={`group flex items-center justify-center md:justify-start cursor-pointer text-lg md:text-xl gap-4 px-3 md:px-3 py-3 rounded-xl text-white transition-all
                     ${
                       pathname === link.href
-                        ? "bg-[#0e357a]/70 font-bold"
-                        : "hover:bg-[#0e357a]/40"
+                        ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                        : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                    }
+                  `}
+                  >
+                    <span className="shrink-0 transition-transform group-hover:scale-110">
+                      {link.icon}
+                    </span>
+                    <span className="hidden md:inline">{link.label}</span>
+                  </Link>
+                ))}
+              </>
+            )}
+
+            {/* Boutons Admin pour admin et advisor */}
+            {(userRole === "admin" || userRole === "advisor") && (
+              <>
+                <Link
+                  href="/admin"
+                  className={`group flex items-center justify-center md:justify-start cursor-pointer text-lg md:text-xl gap-4 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                    ${
+                      pathname === "/admin"
+                        ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                        : "hover:bg-[#0e357a]/50 hover:translate-x-1"
                     }
                   `}
                 >
-                  <span>{link.icon}</span>
-                  <span className="hidden md:inline">{link.label}</span>
+                  <span className="shrink-0 transition-transform group-hover:scale-110">
+                    <BarChart3 size={24} />
+                  </span>
+                  <span className="hidden md:inline">Dashboard Admin</span>
                 </Link>
-              ))}
-            </>
-          )}
+                <Link
+                  href="/admin/users/dashboard"
+                  className={`group flex items-center justify-center md:justify-start cursor-pointer text-lg md:text-xl gap-4 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                    ${
+                      pathname === "/admin/users/dashboard"
+                        ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                        : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                    }
+                  `}
+                >
+                  <span className="shrink-0 transition-transform group-hover:scale-110">
+                    <Users size={24} />
+                  </span>
+                  <span className="hidden md:inline">Gestion Utilisateurs</span>
+                </Link>
+                <Link
+                  href="/admin/promotions"
+                  className={`group flex items-center justify-center md:justify-start cursor-pointer text-lg md:text-xl gap-4 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                    ${
+                      pathname === "/admin/promotions"
+                        ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                        : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                    }
+                  `}
+                >
+                  <span className="shrink-0 transition-transform group-hover:scale-110">
+                    <GraduationCap size={24} />
+                  </span>
+                  <span className="hidden md:inline">Gestion Promotions</span>
+                </Link>
+                <Link
+                  href="/admin/projects"
+                  className={`group flex items-center justify-center md:justify-start cursor-pointer text-lg md:text-xl gap-4 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                    ${
+                      pathname === "/admin/projects"
+                        ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                        : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                    }
+                  `}
+                >
+                  <span className="shrink-0 transition-transform group-hover:scale-110">
+                    <Briefcase size={24} />
+                  </span>
+                  <span className="hidden md:inline">Gestion Projets</span>
+                </Link>
+                <Link
+                  href="/admin/informations"
+                  className={`group flex items-center justify-center md:justify-start cursor-pointer text-lg md:text-xl gap-4 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                    ${
+                      pathname === "/admin/informations"
+                        ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                        : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                    }
+                  `}
+                >
+                  <span className="shrink-0 transition-transform group-hover:scale-110">
+                    <MessageSquare size={24} />
+                  </span>
+                  <span className="hidden md:inline">Gestion Informations</span>
+                </Link>
 
-          {/* Boutons Admin pour admin et advisor */}
-          {(userRole === "admin" || userRole === "advisor") && (
-            <>
-              <Link
-                href="/admin"
-                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
-                  ${
-                    pathname === "/admin"
-                      ? "bg-[#0e357a]/70 font-bold"
-                      : "hover:bg-[#0e357a]/40"
-                  }
-                `}
-              >
-                <span>
-                  <BarChart3 size={24} />
-                </span>
-                <span className="hidden md:inline">Dashboard Admin</span>
-              </Link>
-              <Link
-                href="/admin/users/dashboard"
-                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
-                  ${
-                    pathname === "/admin/users/dashboard"
-                      ? "bg-[#0e357a]/70 font-bold"
-                      : "hover:bg-[#0e357a]/40"
-                  }
-                `}
-              >
-                <span>
-                  <Users size={24} />
-                </span>
-                <span className="hidden md:inline">Gestion Utilisateurs</span>
-              </Link>
-              <Link
-                href="/admin/promotions"
-                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
-                  ${
-                    pathname === "/admin/promotions"
-                      ? "bg-[#0e357a]/70 font-bold"
-                      : "hover:bg-[#0e357a]/40"
-                  }
-                `}
-              >
-                <span>
-                  <GraduationCap size={24} />
-                </span>
-                <span className="hidden md:inline">Gestion Promotions</span>
-              </Link>
-              <Link
-                href="/admin/projects"
-                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
-                  ${
-                    pathname === "/admin/projects"
-                      ? "bg-[#0e357a]/70 font-bold"
-                      : "hover:bg-[#0e357a]/40"
-                  }
-                `}
-              >
-                <span>
-                  <Briefcase size={24} />
-                </span>
-                <span className="hidden md:inline">Gestion Projets</span>
-              </Link>
-              <Link
-                href="/admin/informations"
-                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
-                  ${
-                    pathname === "/admin/informations"
-                      ? "bg-[#0e357a]/70 font-bold"
-                      : "hover:bg-[#0e357a]/40"
-                  }
-                `}
-              >
-                <span>
-                  <MessageSquare size={24} />
-                </span>
-                <span className="hidden md:inline">Gestion Informations</span>
-              </Link>
-
-              {/* Calendrier visible pour les advisors et admins (en bas) */}
-              <Link
-                href="/calendar"
-                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
-                  ${
-                    pathname === "/calendar"
-                      ? "bg-[#0e357a]/70 font-bold"
-                      : "hover:bg-[#0e357a]/40"
-                  }
-                `}
-              >
-                <span>
-                  <Calendar size={24} />
-                </span>
-                <span className="hidden md:inline">Gestion Calendrier</span>
-              </Link>
-              <Link
-                href="/documents"
-                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
-                  ${
-                    pathname === "/documents"
-                      ? "bg-[#0e357a]/70 font-bold"
-                      : "hover:bg-[#0e357a]/40"
-                  }
-                `}
-              >
-                <span>
-                  <Folder size={24} />
-                </span>
-                <span className="hidden md:inline">Gestion Documents</span>
-              </Link>
-              <Link
-                href="/trombinoscope"
-                className={`flex items-center justify-center md:justify-start cursor-pointer text-xl gap-0 md:gap-3 px-0 md:px-2 py-2 rounded-lg text-white transition-all
-                  ${
-                    pathname === "/trombinoscope"
-                      ? "bg-[#0e357a]/70 font-bold"
-                      : "hover:bg-[#0e357a]/40"
-                  }
-                `}
-              >
-                <span>
-                  <UserCheck size={24} />
-                </span>
-                <span className="hidden md:inline">Trombinoscope</span>
-              </Link>
-            </>
-          )}
-        </nav>
-      </div>
-
-      {/* Utilisateur avec données dynamiques */}
-      <div className="flex-shrink-0 mt-4 md:mt-8">
-        <Link
-          href={
-            userRole === "admin" || userRole === "advisor"
-              ? "/admin/profile"
-              : "/profile"
-          }
-          className={`flex flex-col items-center md:flex-row md:items-center gap-2 cursor-pointer p-2 rounded-lg transition-all
-            ${
-              (
-                userRole === "admin" || userRole === "advisor"
-                  ? pathname === "/admin/profile"
-                  : pathname === "/profile"
-              )
-                ? "bg-[#0e357a]/70"
-                : "hover:bg-[#0e357a]/40"
-            }
-          `}
-        >
-          <Image
-            src="/images/Avatar.png"
-            alt="Avatar"
-            width={40}
-            height={40}
-            className="rounded-full bg-white"
-          />
-          <div className="hidden md:flex flex-col">
-            <span className="text-white font-bold leading-tight">
-              {firstName} {lastName}
-            </span>
-            <span className="text-white/80 text-xs leading-tight">
-              {userRole === "student"
-                ? userPromotion || "Promotion non définie"
-                : getRoleLabel(userRole) + " " + userCampus ||
-                  "Campus non défini"}
-            </span>
-            {error && (
-              <span className="text-red-200 text-[10px] leading-tight">
-                Mode hors ligne
-              </span>
+                {/* Calendrier visible pour les advisors et admins (en bas) */}
+                <Link
+                  href="/calendar"
+                  className={`group flex items-center justify-center md:justify-start cursor-pointer text-lg md:text-xl gap-4 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                    ${
+                      pathname === "/calendar"
+                        ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                        : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                    }
+                  `}
+                >
+                  <span className="shrink-0 transition-transform group-hover:scale-110">
+                    <Calendar size={24} />
+                  </span>
+                  <span className="hidden md:inline">Gestion Calendrier</span>
+                </Link>
+                <Link
+                  href="/documents"
+                  className={`group flex items-center justify-center md:justify-start cursor-pointer text-lg md:text-xl gap-4 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                    ${
+                      pathname === "/documents"
+                        ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                        : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                    }
+                  `}
+                >
+                  <span className="shrink-0 transition-transform group-hover:scale-110">
+                    <Folder size={24} />
+                  </span>
+                  <span className="hidden md:inline">Gestion Documents</span>
+                </Link>
+                <Link
+                  href="/trombinoscope"
+                  className={`group flex items-center justify-center md:justify-start cursor-pointer text-lg md:text-xl gap-4 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                    ${
+                      pathname === "/trombinoscope"
+                        ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                        : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                    }
+                  `}
+                >
+                  <span className="shrink-0 transition-transform group-hover:scale-110">
+                    <UserCheck size={24} />
+                  </span>
+                  <span className="hidden md:inline">Trombinoscope</span>
+                </Link>
+              </>
             )}
-          </div>
-        </Link>
+          </nav>
+        </div>
+
+        {/* Utilisateur avec données dynamiques (desktop) */}
+        <div className="flex-shrink-0 mt-4 md:mt-8">
+          <Link
+            href={
+              userRole === "admin" || userRole === "advisor"
+                ? "/admin/profile"
+                : "/profile"
+            }
+            className={`flex flex-col items-center md:flex-row md:items-center gap-2 cursor-pointer p-2 rounded-lg transition-all
+              ${
+                (
+                  userRole === "admin" || userRole === "advisor"
+                    ? pathname === "/admin/profile"
+                    : pathname === "/profile"
+                )
+                  ? "bg-[#0e357a]/70"
+                  : "hover:bg-[#0e357a]/40"
+              }
+            `}
+          >
+            <Image
+              src="/images/Avatar.png"
+              alt="Avatar"
+              width={40}
+              height={40}
+              className="rounded-full bg-white"
+            />
+            <div className="hidden md:flex flex-col">
+              <span className="text-white font-bold leading-tight">
+                {firstName} {lastName}
+              </span>
+              <span className="text-white/80 text-xs leading-tight">
+                {userRole === "student"
+                  ? userPromotion || "Promotion non définie"
+                  : getRoleLabel(userRole) + " " + userCampus ||
+                    "Campus non défini"}
+              </span>
+              {error && (
+                <span className="text-red-200 text-[10px] leading-tight">
+                  Mode hors ligne
+                </span>
+              )}
+            </div>
+          </Link>
+        </div>
       </div>
-    </div>
+
+      {/* Backdrop + panneau coulissant (mobile/tablette) */}
+      <div
+        className={`lg:hidden fixed left-0 right-0 top-14 bottom-0 z-30 ${
+          isOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+      >
+        {/* Backdrop */}
+        <div
+          onClick={() => setIsOpen(false)}
+          className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${
+            isOpen ? "opacity-100" : "opacity-0"
+          }`}
+        />
+        {/* Panneau coulissant */}
+        <div
+          className={`absolute top-0 left-0 h-full w-full bg-[#0E58D8] px-2 md:px-4 py-6 transform transition-transform duration-300 ease-out ${
+            isOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <div className="flex flex-col justify-between h-full">
+            <div className="flex-1 overflow-y-auto">
+              {/* Liens */}
+              <nav className="mt-2 flex-1 flex flex-col">
+                {userRole !== "admin" && userRole !== "advisor" && (
+                  <>
+                    {links.map((link) => (
+                      <Link
+                        key={link.label}
+                        href={link.href}
+                        onClick={() => setIsOpen(false)}
+                        className={`group flex items-center justify-center md:justify-start cursor-pointer text-lg md:text-xl gap-4 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                          ${
+                            pathname === link.href
+                              ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                              : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                          }
+                        `}
+                      >
+                        <span className="shrink-0 transition-transform group-hover:scale-110">
+                          {link.icon}
+                        </span>
+                        <span className="hidden md:inline">{link.label}</span>
+                      </Link>
+                    ))}
+                  </>
+                )}
+
+                {(userRole === "admin" || userRole === "advisor") && (
+                  <>
+                    <Link
+                      href="/admin"
+                      onClick={() => setIsOpen(false)}
+                      className={`group grid grid-cols-3 items-center text-center cursor-pointer text-lg md:text-xl gap-2 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                        ${
+                          pathname === "/admin"
+                            ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                            : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                        }
+                      `}
+                    >
+                      <span className="justify-self-start flex items-center">
+                        <span className="shrink-0 transition-transform group-hover:scale-110">
+                          <BarChart3 size={24} />
+                        </span>
+                      </span>
+                      <span className="justify-self-center inline whitespace-nowrap">
+                        Dashboard Admin
+                      </span>
+                      <span className="justify-self-end w-6" />
+                    </Link>
+                    <Link
+                      href="/admin/users/dashboard"
+                      onClick={() => setIsOpen(false)}
+                      className={`group grid grid-cols-3 items-center text-center cursor-pointer text-lg md:text-xl gap-2 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                        ${
+                          pathname === "/admin/users/dashboard"
+                            ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                            : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                        }
+                      `}
+                    >
+                      <span className="justify-self-start flex items-center">
+                        <span className="shrink-0 transition-transform group-hover:scale-110">
+                          <Users size={24} />
+                        </span>
+                      </span>
+                      <span className="justify-self-center inline whitespace-nowrap">
+                        Gestion Utilisateurs
+                      </span>
+                      <span className="justify-self-end w-6" />
+                    </Link>
+                    <Link
+                      href="/admin/promotions"
+                      onClick={() => setIsOpen(false)}
+                      className={`group grid grid-cols-3 items-center text-center cursor-pointer text-lg md:text-xl gap-2 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                        ${
+                          pathname === "/admin/promotions"
+                            ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                            : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                        }
+                      `}
+                    >
+                      <span className="justify-self-start flex items-center">
+                        <span className="shrink-0 transition-transform group-hover:scale-110">
+                          <GraduationCap size={24} />
+                        </span>
+                      </span>
+                      <span className="justify-self-center inline whitespace-nowrap">
+                        Gestion Promotions
+                      </span>
+                      <span className="justify-self-end w-6" />
+                    </Link>
+                    <Link
+                      href="/admin/projects"
+                      onClick={() => setIsOpen(false)}
+                      className={`group grid grid-cols-3 items-center text-center cursor-pointer text-lg md:text-xl gap-2 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                        ${
+                          pathname === "/admin/projects"
+                            ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                            : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                        }
+                      `}
+                    >
+                      <span className="justify-self-start flex items-center">
+                        <span className="shrink-0 transition-transform group-hover:scale-110">
+                          <Briefcase size={24} />
+                        </span>
+                      </span>
+                      <span className="justify-self-center inline whitespace-nowrap">
+                        Gestion Projets
+                      </span>
+                      <span className="justify-self-end w-6" />
+                    </Link>
+                    <Link
+                      href="/admin/informations"
+                      onClick={() => setIsOpen(false)}
+                      className={`group grid grid-cols-3 items-center text-center cursor-pointer text-lg md:text-xl gap-2 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                        ${
+                          pathname === "/admin/informations"
+                            ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                            : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                        }
+                      `}
+                    >
+                      <span className="justify-self-start flex items-center">
+                        <span className="shrink-0 transition-transform group-hover:scale-110">
+                          <MessageSquare size={24} />
+                        </span>
+                      </span>
+                      <span className="justify-self-center inline whitespace-nowrap">
+                        Gestion Informations
+                      </span>
+                      <span className="justify-self-end w-6" />
+                    </Link>
+                    <Link
+                      href="/calendar"
+                      onClick={() => setIsOpen(false)}
+                      className={`group grid grid-cols-3 items-center text-center cursor-pointer text-lg md:text-xl gap-2 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                        ${
+                          pathname === "/calendar"
+                            ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                            : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                        }
+                      `}
+                    >
+                      <span className="justify-self-start flex items-center">
+                        <span className="shrink-0 transition-transform group-hover:scale-110">
+                          <Calendar size={24} />
+                        </span>
+                      </span>
+                      <span className="justify-self-center inline whitespace-nowrap">
+                        Gestion Calendrier
+                      </span>
+                      <span className="justify-self-end w-6" />
+                    </Link>
+                    <Link
+                      href="/documents"
+                      onClick={() => setIsOpen(false)}
+                      className={`group grid grid-cols-3 items-center text-center cursor-pointer text-lg md:text-xl gap-2 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                        ${
+                          pathname === "/documents"
+                            ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                            : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                        }
+                      `}
+                    >
+                      <span className="justify-self-start flex items-center">
+                        <span className="shrink-0 transition-transform group-hover:scale-110">
+                          <Folder size={24} />
+                        </span>
+                      </span>
+                      <span className="justify-self-center inline whitespace-nowrap">
+                        Gestion Documents
+                      </span>
+                      <span className="justify-self-end w-6" />
+                    </Link>
+                    <Link
+                      href="/trombinoscope"
+                      onClick={() => setIsOpen(false)}
+                      className={`group grid grid-cols-3 items-center text-center cursor-pointer text-lg md:text-xl gap-2 px-3 md:px-3 py-3 rounded-xl text-white transition-all
+                        ${
+                          pathname === "/trombinoscope"
+                            ? "bg-[#0e357a]/70 font-semibold shadow-inner"
+                            : "hover:bg-[#0e357a]/50 hover:translate-x-1"
+                        }
+                      `}
+                    >
+                      <span className="justify-self-start flex items-center">
+                        <span className="shrink-0 transition-transform group-hover:scale-110">
+                          <UserCheck size={24} />
+                        </span>
+                      </span>
+                      <span className="justify-self-center inline whitespace-nowrap">
+                        Trombinoscope
+                      </span>
+                      <span className="justify-self-end w-6" />
+                    </Link>
+                  </>
+                )}
+              </nav>
+            </div>
+
+            {/* Bloc utilisateur (mobile) */}
+            <div className="mt-4 md:mt-8 flex flex-col items-center justify-center">
+              <Link
+                href={
+                  userRole === "admin" || userRole === "advisor"
+                    ? "/admin/profile"
+                    : "/profile"
+                }
+                onClick={() => setIsOpen(false)}
+                className={`flex flex-col items-center md:flex-row md:items-center gap-2 cursor-pointer p-2 rounded-lg transition-all
+                  ${
+                    (
+                      userRole === "admin" || userRole === "advisor"
+                        ? pathname === "/admin/profile"
+                        : pathname === "/profile"
+                    )
+                      ? "bg-[#0e357a]/70"
+                      : "hover:bg-[#0e357a]/40"
+                  }
+                `}
+              >
+                <Image
+                  src="/images/Avatar.png"
+                  alt="Avatar"
+                  width={40}
+                  height={40}
+                  className="rounded-full bg-white"
+                />
+                <div className="flex flex-col max-lg:items-center">
+                  <span className="text-white font-bold leading-tight">
+                    {firstName} {lastName}
+                  </span>
+                  <span className="text-white/80 text-xs leading-tight">
+                    {userRole === "student"
+                      ? userPromotion || "Promotion non définie"
+                      : getRoleLabel(userRole) + " " + userCampus ||
+                        "Campus non défini"}
+                  </span>
+                  {error && (
+                    <span className="text-red-200 text-[10px] leading-tight">
+                      Mode hors ligne
+                    </span>
+                  )}
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 };
 
