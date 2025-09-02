@@ -2,8 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { getUserIdFromToken } from "@/lib/auth";
-import { useUserData } from "@/hooks/useUserData";
+// plus de dépendance au rôle ici, la grille gère l'espace
 
 interface ConditionalMainProps {
   children: React.ReactNode;
@@ -14,13 +13,13 @@ const ConditionalMain = ({ children }: ConditionalMainProps) => {
   const isHomePage = pathname === "/";
   const isLoginPage = pathname === "/login";
   const isForgotPasswordPage = pathname === "/forgot-password";
-  const userId = getUserIdFromToken();
-  const { userData } = useUserData(userId);
-  const isStudent = userData?.role === "student";
+  // pages full-width (sans sidebar)
 
   return (
     <main
-      className="min-h-screen overflow-y-auto transition-all duration-300"
+      className={`min-h-screen overflow-y-auto transition-all duration-300 ${
+        isHomePage || isLoginPage || isForgotPasswordPage ? "lg:col-span-2" : ""
+      }`}
     >
       {children}
     </main>
