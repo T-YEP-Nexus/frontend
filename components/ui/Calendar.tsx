@@ -14,7 +14,6 @@ import {
 } from "@fullcalendar/core";
 import ModalEventForm from "./ModalEventForm";
 import ModalDeleteEvent from "./ModalDeleteEvent";
-import ModalEventRegistration from "./ModalEventRegistration";
 import ModalEventDetails from "./ModalEventDetails";
 import CalendarFilters from "./CalendarFilters";
 import CalendarStats from "./CalendarStats";
@@ -27,9 +26,19 @@ import AdminLoading from "@/components/admin/AdminLoading";
 
 interface CalendarProps {
   role?: "admin" | "advisor" | "student";
+  onStudentRegisterOpen?: (args: {
+    event: any;
+    isRegistered: boolean;
+    actions: {
+      onRegister: (eventId: number) => Promise<void>;
+      onRegisterSlot: (eventId: number, slotIndex: number) => Promise<void>;
+      onUnregister: (eventId: number) => Promise<void>;
+      onUnregisterSlot: (eventId: number, slotIndex: number) => Promise<void>;
+    };
+  }) => void;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ role }) => {
+const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
   const {
     events: backendEvents,
     loading,
@@ -74,20 +83,22 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     end?: Date | string;
     slots?: any[];
   } | null>(null);
-  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [showEventDetailsModal, setShowEventDetailsModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [eventDetails, setEventDetails] = useState<any | null>(null);
-  const [isUserRegistered, setIsUserRegistered] = useState(false);
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
   const [selectedPromotions, setSelectedPromotions] = useState<string[]>([]);
   const [showOnlyMyEvents, setShowOnlyMyEvents] = useState(false);
   const [currentView, setCurrentView] = useState("timeGridWeek");
+  const [windowWidth, setWindowWidth] = useState<number>(
+    typeof window !== "undefined" ? window.innerWidth : 1200
+  );
   const calendarRef = useRef<FullCalendar>(null);
 
   const effectiveRole = role || userRole;
   const isAdmin = effectiveRole === "admin" || effectiveRole === "advisor";
   const isStudent = effectiveRole === "student";
+  const isMobile = windowWidth < 640;
+  const isTablet = windowWidth >= 640 && windowWidth < 1024;
 
   const refreshCalendarData = useCallback(() => {
     const userId = getUserIdFromToken();
@@ -147,6 +158,28 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
       setSelectedPromotions([]);
     }
   }, [effectiveRole, selectedPromotions]);
+
+  // Gestion responsive: écoute le redimensionnement
+  useEffect(() => {
+    const onResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Adapter automatiquement la vue selon la largeur
+  useEffect(() => {
+    if (!calendarRef.current) return;
+    const api = calendarRef.current.getApi();
+    const desiredView = isMobile
+      ? "timeGridDay"
+      : isTablet
+      ? "timeGridWeek"
+      : "timeGridWeek";
+    if (api.view.type !== desiredView) {
+      api.changeView(desiredView);
+      setCurrentView(desiredView);
+    }
+  }, [isMobile, isTablet]);
 
   useEffect(() => {
     if (!loading && !error && backendEvents) {
@@ -334,9 +367,30 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
       setShowEventDetailsModal(true);
     } else if (isStudent) {
       const isRegistered = await checkUserRegistration(eventId);
-      setSelectedEvent(eventData);
-      setIsUserRegistered(isRegistered);
-      setShowRegistrationModal(true);
+      if (onStudentRegisterOpen) {
+        onStudentRegisterOpen({
+          event: eventData,
+          isRegistered,
+          actions: {
+            onRegister: async (id: number) => {
+              await registerToEvent(id);
+              refreshCalendarData();
+            },
+            onRegisterSlot: async (id: number, slotIndex: number) => {
+              await registerToSlot(id, slotIndex);
+              refreshCalendarData();
+            },
+            onUnregister: async (id: number) => {
+              await unregisterFromEvent(id);
+              refreshCalendarData();
+            },
+            onUnregisterSlot: async (id: number, slotIndex: number) => {
+              await unregisterFromSlot(id, slotIndex);
+              refreshCalendarData();
+            },
+          },
+        });
+      }
     }
   };
 
@@ -387,15 +441,15 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
     }
   };
 
-  if (loading || roleLoading) {
-    return (
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-        <div className="flex items-center justify-center h-[600px]">
-          <AdminLoading message="Chargement des événements..." />
-        </div>
-      </div>
-    );
-  }
+  //   if (loading || roleLoading) {
+  //     return (
+  //       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+  //         <div className="flex items-center justify-center h-[600px]">
+  //           <AdminLoading message="Chargement des événements..." />
+  //         </div>
+  //       </div>
+  //     );
+  //   }
 
   if (error) {
     return (
@@ -419,7 +473,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
       }`}
     >
       {/* Stats et Filtres sur la même ligne */}
-      <div className="flex flex-col lg:flex-row gap-4 p-4 border-b border-gray-100">
+      <div className="flex flex-col lg:flex-row items-stretch gap-4 p-4 border-b border-gray-100">
         <div className="flex-1">
           <CalendarStats
             totalEvents={events.length}
@@ -456,7 +510,7 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           />
         </div>
 
-        <div className="lg:w-80">
+        <div className="self-stretch h-full">
           <CalendarFilters
             eventTypes={[
               "follow-up",
@@ -491,30 +545,44 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
       </div>
 
       {/* Calendrier avec plus d'espacement */}
-      <div className="p-6">
+      <div className="p-2 sm:p-6">
         <FullCalendar
           ref={calendarRef}
           plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
           initialView={currentView}
           locale={frLocale}
-          headerToolbar={{
-            left: "prev today",
-            center: "title",
-            right: "dayGridMonth,timeGridWeek,timeGridDay next",
-          }}
+          headerToolbar={
+            isMobile
+              ? {
+                  left: "prev",
+                  center: "title",
+                  right: "next",
+                }
+              : isTablet
+              ? {
+                  left: "prev",
+                  center: "title",
+                  right: "timeGridWeek,timeGridDay today next",
+                }
+              : {
+                  left: "prev today",
+                  center: "title",
+                  right: "dayGridMonth,timeGridWeek,timeGridDay next",
+                }
+          }
           views={{
             timeGridDay: {
               titleFormat: { year: "numeric", month: "long", day: "numeric" },
-              slotMinTime: "06:00:00",
-              slotMaxTime: "22:00:00",
+              slotMinTime: "08:00:00",
+              slotMaxTime: "19:00:00",
               slotDuration: "01:00:00",
               slotLabelInterval: "02:00:00",
               allDaySlot: false,
             },
             timeGridWeek: {
               titleFormat: { year: "numeric", month: "long", day: "numeric" },
-              slotMinTime: "06:00:00",
-              slotMaxTime: "22:00:00",
+              slotMinTime: "08:00:00",
+              slotMaxTime: "19:00:00",
               slotDuration: "01:00:00",
               slotLabelInterval: "02:00:00",
               allDaySlot: false,
@@ -522,9 +590,12 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
             dayGridMonth: {
               titleFormat: { year: "numeric", month: "long" },
               dayHeaderFormat: { weekday: "short" },
+              dayMaxEventRows: 3,
             },
           }}
-          height={910}
+          height={isMobile ? "auto" : isTablet ? 720 : 910}
+          contentHeight={isMobile ? "auto" : undefined}
+          aspectRatio={isMobile ? 0.9 : 1.35}
           events={events}
           nowIndicator={true}
           dayHeaderFormat={{ weekday: "short", day: "numeric", month: "short" }}
@@ -550,11 +621,11 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
 
             return (
               <div className="event-content p-1 h-full flex flex-col justify-between">
-                <div className="event-title font-semibold text-xs leading-tight text-white">
+                <div className="event-title font-semibold text-[10px] sm:text-xs leading-tight text-white">
                   {title}
                 </div>
 
-                <div className="event-time text-xs text-white/70 mt-auto">
+                <div className="event-time text-[10px] sm:text-xs text-white/70 mt-auto">
                   {eventInfo.timeText}
                 </div>
               </div>
@@ -611,25 +682,6 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
           onClose={() => setDeleteModalOpen(false)}
           event={eventToDelete}
           onConfirm={() => handleDeleteEvent(Number(eventToDelete.id))}
-        />
-      )}
-
-      {isStudent && selectedEvent && (
-        <ModalEventRegistration
-          open={showRegistrationModal}
-          onClose={() => setShowRegistrationModal(false)}
-          event={selectedEvent}
-          isRegistered={isUserRegistered}
-          onRegister={async (eventId) => {
-            await registerToEvent(eventId);
-            refreshCalendarData();
-          }}
-          onRegisterSlot={handleRegisterSlot}
-          onUnregister={async (eventId) => {
-            await unregisterFromEvent(eventId);
-            refreshCalendarData();
-          }}
-          onUnregisterSlot={handleUnregisterSlot}
         />
       )}
 
@@ -882,6 +934,53 @@ const Calendar: React.FC<CalendarProps> = ({ role }) => {
 
         .fc .fc-daygrid-day.fc-day-future .fc-daygrid-day-number {
           color: #374151;
+        }
+
+        /* Responsive: boutons et titres plus compacts sur mobile */
+        @media (max-width: 640px) {
+          .fc .fc-toolbar {
+            padding: 0.5rem 0.5rem 0.25rem 0.5rem;
+          }
+          .fc .fc-button {
+            font-size: 0.6rem;
+            padding: 0.25rem 0.5rem;
+            min-width: 28px;
+            min-height: 28px;
+            border-radius: 0.5rem;
+          }
+          .fc .fc-toolbar-title {
+            font-size: 1rem;
+          }
+          .fc .fc-col-header-cell-cushion {
+            font-size: 0.65rem;
+            padding: 0.25rem 0.25rem;
+          }
+          .fc .fc-timegrid-slot-label {
+            font-size: 0.65rem;
+            padding: 0.125rem 0.375rem;
+          }
+          .fc .fc-button .fc-icon {
+            font-size: 0.8em;
+          }
+          .fc .fc-button-group .fc-button {
+            margin: 0 0.15rem;
+          }
+          .fc .fc-button.fc-today-button {
+            padding: 0.25rem 0.5rem;
+          }
+          .fc .fc-event .event-title,
+          .fc .fc-event .event-time {
+            font-size: 9px;
+          }
+        }
+
+        @media (max-width: 1024px) and (min-width: 640px) {
+          .fc .fc-toolbar {
+            padding: 1rem 1.25rem 0.75rem 1.25rem;
+          }
+          .fc .fc-toolbar-title {
+            font-size: 1.25rem;
+          }
         }
       `}</style>
     </div>
