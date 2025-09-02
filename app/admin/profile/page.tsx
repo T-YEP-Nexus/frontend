@@ -988,7 +988,7 @@ const AdminProfilePage = () => {
       {showOtherUsers && (
         <div className="bg-white rounded-2xl shadow-lg border-2 border-blue-200/50 overflow-hidden hover:shadow-xl transition-all duration-300 mb-8 ">
           <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-200">
-            <div className="flex items-center justify-between">
+            <div className="flex max-lg:flex-col max-lg:gap-4 items-center justify-between">
               <h2 className="font-bold text-2xl text-blue-900 flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-blue-200 to-blue-300 rounded-xl">
                   <User className="w-6 h-6 text-blue-700" />
