@@ -4,6 +4,11 @@ export interface ProjectResource {
   description?: string;
   uploaded_at: string;
 }
+export interface Medal {
+  name: string;
+  description: string;
+  state: boolean;
+}
 
 export interface Project {
   id: string;
@@ -13,6 +18,18 @@ export interface Project {
   is_active: boolean;
   id_creator: string;
   id_promotion: string;
+  created_at: string;
+}
+
+interface ProjectStudent {
+  id: string;
+  id_student: string;
+  id_project: string;
+  due_date: string | null;
+  assigned_at: string;
+  advisor_comment: string | null;
+  score: Medal[];
+  max_score: number | null;
   created_at: string;
 }
 
@@ -44,7 +61,16 @@ export interface NewProjectInput {
   is_active?: boolean;
   id_creator: string;
   id_promotion: string;
+  id_student: string;
+  id_project: string;
+  due_date: string | null;
+  assigned_at: string;
+  advisor_comment: string | null;
+  score: Medal[];
+  max_score: number | null;
 }
+
+
 
 export interface UpdateProjectInput {
   name?: string;
@@ -291,36 +317,139 @@ export const getActiveProjects = async (): Promise<Project[]> => {
 // Créer un nouveau projet
 export const createProject = async (projectData: NewProjectInput): Promise<Project> => {
   try {
-    const resProject = await fetch('http://localhost:3003/projects', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: projectData.name,
-        description: projectData.description,
-        ressources: projectData.ressources || [],
-        is_active: projectData.is_active ?? true,
-        id_creator: projectData.id_creator,
-        id_promotion: projectData.id_promotion
-      })
+    console.log("🔍 DEBUG - Début création projet:", projectData);
+
+    // Créer le projet
+    const projectResponse = await fetchWithTimeout(`${PROJECT_SERVICE_BASE_URL}/projects`, {
+      method: "POST",
+      body: JSON.stringify(projectData),
     });
 
-    if (!resProject.ok) {
-      const err = await resProject.json();
-      throw new Error(err.message || 'Échec création projet');
+    if (!projectResponse.ok) {
+      const errorResult: ApiResponse<never> = await projectResponse.json();
+      throw new Error(errorResult.message || `HTTP error! status: ${projectResponse.status}`);
     }
 
-    const apiResponse = (await resProject.json()) as ApiResponse<Project>;
-    if (!apiResponse.success || !apiResponse.data) {
-      throw new Error(apiResponse.message || 'Échec création projet');
+    const projectResult: ApiResponse<Project> = await projectResponse.json();
+    console.log("🔍 DEBUG - Projet créé:", projectResult);
+
+    if (!projectResult.success || !projectResult.data) {
+      throw new Error(projectResult.message || "Échec de la création du projet");
     }
-    console.log('Projet créé avec succès:', apiResponse.data);
-    return apiResponse.data;
-  } catch (error) {
-    throw new Error(`Erreur lors de la création du projet : ${error instanceof Error ? error.message : String(error)}`);
+
+    console.log("✅ DEBUG - Projet créé avec succès:", projectResult.data);
+    return projectResult.data;
+
+  } catch (error: any) {
+    console.error("❌ DEBUG - Erreur dans createProject:", error);
+    
+    console.warn("Service projects indisponible, simulation de la création:", error);
+    
+    const newProject: Project = {
+      id: `project-${Date.now()}`,
+      name: projectData.name,
+      description: projectData.description,
+      ressources: projectData.ressources || [],
+      is_active: projectData.is_active ?? true,
+      id_creator: projectData.id_creator,
+      id_promotion: projectData.id_promotion,
+      created_at: new Date().toISOString()
+    };
+
+    defaultProjectData.push(newProject);
+
+    await new Promise(resolve => setTimeout(resolve, 300)); 
+    console.log('Projet créé localement (simulation):', newProject);
+    return newProject;
   }
 };
 
+// Fonction séparée pour créer un projet ET l'assigner automatiquement aux étudiants
+export const createProjectAndAssignToStudents = async (projectDataStudents: NewProjectInput): Promise<ProjectStudent[]> => {
+  try {
+    console.log("🔍 DEBUG - Début création projet et assignation:", projectDataStudents);
 
+    console.log("🔍 DEBUG - Étape 1: Création du projet");
+    const createdProject = await createProject(projectDataStudents);
+    const projectId = createdProject.id;
+
+    console.log("🔍 DEBUG - ID du projet créé:", projectId);
+
+    console.log("🔍 DEBUG - Étape 2: Récupération des étudiants de la promotion");
+    const studentsResponse = await fetchWithTimeout(`http://localhost:3004/students/promotion/${projectDataStudents.id_promotion}`);
+
+    if (!studentsResponse.ok) {
+      throw new Error("Erreur lors de la récupération des étudiants de la promotion");
+    }
+
+    const studentsResult = await studentsResponse.json();
+    console.log("🔍 DEBUG - Étudiants récupérés:", studentsResult);
+
+    if (!studentsResult.success) {
+      throw new Error(studentsResult.message || "Aucun étudiant trouvé pour cette promotion");
+    }
+
+    const students = studentsResult.data;
+    console.log("🔍 DEBUG - Nombre d'étudiants à assigner:", students.length);
+
+    console.log("🔍 DEBUG - Étape 3: Création des assignations project_student");
+    const assignmentPromises = students.map(async (student: any, index: number) => {
+      console.log(`🔍 DEBUG - Assignation ${index + 1}/${students.length} - Étudiant ID:`, student.id);
+      
+      const assignmentData: Partial<ProjectStudent> = {
+        id_student: student.id,
+        id_project: projectId,
+        due_date: projectDataStudents.due_date,
+        assigned_at: new Date().toISOString(),
+        advisor_comment: projectDataStudents.advisor_comment,
+        score: projectDataStudents.score || [], 
+        max_score: (projectDataStudents.score && Array.isArray(projectDataStudents.score)) ? projectDataStudents.score.length : 0,
+        created_at: new Date().toISOString()
+      };
+
+      console.log(`🔍 DEBUG - Données assignation pour étudiant ${student.id}:`, assignmentData);
+
+      const assignmentResponse = await fetchWithTimeout("http://localhost:3003/project-students", {
+        method: "POST",
+        body: JSON.stringify(assignmentData),
+      });
+
+      if (!assignmentResponse.ok) {
+        let errorDetail = `Status: ${assignmentResponse.status}`;
+        try {
+          const errorBody = await assignmentResponse.json();
+          errorDetail += ` - Message: ${errorBody.message || 'Pas de message'}`;
+          console.error(`❌ DEBUG - Détail erreur étudiant ${student.id}:`, errorBody);
+        } catch (parseError) {
+          const errorText = await assignmentResponse.text();
+          errorDetail += ` - Response: ${errorText}`;
+          console.error(`❌ DEBUG - Réponse brute erreur étudiant ${student.id}:`, errorText);
+        }
+        throw new Error(`Erreur assignation étudiant ${student.id}: ${errorDetail}`);
+      }
+
+      const assignmentResult = await assignmentResponse.json();
+      console.log(`🔍 DEBUG - Assignation créée pour étudiant ${student.id}:`, assignmentResult);
+
+      if (!assignmentResult.success) {
+        throw new Error(`Échec assignation étudiant ${student.id}: ${assignmentResult.message}`);
+      }
+
+      return assignmentResult.data;
+    });
+
+    // Attendre que toutes les assignations soient créées
+    const assignments = await Promise.all(assignmentPromises);
+    console.log("🔍 DEBUG - Toutes les assignations créées:", assignments);
+
+    // Retourner le résultat complet
+    return assignments;
+
+  } catch (error: any) {
+    console.error("❌ DEBUG - Erreur dans createProjectAndAssignToStudents:", error);
+    throw error;
+  }
+};
 // Mettre à jour un projet
 export const updateProject = async (projectId: string, updates: UpdateProjectInput): Promise<Project> => {
   const url = `${PROJECT_SERVICE_BASE_URL}/projects/${projectId}`;

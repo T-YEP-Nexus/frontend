@@ -30,10 +30,27 @@ interface ProjectStudent {
   updated_at: string;
 }
 
+interface ProjectCreationData {
+  name: string;
+  description: string;
+  id_promotion: string;
+  ressources?: Array<{
+    filename: string;
+    url: string;
+    description?: string;
+  }>;
+  due_date?: string;
+}
+
 export function useProjectsData() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<null | string>(null);
+  
+  // États pour la création de projets
+  const [creating, setCreating] = useState(false);
+  const [creationError, setCreationError] = useState<string | null>(null);
+  const [creationResult, setCreationResult] = useState<any>(null);
 
   useEffect(() => {
     const userId = getUserIdFromToken();
@@ -66,7 +83,7 @@ export function useProjectsData() {
   // Nouvelle fonction pour récupérer l'étudiant par profile ID
   const getStudentByProfileId = async (profileId: string) => {
     console.log("🔍 DEBUG - Récupération étudiant pour profil:", profileId);
-    const response = await fetch(`http://localhost:3004/student/profile/${profileId}`);
+    const response = await fetch(`http://localhost:3003/student/profile/${profileId}`);
     
     console.log("🔍 DEBUG - Réponse API étudiant:", response.status, response.ok);
 
@@ -102,6 +119,158 @@ export function useProjectsData() {
     }
 
     return result.data;
+  };
+
+  // Fonction pour créer un projet et l'assigner automatiquement à tous les étudiants de la promotion
+  const createProjectAndAssignToStudents = async (projectData: ProjectCreationData) => {
+    try {
+      console.log("🔍 DEBUG - Début création projet et assignation:", projectData);
+
+      // Étape 1: Créer le projet
+      console.log("🔍 DEBUG - Étape 1: Création du projet");
+      const projectResponse = await fetch("http://localhost:3003/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(projectData),
+      });
+
+      if (!projectResponse.ok) {
+        throw new Error("Erreur lors de la création du projet");
+      }
+
+      const projectResult = await projectResponse.json();
+      console.log("🔍 DEBUG - Projet créé:", projectResult);
+
+      if (!projectResult.success) {
+        throw new Error(projectResult.message || "Échec de la création du projet");
+      }
+
+      const createdProject = projectResult.data;
+      const projectId = createdProject.id;
+
+      console.log("🔍 DEBUG - ID du projet créé:", projectId);
+
+      // Étape 2: Récupérer tous les étudiants de la promotion
+      console.log("🔍 DEBUG - Étape 2: Récupération des étudiants de la promotion");
+      const studentsResponse = await fetch(`http://localhost:3004/students/promotion/${projectData.id_promotion}`);
+
+      if (!studentsResponse.ok) {
+        throw new Error("Erreur lors de la récupération des étudiants de la promotion");
+      }
+
+      const studentsResult = await studentsResponse.json();
+      console.log("🔍 DEBUG - Étudiants récupérés:", studentsResult);
+
+      if (!studentsResult.success) {
+        throw new Error(studentsResult.message || "Aucun étudiant trouvé pour cette promotion");
+      }
+
+      const students = studentsResult.data;
+      console.log("🔍 DEBUG - Nombre d'étudiants à assigner:", students.length);
+
+      // Étape 3: Créer un project_student pour chaque étudiant
+      console.log("🔍 DEBUG - Étape 3: Création des assignations project_student");
+      const assignmentPromises = students.map(async (student: any, index: number) => {
+        console.log(`🔍 DEBUG - Assignation ${index + 1}/${students.length} - Étudiant ID:`, student.id);
+        
+        const assignmentData = {
+          id_student: student.id,
+          id_project: projectId,
+          due_date: projectData.due_date || null,
+          advisor_comment: null,
+          score: null,
+          max_score: null
+        };
+
+        console.log(`🔍 DEBUG - Données assignation pour étudiant ${student.id}:`, assignmentData);
+
+        const assignmentResponse = await fetch("http://localhost:3003/project-students", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(assignmentData),
+        });
+
+        if (!assignmentResponse.ok) {
+          console.error(`❌ DEBUG - Erreur assignation étudiant ${student.id}:`, assignmentResponse.status);
+          throw new Error(`Erreur lors de l'assignation pour l'étudiant ${student.id}`);
+        }
+
+        const assignmentResult = await assignmentResponse.json();
+        console.log(`🔍 DEBUG - Assignation créée pour étudiant ${student.id}:`, assignmentResult);
+
+        if (!assignmentResult.success) {
+          throw new Error(`Échec assignation étudiant ${student.id}: ${assignmentResult.message}`);
+        }
+
+        return assignmentResult.data;
+      });
+
+      // Attendre que toutes les assignations soient créées
+      const assignments = await Promise.all(assignmentPromises);
+      console.log("🔍 DEBUG - Toutes les assignations créées:", assignments);
+
+      // Retourner le résultat complet
+      const result = {
+        success: true,
+        message: `Projet créé et assigné à ${students.length} étudiant(s)`,
+        data: {
+          project: createdProject,
+          assignments: assignments,
+          studentsCount: students.length
+        }
+      };
+
+      console.log("🔍 DEBUG - Résultat final:", result);
+      return result;
+
+    } catch (error: any) {
+      console.error("❌ DEBUG - Erreur dans createProjectAndAssignToStudents:", error);
+      return {
+        success: false,
+        message: error.message || "Erreur lors de la création et assignation du projet",
+        data: null
+      };
+    }
+  };
+
+  // Fonction wrapper pour la création avec gestion d'état
+  const createAndAssignProject = async (projectData: ProjectCreationData) => {
+    try {
+      setCreating(true);
+      setCreationError(null);
+      setCreationResult(null);
+
+      const result = await createProjectAndAssignToStudents(projectData);
+      
+      if (result.success) {
+        setCreationResult(result);
+        return result;
+      } else {
+        setCreationError(result.message);
+        return result;
+      }
+    } catch (error: any) {
+      const errorMessage = error.message || "Erreur inconnue";
+      setCreationError(errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        data: null
+      };
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  // Réinitialiser l'état de création
+  const resetCreationState = () => {
+    setCreating(false);
+    setCreationError(null);
+    setCreationResult(null);
   };
 
   // Nouvelle fonction principale pour récupérer les projets de la promotion de l'étudiant connecté
@@ -377,16 +546,22 @@ export function useProjectsData() {
     projects,
     loading,
     error,
+    
+    // Fonctions 
     fetchProjectsByPromotion,
     fetchProjectsByPromotionName,
     getPromotionIdByName,
     fetchProjectsByStudent,
     fetchProjectById,
     fetchAllProjects,
-    // Nouvelles fonctions ajoutées
     fetchProjectsForCurrentStudent,
     getProfileByUserId,
     getStudentByProfileId,
-    getPromotionIdByStudent
+    getPromotionIdByStudent,
+    creating,
+    creationError,
+    creationResult,
+    createAndAssignProject,
+    resetCreationState
   };
 }
