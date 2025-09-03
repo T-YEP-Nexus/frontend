@@ -9,6 +9,8 @@ import { useProjectsData } from "@/hooks/useProjectsData";
 import { Button } from "@/components/ui/button";
 import { useRoleRedirect } from "@/hooks/useRoleRedirect";
 import AdminLoading from "@/components/admin/AdminLoading";
+import { getUserIdFromToken } from "@/lib/auth";
+import { getUserData } from "@/lib/userData";
 
 export default function Page() {
   const { isLoading } = useRoleRedirect();
@@ -16,6 +18,7 @@ export default function Page() {
   const [displayCount, setDisplayCount] = useState(8);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"active" | "my-projects">("active");
+  const [userRole, setUserRole] = useState<string>("student");
   const projectsGridRef = useRef<HTMLDivElement>(null);
   const buttonsRef = useRef<HTMLDivElement>(null);
 
@@ -31,6 +34,29 @@ export default function Page() {
   // Charger les projets au montage du composant
   useEffect(() => {
     console.log("🔍 DEBUG - Composant page monté");
+
+    // Récupérer le rôle de l'utilisateur
+    const loadUserRole = async () => {
+      try {
+        const userId = getUserIdFromToken();
+        if (userId) {
+          const user = await getUserData(userId);
+          const detectedRole = (user.role || "student").toLowerCase();
+          const finalRole: "admin" | "advisor" | "student" = [
+            "admin",
+            "advisor",
+          ].includes(detectedRole)
+            ? (detectedRole as any)
+            : "student";
+          setUserRole(finalRole);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération du rôle:", error);
+        setUserRole("student");
+      }
+    };
+
+    loadUserRole();
     fetchProjectsForCurrentStudent();
   }, []);
 
@@ -108,6 +134,7 @@ export default function Page() {
           description: "Projet entièrement livré",
         },
       ],
+      ressources: project.ressources || [],
     };
   };
 
@@ -191,7 +218,7 @@ export default function Page() {
           <p className="text-red-600 text-lg mb-4">
             Erreur lors du chargement des projets : {error}
           </p>
-          <Button 
+          <Button
             onClick={() => fetchProjectsForCurrentStudent()}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
           >
@@ -245,11 +272,11 @@ export default function Page() {
       {projects.length === 0 && !loading && (
         <div className="text-center py-12">
           <p className="text-gray-600 text-lg mb-4">
-            {viewMode === "active" 
-              ? "Aucun projet trouvé pour votre promotion" 
+            {viewMode === "active"
+              ? "Aucun projet trouvé pour votre promotion"
               : "Aucun projet ne vous est assigné"}
           </p>
-          <Button 
+          <Button
             onClick={() => fetchProjectsForCurrentStudent()}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
           >
@@ -264,23 +291,34 @@ export default function Page() {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-8 mb-12 auto-rows-fr transition-all duration-300"
           ref={projectsGridRef}
         >
-          {displayedProjects.map((project) => (
-            <Cards
-              key={project.id}
-              projectId={project.id}
-              projectName={project.name}
-              progress={project.progress}
-              description={project.description}
-              details={project.details}
-              deadline={project.deadline}
-              documentation={project.documentation}
-              tasks={project.tasks}
-              trophies={project.trophies}
-              isExpanded={expandedCard === project.id}
-              onToggle={() => handleCardToggle(project.id)}
-              isBlurred={expandedCard !== null && expandedCard !== project.id}
-            />
-          ))}
+          {displayedProjects.map((project) => {
+            // Debug: afficher les données passées au composant Cards
+            console.log(`🎯 Projet ${project.name} (${project.id}):`, {
+              userRole,
+              ressources: project.ressources,
+              trophies: project.trophies,
+            });
+
+            return (
+              <Cards
+                key={project.id}
+                projectId={project.id}
+                projectName={project.name}
+                progress={project.progress}
+                description={project.description}
+                details={project.details}
+                deadline={project.deadline}
+                documentation={project.documentation}
+                ressources={project.ressources}
+                tasks={project.tasks}
+                trophies={project.trophies}
+                userRole={userRole}
+                isExpanded={expandedCard === project.id}
+                onToggle={() => handleCardToggle(project.id)}
+                isBlurred={expandedCard !== null && expandedCard !== project.id}
+              />
+            );
+          })}
         </div>
       )}
 

@@ -9,6 +9,8 @@ interface TrophyGridProps {
   size?: "sm" | "md" | "lg";
   showTooltip?: boolean;
   className?: string;
+  onTrophyClick?: (trophy: Trophy, index: number) => void;
+  clickable?: boolean;
 }
 
 const TrophyGrid: React.FC<TrophyGridProps> = ({
@@ -19,6 +21,8 @@ const TrophyGrid: React.FC<TrophyGridProps> = ({
   size = "md",
   showTooltip = true,
   className = "",
+  onTrophyClick,
+  clickable = false,
 }) => {
   const gridColsClasses = {
     3: "grid-cols-3",
@@ -28,6 +32,13 @@ const TrophyGrid: React.FC<TrophyGridProps> = ({
   };
 
   const obtainedCount = trophies.filter((t) => t.obtained).length;
+
+  const handleTrophyClick = (trophy: Trophy) => {
+    if (onTrophyClick) {
+      const index = trophies.findIndex((t) => t.name === trophy.name);
+      onTrophyClick(trophy, index);
+    }
+  };
 
   return (
     <div className={className}>
@@ -49,6 +60,8 @@ const TrophyGrid: React.FC<TrophyGridProps> = ({
             trophy={trophy}
             size={size}
             showTooltip={showTooltip}
+            onClick={handleTrophyClick}
+            clickable={clickable}
           />
         ))}
       </div>

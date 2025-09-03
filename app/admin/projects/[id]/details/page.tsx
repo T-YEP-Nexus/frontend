@@ -18,6 +18,8 @@ import { getProjectResources } from "@/lib/projectData";
 import { useProjectsData } from "@/hooks/useProjectsData";
 import AdminLoading from "@/components/admin/AdminLoading";
 import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
+import TrophyGrid from "@/components/ui/TrophyGrid";
+import { Trophy } from "@/components/ui/TrophyCard";
 
 export default function AdminProjectDetailsPage() {
   const params = useParams();
@@ -88,7 +90,6 @@ export default function AdminProjectDetailsPage() {
         setStudentsLoading(true);
         setStudentsError(null);
 
-      
         // Étudiants assignés à ce projet
         const assignmentsRes = await fetch(
           `http://localhost:3003/project-students/project/${projectId}`
@@ -102,7 +103,7 @@ export default function AdminProjectDetailsPage() {
         // Étudiants de la promotion du projet (avec profil)
         const cp: any =
           projects.find((p: any) => String(p.id) === String(projectId)) || {};
-        
+
         if (cp?.id_promotion) {
           const studentsRes = await fetch(
             `http://localhost:3004/students/promotion/${cp.id_promotion}`
@@ -132,7 +133,9 @@ export default function AdminProjectDetailsPage() {
   }, [projectId, projects]);
 
   const currentProject = useMemo(() => {
-    const project = projects.find((p: any) => String(p.id) === String(projectId));
+    const project = projects.find(
+      (p: any) => String(p.id) === String(projectId)
+    );
     return project;
   }, [projects, projectId]);
 
@@ -187,56 +190,44 @@ export default function AdminProjectDetailsPage() {
     return info;
   }, [currentProject]);
 
-  
-
   // Fonction pour gérer la sélection d'un étudiant assigné
   const handleSelectAssignedStudent = (assignment: any) => {
+    const studentId = String(assignment.id_student);
+    const assignmentId = String(assignment.id);
+    const comment = assignment.advisor_comment || "";
+    const startDate = assignment.assigned_at || "";
+    const endDate = assignment.due_date || "";
+    const assignmentScore = assignment.score || []; // Récupérer le score
 
-  
-  const studentId = String(assignment.id_student);
-  const assignmentId = String(assignment.id);
-  const comment = assignment.advisor_comment || "";
-  const startDate = assignment.assigned_at || "";
-  const endDate = assignment.due_date || "";
-  const assignmentScore = assignment.score || []; // Récupérer le score
-  
-  // Trouver les données complètes de l'étudiant
-  const studentData = allStudents.find(
-    (st) => String(st.id) === studentId
-  );
-  
-  setStartDate(assignment.assigned_at);
-  setEndDate(assignment.due_date);
-  setMedals(assignmentScore); 
-  
-  setSelectedStudent(studentId);
-  setSelectedAssignmentId(assignmentId);
-  setAdvisorComment(comment);
-  setDropdownOpen(false);
-  
-};
+    // Trouver les données complètes de l'étudiant
+    const studentData = allStudents.find((st) => String(st.id) === studentId);
 
-  // Fonction pour gérer la sélection d'un étudiant de la liste générale
-  const handleSelectGeneralStudent = (student: any) => {
+    setStartDate(assignment.assigned_at);
+    setEndDate(assignment.due_date);
+    setMedals(assignmentScore);
 
-    
-    const studentId = String(student.id);
-    
-    // Chercher si cet étudiant a une assignation
-    const foundAssign = assignedStudents.find(
-      (a) => String(a.id_student) === studentId
-    );
-    
-    const assignmentId = foundAssign ? String(foundAssign.id) : "";
-    const comment = foundAssign?.advisor_comment || "";
-    
-
-    
     setSelectedStudent(studentId);
     setSelectedAssignmentId(assignmentId);
     setAdvisorComment(comment);
     setDropdownOpen(false);
-    
+  };
+
+  // Fonction pour gérer la sélection d'un étudiant de la liste générale
+  const handleSelectGeneralStudent = (student: any) => {
+    const studentId = String(student.id);
+
+    // Chercher si cet étudiant a une assignation
+    const foundAssign = assignedStudents.find(
+      (a) => String(a.id_student) === studentId
+    );
+
+    const assignmentId = foundAssign ? String(foundAssign.id) : "";
+    const comment = foundAssign?.advisor_comment || "";
+
+    setSelectedStudent(studentId);
+    setSelectedAssignmentId(assignmentId);
+    setAdvisorComment(comment);
+    setDropdownOpen(false);
   };
 
   if (loading) return <AdminLoading message="Chargement..." />;
@@ -423,8 +414,7 @@ export default function AdminProjectDetailsPage() {
                     if (!selectedAssignmentId) {
                       return;
                     }
-                    
-                    
+
                     try {
                       const response = await fetch(
                         `http://localhost:3003/project-students/${selectedAssignmentId}`,
@@ -436,9 +426,9 @@ export default function AdminProjectDetailsPage() {
                           }),
                         }
                       );
-                      
+
                       const result = await response.json();
-                      
+
                       if (response.ok) {
                       } else {
                         console.error("❌ Error saving comment:", result);
@@ -541,18 +531,14 @@ export default function AdminProjectDetailsPage() {
                   <Calendar className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Date de début</p>
-                    <p className="font-semibold text-gray-800">
-                      {startDate}
-                    </p>
+                    <p className="font-semibold text-gray-800">{startDate}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Date de fin</p>
-                    <p className="font-semibold text-gray-800">
-                      {endDate}
-                    </p>
+                    <p className="font-semibold text-gray-800">{endDate}</p>
                   </div>
                 </div>
               </div>
@@ -646,94 +632,78 @@ export default function AdminProjectDetailsPage() {
 
           {/* Médailles */}
           <div className="mt-8">
-  <MainCard
-    title="Médailles du projet"
-    icon={<Users className="w-6 h-6 text-blue-500" />}
-  >
-    {(() => {
-      const medalsList = Array.isArray(medals) ? medals : [];
-      
-      if (medalsList.length === 0) {
-        return (
-          <p className="text-gray-500">Aucune médaille définie pour cette assignation.</p>
-        );
-      }
-      
-      const obtainedCount = medalsList.filter((m: any) => m.state === true).length;
-      
-      
-      
-      const handleToggleMedal = (medalIdx: number) => {
-        setMedals((prev: any) => {
-          if (!Array.isArray(prev)) return prev;
-          const newMedals = prev.map((m: any, i: number) => i === medalIdx ? { ...m, state: !m.state } : m);
-          if (selectedAssignmentId) {
-            fetch(`http://localhost:3003/project-students/${selectedAssignmentId}/grade`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ score: newMedals }),
-            })
-              .then((res) => res.json())
-              .then((result) => {
-                console.log('sauvegardées dans la BDD (response):', result);
-              })
-              .catch((err) => {
-                console.error('Erreur lors de la sauvegarde des médailles:', err);
-              });
-          }
-          return newMedals;
-        });
-      };
+            <MainCard
+              title="Médailles du projet"
+              icon={<Users className="w-6 h-6 text-blue-500" />}
+            >
+              {(() => {
+                const medalsList = Array.isArray(medals) ? medals : [];
 
-      return (
-        <div>
-          <p className="text-sm text-gray-600 mb-4">
-            {obtainedCount}/{medalsList.length} médailles obtenues
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {medalsList.map((medal: any, idx: number) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleToggleMedal(idx)}
-                className={`p-4 rounded-lg border-2 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer ${
-                  medal.state 
-                    ? 'bg-green-50 border-green-200 shadow-md' 
-                    : 'bg-gray-50 border-gray-200'
-                }`}
-                title="Cliquer pour changer l'état de la médaille"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={`w-3 h-3 rounded-full ${
-                    medal.state ? 'bg-green-500' : 'bg-gray-300'
-                  }`}></div>
-                  <p className={`font-semibold truncate ${
-                    medal.state ? 'text-green-800' : 'text-gray-600'
-                  }`}>
-                    {medal.name || `Médaille ${idx + 1}`}
-                  </p>
-                </div>
-                {medal.description && (
-                  <p className={`text-xs mt-1 ${
-                    medal.state ? 'text-green-600' : 'text-gray-500'
-                  }`}>
-                    {medal.description}
-                  </p>
-                )}
-                <p className={`text-xs mt-1 font-medium ${
-                  medal.state ? 'text-green-700' : 'text-gray-400'
-                }`}>
-                  {medal.state ? '✅ Obtenue' : '⏳ En attente'}
-                </p>
-              </button>
-            ))}
+                if (medalsList.length === 0) {
+                  return (
+                    <p className="text-gray-500">
+                      Aucune médaille définie pour cette assignation.
+                    </p>
+                  );
+                }
+
+                // Convertir le format des médailles pour TrophyGrid
+                const trophies: Trophy[] = medalsList.map((medal: any) => ({
+                  name: medal.name || "Médaille",
+                  obtained: medal.state === true,
+                  description: medal.description || "Médaille du projet",
+                }));
+
+                // Fonction pour gérer le clic sur une médaille
+                const handleTrophyClick = (trophy: Trophy, index: number) => {
+                  setMedals((prev: any) => {
+                    if (!Array.isArray(prev)) return prev;
+                    const newMedals = prev.map((m: any, i: number) =>
+                      i === index ? { ...m, state: !m.state } : m
+                    );
+
+                    if (selectedAssignmentId) {
+                      fetch(
+                        `http://localhost:3003/project-students/${selectedAssignmentId}/grade`,
+                        {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ score: newMedals }),
+                        }
+                      )
+                        .then((res) => res.json())
+                        .then((result) => {
+                          console.log(
+                            "sauvegardées dans la BDD (response):",
+                            result
+                          );
+                        })
+                        .catch((err) => {
+                          console.error(
+                            "Erreur lors de la sauvegarde des médailles:",
+                            err
+                          );
+                        });
+                    }
+                    return newMedals;
+                  });
+                };
+
+                return (
+                  <TrophyGrid
+                    trophies={trophies}
+                    gridCols={4}
+                    size="md"
+                    showTooltip={true}
+                    showCount={true}
+                    title=""
+                    onTrophyClick={handleTrophyClick}
+                    clickable={true}
+                  />
+                );
+              })()}
+            </MainCard>
           </div>
-        </div>
-      );
-    })()}
-  </MainCard>
-</div>
-
 
           {/* Équipe (si dispo, comme côté student) */}
           {(() => {
