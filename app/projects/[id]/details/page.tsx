@@ -21,23 +21,22 @@ import ResourceSection from "@/components/Projects/Details/Ressources/ResourceSe
 import MainCard from "@/components/Projects/Details/MainCard/MainCard";
 import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
+import TrophyGrid from "@/components/ui/TrophyGrid";
 import { Project, getProjectResources } from "@/lib/projectData";
 
-export default function ProjectDetails({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function ProjectDetails({ params }: { params: { id: string } }) {
   // Récupération de l'id depuis les params
   const projectId = parseInt(params.id);
 
   // Récupération du projet
-  const project = getProjectByIdOr(projectId) as typeof import("@/lib/projectsData").projects[number] & {
+  const project = getProjectByIdOr(
+    projectId
+  ) as typeof import("@/lib/projectsData").projects[number] & {
     hotTopics?: { title: string; description: string }[];
     skills?: string[];
   };
 
-  console.log("MOREZ :",project);
+  console.log("MOREZ :", project);
   // State pour les ressources
   type ProjectResource = {
     filename: string;
@@ -52,7 +51,10 @@ export default function ProjectDetails({
     resources_count: number;
   };
 
-  const [resourcesData, setResourcesData] = React.useState<ProjectData | null>(null);
+  const [resourcesData, setResourcesData] = React.useState<ProjectData | null>(
+    null
+  );
+  const [medals, setMedals] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     const fetchResources = async () => {
@@ -60,10 +62,34 @@ export default function ProjectDetails({
       setResourcesData(data);
     };
 
+    const fetchMedals = async () => {
+      try {
+        // Récupérer les assignations du projet pour obtenir les médailles
+        const assignmentsRes = await fetch(
+          `http://localhost:3003/project-students/project/${params.id}`
+        );
+        const assignmentsJson = assignmentsRes.ok
+          ? await assignmentsRes.json()
+          : { success: false, data: [] };
+        const assignments = assignmentsJson.success ? assignmentsJson.data : [];
+
+        // Prendre la première assignation pour récupérer les médailles
+        if (assignments.length > 0) {
+          const firstAssignment = assignments[0];
+          setMedals(firstAssignment.score || []);
+          console.log("Médailles:", firstAssignment.score);
+        }
+      } catch (error) {
+        console.error("❌ Error fetching medals:", error);
+        setMedals([]);
+      }
+    };
+
     fetchResources();
+    fetchMedals();
   }, [params.id]);
 
-  console.log( "Ressources Data:", resourcesData);
+  console.log("Ressources Data:", resourcesData);
   // État local pour les tâches
   const [tasks, setTasks] = React.useState<string[]>([]);
   const [newTask, setNewTask] = React.useState("");
@@ -151,7 +177,9 @@ export default function ProjectDetails({
               <h2 className="text-white text-xl font-semibold">
                 Progression globale
               </h2>
-              <DevelopmentBadge size="xs" />
+              <DevelopmentBadge>
+                <div className="w-4 h-4"></div>
+              </DevelopmentBadge>
             </div>
             <span className="text-white font-bold text-2xl">
               {project.progress}%
@@ -186,11 +214,19 @@ export default function ProjectDetails({
               title="Ressources"
               icon={<Download className="w-6 h-6 text-blue-400" />}
             >
-              {resourcesData?.resources && Array.isArray(resourcesData?.resources) && resourcesData?.resources.length > 0 ? (
+              {resourcesData?.resources &&
+              Array.isArray(resourcesData?.resources) &&
+              resourcesData?.resources.length > 0 ? (
                 <div className="space-y-2">
                   {resourcesData?.resources.map((resource, index) => {
-                    const resObj = typeof resource === "string" ? JSON.parse(resource) : resource;
-                    const isValidUrl = resObj.url && (resObj.url.startsWith("http") || resObj.url.startsWith("/"));
+                    const resObj =
+                      typeof resource === "string"
+                        ? JSON.parse(resource)
+                        : resource;
+                    const isValidUrl =
+                      resObj.url &&
+                      (resObj.url.startsWith("http") ||
+                        resObj.url.startsWith("/"));
                     return (
                       <div
                         key={`resource-${index}-${resObj.filename}`}
@@ -228,7 +264,9 @@ export default function ProjectDetails({
               ) : (
                 <div className="text-center py-8">
                   <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 font-medium mb-2">Aucune ressource disponible</p>
+                  <p className="text-gray-500 font-medium mb-2">
+                    Aucune ressource disponible
+                  </p>
                   <p className="text-sm text-gray-400">
                     Les ressources du projet apparaîtront ici une fois ajoutées.
                   </p>
@@ -246,34 +284,36 @@ export default function ProjectDetails({
                 />
               }
             >
-              <span className="text-base font-normal text-gray-500">
-                {project.trophies.filter((t) => t.obtained).length}/
-                {project.trophies.length}
-              </span>
-              <div className="grid grid-cols-6 gap-6 mt-4">
-                {project.trophies.map((trophy, idx) => (
-                  <div
-                    key={trophy.name}
-                    className="flex flex-col items-center group relative"
-                  >
-                    <FontAwesomeIcon
-                      icon={faMedal}
-                      size="2x"
-                      className={
-                        trophy.obtained
-                          ? "text-yellow-400"
-                          : "text-gray-300 opacity-40"
-                      }
-                    />
-                    <span className="absolute z-10 bottom-12 left-1/2 -translate-x-1/2 px-3 py-2 rounded bg-gray-900 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg">
-                      {trophy.description}
-                    </span>
-                    <span className="text-xs text-gray-700 mt-2 text-center break-words">
-                      {trophy.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {(() => {
+                const medalsList = Array.isArray(medals) ? medals : [];
+
+                if (medalsList.length === 0) {
+                  return (
+                    <p className="text-gray-500">
+                      Aucune médaille définie pour ce projet.
+                    </p>
+                  );
+                }
+
+                // Convertir le format des médailles pour TrophyGrid
+                const trophies = medalsList.map((medal: any) => ({
+                  name: medal.name || "Médaille",
+                  obtained: medal.state === true,
+                  description: medal.description || "Médaille du projet",
+                }));
+
+                return (
+                  <TrophyGrid
+                    trophies={trophies}
+                    gridCols={6}
+                    size="md"
+                    showTooltip={true}
+                    showCount={false}
+                    title=""
+                    clickable={false}
+                  />
+                );
+              })()}
             </MainCard>
 
             {/* Hot Topics & Compétences */}

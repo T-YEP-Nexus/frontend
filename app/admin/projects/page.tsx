@@ -362,9 +362,9 @@ export default function AdminProjectsPage() {
       if (expandedCard !== null) {
         setExpandedCard(null);
         // Petit délai pour éviter le conflit visuel
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      
+
       // Ouvrir la nouvelle carte - récupérer les ressources si pas déjà fait
       if (!projectResources[projectId]) {
         console.log(
@@ -543,14 +543,7 @@ export default function AdminProjectsPage() {
               key={project.id}
               projectId={project.id}
               projectName={project.name}
-              progress={
-                projectResources[project.id]?.resources
-                  ? Math.min(
-                      projectResources[project.id].resources.length * 10,
-                      100
-                    )
-                  : 0
-              }
+              progress={0}
               description={project.description}
               details={{
                 startDate: project.details?.startDate
@@ -616,16 +609,10 @@ export default function AdminProjectsPage() {
                     ),
               }}
               documentation={{
-                pdfUrl:
-                  project.documentation?.pdfUrl ||
-                  projectResources[project.id]?.resources?.[0]?.url ||
-                  "#",
-                pdfName:
-                  project.documentation?.pdfName ||
-                  projectResources[project.id]?.resources?.[0]?.filename ||
-                  "Documentation.pdf",
+                pdfUrl: project.documentation?.pdfUrl || "#",
+                pdfName: project.documentation?.pdfName || "Documentation.pdf",
               }}
-              ressources={projectResources[project.id]?.resources || []} // Ajout des vraies ressources
+              ressources={projectResources[project.id]?.resources || []}
               tasks={[
                 "Analyser les besoins",
                 "Concevoir l'architecture",
