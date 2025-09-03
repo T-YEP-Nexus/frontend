@@ -26,10 +26,12 @@ import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 import AdminButton from "@/components/admin/buttons/AdminButton";
 import AdminLoading from "@/components/admin/AdminLoading";
 import DateTimelineSelector from "@/components/ui/DateTimelineSelector";
+import type { Project } from "@/lib/projectData";
 
 interface Medal {
   name: string;
   description: string;
+  state: boolean;
 }
 
 interface Resource {
@@ -40,50 +42,18 @@ interface Resource {
   file?: File;
 }
 
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  longDescription?: string;
-  details?: {
-    startDate: string;
-    endDate: string;
-    team: string;
-  };
-  deadline?: {
-    kickOff: string;
-    followUp: string;
-    keynote: string;
-  };
-  documentation?: {
-    pdfUrl: string;
-    pdfName: string;
-  };
-  medals?: Medal[];
-  resources?: Resource[];
-  hotTopics?: string;
-  skills?: string;
-  is_active: boolean;
-  id_creator: string;
-  created_at: string;
-  updated_at: string;
-}
-
 interface EditFormData {
   name: string;
   description: string;
   promotion: string;
-  startDate: string;
-  endDate: string;
-  teamSize: string;
-  kickOffDate: string;
-  followUpDate: string;
-  keynoteDate: string;
+  assigned_at: string;
+  due_date: string;
+  advisor_comment: string | null;
   medals: Medal[];
   resources: Resource[];
-  hotTopics: string;
-  skills: string;
+  max_score: number | string;
   is_active: boolean;
+  created_at: string;
 }
 
 export default function EditProjectPage() {
@@ -95,13 +65,10 @@ export default function EditProjectPage() {
     name: "",
     description: "",
     promotion: "",
-    startDate: "",
-    endDate: "",
-    teamSize: "",
-    kickOffDate: "",
-    followUpDate: "",
-    keynoteDate: "",
-    medals: [{ name: "", description: "" }],
+    assigned_at: "",
+    due_date: "",
+    advisor_comment: null,
+    medals: [{ name: "", description: "", state: false }],
     resources: [
       {
         name: "",
@@ -110,9 +77,9 @@ export default function EditProjectPage() {
         category: "project",
       },
     ],
-    hotTopics: "",
-    skills: "",
+    max_score: "",
     is_active: true,
+    created_at: new Date().toISOString(),
   });
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -155,77 +122,46 @@ export default function EditProjectPage() {
         setLoading(true);
         setError(null);
 
-        // TODO: Implémenter l'appel API pour récupérer le projet
+        // Récupération du vrai projet depuis l'API
         console.log("Récupération du projet avec l'ID:", projectId);
 
-        // Données de test pour simuler un projet
-        const mockProjectData: Project = {
-          id: projectId,
-          name: "Projet de test",
-          description: "Description du projet de test",
-          details: {
-            startDate: "2024-01-01",
-            endDate: "2024-12-31",
-            team: "5 développeurs",
-          },
-          deadline: {
-            kickOff: "2024-01-15",
-            followUp: "2024-06-15",
-            keynote: "2024-12-15",
-          },
-          medals: [
-            { name: "Premier commit", description: "Premier commit réalisé" },
-            {
-              name: "Architecture validée",
-              description: "Architecture du projet validée",
-            },
-          ],
-          resources: [
-            {
-              name: "Documentation Kick Off",
-              url: "",
-              description: "Documentation pour la phase de lancement",
-              category: "kickoff" as const,
-            },
-            {
-              name: "Documentation Bootstrap",
-              url: "",
-              description: "Documentation pour la phase de préparation",
-              category: "bootstrap" as const,
-            },
-            {
-              name: "Documentation Projet",
-              url: "",
-              description: "Documentation pour la phase de développement",
-              category: "project" as const,
-            },
-          ],
-          hotTopics: "Intelligence artificielle, Blockchain",
-          skills: "React, Node.js, Python",
-          is_active: true,
-          id_creator: "user-123",
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-        };
+        const { getProjectById } = await import("@/lib/projectData");
+        const projectData = await getProjectById(projectId);
 
-        setProject(mockProjectData);
+        if (!projectData) {
+          throw new Error("Projet non trouvé");
+        }
+
+        console.log("Projet récupéré:", projectData);
+
+        setProject(projectData);
         setFormData({
-          name: mockProjectData.name || "",
-          description: mockProjectData.description || "",
-          promotion: "", // À remplacer par la vraie promotion du projet
-          startDate: mockProjectData.details?.startDate || "",
-          endDate: mockProjectData.details?.endDate || "",
-          teamSize: mockProjectData.details?.team || "",
-          kickOffDate: mockProjectData.deadline?.kickOff || "",
-          followUpDate: mockProjectData.deadline?.followUp || "",
-          keynoteDate: mockProjectData.deadline?.keynote || "",
+          name: projectData.name || "",
+          description: projectData.description || "",
+          promotion: projectData.id_promotion || "",
+          assigned_at: "", // À récupérer depuis projectData.ressources si disponible
+          due_date: "", // À récupérer depuis projectData.ressources si disponible
+          advisor_comment: null,
           medals:
-            mockProjectData.medals && mockProjectData.medals.length > 0
-              ? mockProjectData.medals
-              : [{ name: "", description: "" }],
+            projectData.ressources && projectData.ressources.length > 0
+              ? projectData.ressources
+                  .filter(
+                    (r) => r.description && r.description.includes("médaille")
+                  )
+                  .map((r, index) => ({
+                    name: r.description || `Médaille ${index + 1}`,
+                    description: r.description || "",
+                    state: false,
+                  }))
+              : [{ name: "", description: "", state: false }],
           resources:
-            mockProjectData.resources && mockProjectData.resources.length > 0
-              ? mockProjectData.resources
+            projectData.ressources && projectData.ressources.length > 0
+              ? projectData.ressources.map((r) => ({
+                  name: r.filename || r.description || "",
+                  url: r.url || "",
+                  description: r.description || "",
+                  category: "project" as const,
+                }))
               : [
                   {
                     name: "",
@@ -234,12 +170,10 @@ export default function EditProjectPage() {
                     category: "project",
                   },
                 ],
-          hotTopics: mockProjectData.hotTopics || "",
-          skills: mockProjectData.skills || "",
+          max_score: "",
           is_active:
-            mockProjectData.is_active !== undefined
-              ? mockProjectData.is_active
-              : true,
+            projectData.is_active !== undefined ? projectData.is_active : true,
+          created_at: projectData.created_at,
         });
       } catch (err) {
         console.error("Erreur lors de la récupération du projet:", err);
@@ -315,7 +249,7 @@ export default function EditProjectPage() {
   const addMedal = () => {
     setFormData((prev) => ({
       ...prev,
-      medals: [...prev.medals, { name: "", description: "" }],
+      medals: [...prev.medals, { name: "", description: "", state: false }],
     }));
 
     // Scroll vers la nouvelle médaille après un court délai
@@ -406,6 +340,30 @@ export default function EditProjectPage() {
       setError("La description du projet est requise");
       return false;
     }
+    if (!formData.promotion) {
+      setError("La promotion est requise");
+      return false;
+    }
+    if (!formData.assigned_at) {
+      setError("La date de début est requise");
+      return false;
+    }
+    if (!formData.due_date) {
+      setError("La date de fin est requise");
+      return false;
+    }
+    if (new Date(formData.assigned_at) >= new Date(formData.due_date)) {
+      setError("La date de fin doit être postérieure à la date de début");
+      return false;
+    }
+    if (
+      formData.medals.some(
+        (medal) => !medal.name.trim() || !medal.description.trim()
+      )
+    ) {
+      setError("Toutes les médailles doivent avoir un nom et une description");
+      return false;
+    }
     return true;
   };
 
@@ -425,23 +383,17 @@ export default function EditProjectPage() {
       console.log("Données du projet à sauvegarder:", {
         name: formData.name,
         description: formData.description,
-        details: {
-          startDate: formData.startDate,
-          endDate: formData.endDate,
-          team: formData.teamSize,
-        },
-        deadline: {
-          kickOff: formData.kickOffDate,
-          followUp: formData.followUpDate,
-          keynote: formData.keynoteDate,
-        },
+        promotion: formData.promotion,
+        assigned_at: formData.assigned_at,
+        due_date: formData.due_date,
+        advisor_comment: formData.advisor_comment,
         medals: formData.medals.filter(
           (medal) => medal.name.trim() && medal.description.trim()
         ),
         resources: formData.resources,
-        hotTopics: formData.hotTopics,
-        skills: formData.skills,
+        max_score: formData.max_score,
         is_active: formData.is_active,
+        created_at: formData.created_at,
       });
 
       setSuccess("Projet modifié avec succès ! (API à implémenter)");
@@ -637,6 +589,48 @@ export default function EditProjectPage() {
                   required
                 />
               </div>
+
+              {/* Dates du projet */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Date de début */}
+                <div className="group">
+                  <label
+                    htmlFor="assigned_at"
+                    className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer"
+                  >
+                    Date de début *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="assigned_at"
+                    name="assigned_at"
+                    value={formData.assigned_at}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-pointer"
+                    required
+                  />
+                </div>
+
+                {/* Date de fin */}
+                <div className="group">
+                  <label
+                    htmlFor="due_date"
+                    className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer"
+                  >
+                    Date de fin *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="due_date"
+                    name="due_date"
+                    value={formData.due_date}
+                    onChange={handleInputChange}
+                    min={formData.assigned_at}
+                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-pointer"
+                    required
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -648,77 +642,153 @@ export default function EditProjectPage() {
               </div>
               Ressources du projet
             </h3>
-              <div className="space-y-4">
+            <div className="space-y-4">
               {formData.resources.map((resource, index) => (
-                        <div
+                <div
                   key={index}
                   className="space-y-3 p-4 border-2 border-emerald-200 rounded-xl bg-emerald-50/50 group"
-                        >
-                          <div className="flex items-center justify-between">
+                >
+                  <div className="flex items-center justify-between">
                     <h5 className="text-sm font-semibold text-emerald-900">
                       Ressource {index + 1}
-                            </h5>
-                            <Button
-                              type="button"
+                    </h5>
+                    <Button
+                      type="button"
                       onClick={() => removeResource(index)}
-                              className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
+                      className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="group">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="group">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                                Nom de la ressource *
-                              </label>
-                              <input
-                                type="text"
-                                value={resource.name}
-                                onChange={(e) =>
+                        Nom de la ressource *
+                      </label>
+                      <input
+                        type="text"
+                        value={resource.name}
+                        onChange={(e) =>
                           updateResource(index, "name", e.target.value)
-                                }
+                        }
                         className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
                         placeholder="Ex: Documentation du projet"
-                                required
-                              />
-                            </div>
+                        required
+                      />
+                    </div>
 
-                            <div className="group">
+                    <div className="group">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                                URL de la ressource
-                              </label>
-                              <input
-                                type="url"
-                                value={resource.url}
-                                onChange={(e) =>
+                        URL de la ressource
+                      </label>
+                      <input
+                        type="url"
+                        value={resource.url}
+                        onChange={(e) =>
                           updateResource(index, "url", e.target.value)
-                                }
+                        }
                         className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
-                                placeholder="https://..."
-                              />
-                            </div>
+                        placeholder="https://..."
+                      />
+                    </div>
 
-                            <div className="group">
+                    <div className="group">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                                Type de fichier accepté
-                              </label>
+                        Type de fichier accepté
+                      </label>
                       <div className="px-4 py-3 border-2 border-emerald-200 rounded-xl bg-emerald-50/30 text-emerald-700 text-xs">
-                                PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
-                              </div>
-                            </div>
-                            </div>
-                          </div>
+                        PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
 
-                <div className="flex justify-center">
-                  <AdminButton
-                    type="button"
-                    onClick={() => addResource("project")}
-                  >
-                    <Plus className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+              <div className="flex justify-center">
+                <AdminButton
+                  type="button"
+                  onClick={() => addResource("project")}
+                >
+                  <Plus className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
                   Ajouter une ressource
-                  </AdminButton>
+                </AdminButton>
+              </div>
+            </div>
+          </div>
+
+          {/* Section Médailles */}
+          <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-2xl p-6 border-2 border-pink-200/50">
+            <h3 className="text-xl font-bold text-pink-900 flex items-center gap-3 mb-6">
+              <div className="p-2 bg-gradient-to-br from-pink-200 to-pink-300 rounded-xl">
+                <CheckSquare className="w-5 h-5 text-pink-700" />
+              </div>
+              Médailles du projet
+            </h3>
+            <div className="space-y-6">
+              <div className="space-y-4">
+                {formData.medals.map((medal, index) => (
+                  <div
+                    key={index}
+                    className="space-y-3 p-4 border-2 border-pink-200 rounded-xl bg-pink-50/50 group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-pink-900">
+                        Médaille {index + 1}
+                      </h4>
+                      {formData.medals.length > 1 && (
+                        <Button
+                          type="button"
+                          onClick={() => removeMedal(index)}
+                          className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="group">
+                        <label className="block text-sm font-semibold text-pink-900 mb-2 group-hover:text-pink-700 transition-colors duration-300 cursor-pointer">
+                          Nom de la médaille *
+                        </label>
+                        <input
+                          type="text"
+                          value={medal.name}
+                          onChange={(e) =>
+                            updateMedal(index, "name", e.target.value)
+                          }
+                          className="w-full px-4 py-3 border-2 border-pink-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-pink-500 bg-white text-pink-900 placeholder-pink-400 transition-all duration-300 hover:border-pink-400 hover:shadow-md focus:shadow-lg cursor-text"
+                          placeholder="Ex: Médaille d'or"
+                          required
+                        />
+                      </div>
+
+                      <div className="group">
+                        <label className="block text-sm font-semibold text-pink-900 mb-2 group-hover:text-pink-700 transition-colors duration-300 cursor-pointer">
+                          Description de la médaille *
+                        </label>
+                        <textarea
+                          value={medal.description}
+                          onChange={(e) =>
+                            updateMedal(index, "description", e.target.value)
+                          }
+                          rows={2}
+                          className="w-full px-4 py-3 border-2 border-pink-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-pink-500 bg-white text-pink-900 placeholder-pink-400 transition-all duration-300 hover:border-pink-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
+                          placeholder="Description de la médaille..."
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div ref={medalsContainerRef} className="flex justify-center">
+                <AdminButton type="button" onClick={addMedal}>
+                  <Plus className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+                  Ajouter une médaille
+                </AdminButton>
               </div>
             </div>
           </div>
@@ -931,7 +1001,7 @@ export default function EditProjectPage() {
                     Dernière modification :
                   </span>
                   <p className="text-blue-900">
-                    {new Date(project.updated_at).toLocaleDateString("fr-FR")}
+                    {new Date(project.created_at).toLocaleDateString("fr-FR")}
                   </p>
                 </div>
                 <div className="p-3 bg-white/50 rounded-lg hover:bg-white/70 transition-colors duration-300 cursor-default">

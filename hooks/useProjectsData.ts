@@ -46,7 +46,7 @@ export function useProjectsData() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<null | string>(null);
-  
+
   // États pour la création de projets
   const [creating, setCreating] = useState(false);
   const [creationError, setCreationError] = useState<string | null>(null);
@@ -54,7 +54,7 @@ export function useProjectsData() {
 
   useEffect(() => {
     const userId = getUserIdFromToken();
-    
+
     // Vous devrez passer l'id_promotion ici
     // fetchProjectsByPromotion(promotionId);
   }, []);
@@ -86,7 +86,7 @@ export function useProjectsData() {
   const getProfileByUserId = async (userId: string) => {
     console.log("🔍 DEBUG - Récupération profil pour user:", userId);
     const response = await fetch(`http://localhost:3004/profile/user/${userId}`);
-    
+
     console.log("🔍 DEBUG - Réponse API profil:", response.status, response.ok);
 
     if (!response.ok) {
@@ -95,7 +95,7 @@ export function useProjectsData() {
 
     const result = await response.json();
     console.log("🔍 DEBUG - Données profil reçues:", result);
-    
+
     if (!result.success) {
       throw new Error(result.message || "Profil non trouvé");
     }
@@ -106,19 +106,26 @@ export function useProjectsData() {
   // Nouvelle fonction pour récupérer l'étudiant par profile ID
   const getStudentByProfileId = async (profileId: string) => {
     console.log("🔍 DEBUG - Récupération étudiant pour profil:", profileId);
-    const response = await fetch(`http://localhost:3003/student/profile/${profileId}`);
-    
+    // Correct service: profile-service expose /student/profile/:id
+    const response = await fetch(`http://localhost:3004/student/profile/${profileId}`);
+
     console.log("🔍 DEBUG - Réponse API étudiant:", response.status, response.ok);
 
     if (!response.ok) {
+      // Autoriser absence d'étudiant pour un profil (404)
+      if (response.status === 404) {
+        console.warn("ℹ️ Aucun étudiant pour le profil:", profileId);
+        return null;
+      }
       throw new Error("Erreur lors de la récupération de l'étudiant");
     }
 
     const result = await response.json();
     console.log("🔍 DEBUG - Données étudiant reçues:", result);
-    
+
     if (!result.success) {
-      throw new Error(result.message || "Étudiant non trouvé");
+      console.warn("ℹ️ Étudiant non trouvé pour le profil, message:", result.message);
+      return null;
     }
 
     return result.data;
@@ -127,7 +134,7 @@ export function useProjectsData() {
   // Nouvelle fonction pour récupérer la promotion par student ID
   const getPromotionIdByStudent = async (studentId: string) => {
     const response = await fetch(`http://localhost:3004/student/${studentId}`);
-    
+
     console.log("🔍 DEBUG - Réponse API promotion par étudiant:", response.status, response.ok);
 
     if (!response.ok) {
@@ -136,7 +143,7 @@ export function useProjectsData() {
 
     const result = await response.json();
     console.log("🔍 DEBUG - Données promotion par étudiant reçues:", result);
-    
+
     if (!result.success) {
       throw new Error(result.message || "Promotion non trouvée");
     }
@@ -197,7 +204,7 @@ export function useProjectsData() {
       console.log("🔍 DEBUG - Étape 3: Création des assignations project_student");
       const assignmentPromises = students.map(async (student: any, index: number) => {
         console.log(`🔍 DEBUG - Assignation ${index + 1}/${students.length} - Étudiant ID:`, student.id);
-        
+
         const assignmentData = {
           id_student: student.id,
           id_project: projectId,
@@ -268,7 +275,7 @@ export function useProjectsData() {
       setCreationResult(null);
 
       const result = await createProjectAndAssignToStudents(projectData);
-      
+
       if (result.success) {
         setCreationResult(result);
         return result;
@@ -302,7 +309,7 @@ export function useProjectsData() {
       console.log("🔍 DEBUG - Début fetchProjectsForCurrentStudent");
       setLoading(true);
       setError(null);
-      
+
       const userId = getUserIdFromToken();
       console.log("🔍 DEBUG - User ID:", userId);
 
@@ -318,13 +325,20 @@ export function useProjectsData() {
       const student = await getStudentByProfileId(profile.id);
       console.log("🔍 DEBUG - Étudiant récupéré:", student);
 
+      if (!student) {
+        console.warn("ℹ️ Pas d'étudiant lié, pas de projets par promotion.");
+        setProjects([]);
+        setLoading(false);
+        return;
+      }
+
       // Étape 3: Récupérer la promotion
       const promotion = await getPromotionIdByStudent(student.id);
       console.log("🔍 DEBUG - Promotion récupérée:", promotion);
 
       // Étape 4: Récupérer les projets de cette promotion
       console.log("🔍 DEBUG - Récupération des projets pour la promotion:",promotion.id_promotion);
-      
+
       if (promotion.name) {
         await fetchProjectsByPromotionName(promotion.name);
       } else if (promotion.id_promotion) {
@@ -375,7 +389,7 @@ export function useProjectsData() {
   const getPromotionIdByName = async (promotionName: string): Promise<string> => {
     console.log("🔍 DEBUG - Recherche promotion par nom:", promotionName);
     const response = await fetch(`http://localhost:3003/promotion/name/${promotionName}`);
-    
+
     console.log("🔍 DEBUG - Réponse API promotion par nom:", response.status, response.ok);
 
     if (!response.ok) {
@@ -384,7 +398,7 @@ export function useProjectsData() {
 
     const result = await response.json();
     console.log("🔍 DEBUG - Données promotion reçues:", result);
-    
+
     if (!result.success) {
       throw new Error(result.message || "Promotion non trouvée");
     }
@@ -397,7 +411,7 @@ export function useProjectsData() {
   const fetchProjectsByPromotionName = async (promotionName: string) => {
     try {
       setLoading(true);
-      
+
       // D'abord récupérer l'ID de la promotion avec son nom
       const promotionId = await getPromotionIdByName(promotionName);
       console.log("🔍 DEBUG - Promotion ID récupéré:", promotionId);
@@ -442,7 +456,7 @@ export function useProjectsData() {
 
       if (result.success) {
         console.log("🔍 DEBUG - Nombre d'assignations trouvées:", result.data?.length || 0);
-        
+
         if (result.data && result.data.length > 0) {
           console.log("🔍 DEBUG - Première assignation:", result.data[0]);
         }
@@ -453,14 +467,14 @@ export function useProjectsData() {
           result.data.map(async (assignment: ProjectStudent, index: number) => {
             console.log(`🔍 DEBUG - Traitement assignation ${index}:`, assignment);
             console.log(`🔍 DEBUG - Appel projet ID: ${assignment.id_project}`);
-            
+
             const projectResponse = await fetch(`http://localhost:3003/projects/${assignment.id_project}`);
             console.log(`🔍 DEBUG - Réponse projet ${assignment.id_project}:`, projectResponse.status, projectResponse.ok);
-            
+
             if (projectResponse.ok) {
               const projectResult = await projectResponse.json();
               console.log(`🔍 DEBUG - Détails projet ${assignment.id_project}:`, projectResult);
-              
+
               const projectWithAssignment = {
                 ...projectResult.data,
                 assignment: assignment
@@ -477,7 +491,7 @@ export function useProjectsData() {
         const validProjects = projectDetails.filter(Boolean);
         console.log("🔍 DEBUG - Projets valides filtrés:", validProjects);
         console.log("🔍 DEBUG - Nombre de projets valides:", validProjects.length);
-        
+
         setProjects(validProjects);
       } else {
         console.error("❌ DEBUG - result.success = false, message:", result.message);
@@ -569,8 +583,8 @@ export function useProjectsData() {
     projects,
     loading,
     error,
-    
-    // Fonctions 
+
+    // Fonctions
     fetchProjectsByPromotion,
     fetchProjectsByPromotionName,
     getPromotionIdByName,
@@ -585,7 +599,7 @@ export function useProjectsData() {
     creationError,
     creationResult,
     createAndAssignProject,
-    resetCreationState
+    resetCreationState,
     fetchActiveProjects // Exposer la fonction
   };
 }
