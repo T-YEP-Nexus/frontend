@@ -31,6 +31,7 @@ import DateTimelineSelector from "@/components/ui/DateTimelineSelector";
 interface Medal {
   name: string;
   description: string;
+  state:boolean;
 }
 
 interface Resource {
@@ -45,17 +46,15 @@ interface CreateFormData {
   name: string;
   description: string;
   promotion: string;
-  startDate: string;
-  endDate: string;
-  // teamSize: string;
-  // kickOffDate: string;
-  // followUpDate: string;
-  // keynoteDate: string;
-  medals: Medal[];
+  assigned_at: string;
+  due_date: string;
+  advisor_comment: string | null;
+  score: Medal[];
   resources: Resource[];
-  // hotTopics: string;
-  // skills: string;
+  max_score: number | string;
   is_active: boolean;
+  created_at: string;
+
 }
 
 export default function CreateProjectPage() {
@@ -64,13 +63,10 @@ export default function CreateProjectPage() {
     name: "",
     description: "",
     promotion: "",
-    startDate: "",
-    endDate: "",
-    // teamSize: "",
-    // kickOffDate: "",
-    // followUpDate: "",
-    // keynoteDate: "",
-    medals: [{ name: "", description: "" }],
+    assigned_at: "",
+    due_date: "",
+    score: [{ name: "", description: "", state:false}],
+    max_score: "",
     resources: [
       {
         name: "",
@@ -79,9 +75,9 @@ export default function CreateProjectPage() {
         category: "project",
       },
     ],
-    // hotTopics: "",
-    // skills: "",
     is_active: true,
+    created_at: new Date().toISOString(),
+    advisor_comment: null,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -175,7 +171,7 @@ export default function CreateProjectPage() {
   const addMedal = () => {
     setFormData((prev) => ({
       ...prev,
-      medals: [...prev.medals, { name: "", description: "" }],
+      score: [...prev.score, { name: "", description: "", state: false }],
     }));
 
     // Scroll vers la nouvelle médaille après un court délai
@@ -199,7 +195,7 @@ export default function CreateProjectPage() {
   const removeMedal = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      medals: prev.medals.filter((_, i) => i !== index),
+      score: prev.score.filter((_, i) => i !== index),
     }));
   };
 
@@ -210,7 +206,7 @@ export default function CreateProjectPage() {
   ) => {
     setFormData((prev) => ({
       ...prev,
-      medals: prev.medals.map((medal, i) =>
+      score: prev.score.map((medal, i) =>
         i === index ? { ...medal, [field]: value } : medal
       ),
     }));
@@ -270,15 +266,15 @@ export default function CreateProjectPage() {
       setError("La promotion est requise");
       return false;
     }
-    if (!formData.startDate) {
+    if (!formData.assigned_at) {
       setError("La date de début est requise");
       return false;
     }
-    if (!formData.endDate) {
+    if (!formData.due_date) {
       setError("La date de fin est requise");
       return false;
     }
-    if (new Date(formData.startDate) >= new Date(formData.endDate)) {
+    if (new Date(formData.assigned_at) >= new Date(formData.due_date)) {
       setError("La date de fin doit être postérieure à la date de début");
       return false;
     }
@@ -287,7 +283,7 @@ export default function CreateProjectPage() {
     //   return false;
     // }
     if (
-      formData.medals.some(
+      formData.score.some(
         (medal) => !medal.name.trim() || !medal.description.trim()
       )
     ) {
@@ -323,9 +319,8 @@ export default function CreateProjectPage() {
       }
 
       // Appel à la fonction utilitaire pour créer le projet
-      // @ts-ignore
-      const { createProject } = await import("@/lib/projectData");
-      await createProject({
+      const { createProjectAndAssignToStudents } = await import("@/lib/projectData");
+      await createProjectAndAssignToStudents({
         name: formData.name,
         description: formData.description,
         ressources: formData.resources.map((r) => ({
@@ -333,18 +328,19 @@ export default function CreateProjectPage() {
           url: r.url,
           uploaded_at: new Date().toISOString(),
         })),
+        assigned_at: formData.assigned_at,
+        due_date: formData.due_date,
+        score: formData.score,
+        max_score: Number(formData.max_score),
         is_active: formData.is_active,
         id_creator: getUserIdFromToken(),
         id_promotion: promotionId,
+        advisor_comment: null,
+        id_student: "",
+        id_project:"",
       });
       setSuccess("Projet créé avec succès !");
       console.log("Projet créé avec les données:", formData);
-      console.log(
-        "Dates du projet - Début:",
-        formData.startDate,
-        "Fin:",
-        formData.endDate
-      );
       // Rediriger après 2 secondes
       setTimeout(() => {
         router.push("/admin/projects");
@@ -513,16 +509,16 @@ export default function CreateProjectPage() {
                 {/* Date de début */}
                 <div className="group">
                   <label
-                    htmlFor="startDate"
+                    htmlFor="assigned_at"
                     className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer"
                   >
                     Date de début *
                   </label>
                   <input
                     type="datetime-local"
-                    id="startDate"
-                    name="startDate"
-                    value={formData.startDate}
+                    id="assigned_at"
+                    name="assigned_at"
+                    value={formData.assigned_at}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-pointer"
                     required
@@ -532,18 +528,18 @@ export default function CreateProjectPage() {
                 {/* Date de fin */}
                 <div className="group">
                   <label
-                    htmlFor="endDate"
+                    htmlFor="due_date"
                     className="block text-sm font-semibold text-blue-900 mb-2 group-hover:text-blue-700 transition-colors duration-300 cursor-pointer"
                   >
                     Date de fin *
                   </label>
                   <input
                     type="datetime-local"
-                    id="endDate"
-                    name="endDate"
-                    value={formData.endDate}
+                    id="due_date"
+                    name="due_date"
+                    value={formData.due_date}
                     onChange={handleInputChange}
-                    min={formData.startDate}
+                    min={formData.assigned_at}
                     className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 transition-all duration-300 hover:border-blue-400 hover:shadow-md focus:shadow-lg cursor-pointer"
                     required
                   />
@@ -562,8 +558,8 @@ export default function CreateProjectPage() {
             </h3>
             <div className="space-y-6">
               <DateTimelineSelector
-                startDate={formData.startDate}
-                endDate={formData.endDate}
+                assigned_at={formData.assigned_at}
+                due_date={formData.due_date}
                 kickOffDate={formData.kickOffDate}
                 followUpDate={formData.followUpDate}
                 keynoteDate={formData.keynoteDate}
@@ -780,7 +776,7 @@ export default function CreateProjectPage() {
             </h3>
             <div className="space-y-6">
               <div className="space-y-4">
-                {formData.medals.map((medal, index) => (
+                {formData.score.map((medal, index) => (
                   <div
                     key={index}
                     className="space-y-3 p-4 border-2 border-pink-200 rounded-xl bg-pink-50/50 group"
@@ -789,7 +785,7 @@ export default function CreateProjectPage() {
                       <h4 className="text-sm font-semibold text-pink-900">
                         Médaille {index + 1}
                       </h4>
-                      {formData.medals.length > 1 && (
+                      {formData.score.length > 1 && (
                         <Button
                           type="button"
                           onClick={() => removeMedal(index)}
