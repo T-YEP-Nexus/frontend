@@ -34,6 +34,7 @@ La plateforme évoluera avec de nouvelles fonctionnalités qui permettra une com
 | **Node.js** 🟢 | Runtime JavaScript pour les services backend | [📚 Docs](https://nodejs.org/docs/latest/api/) |
 | **Next.js** ⚡ | Framework full-stack React avec API routes intégrées | [📚 Docs](https://nextjs.org/docs) |
 | **Supabase** 🐘 | Base de données moderne, alternative à Firebase | [📚 Docs](https://supabase.com/docs) |
+| **Express** 💨 | Framework backend pour créer des API | [📚 Docs](https://expressjs.com/en/starter/installing.html) |
 
 ### 🎨 Technologies Frontend
 
