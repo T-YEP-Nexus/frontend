@@ -26,6 +26,12 @@ interface CardsProps {
     pdfUrl?: string;
     pdfName: string;
   };
+  ressources?: Array<{
+    url?: string;
+    filename?: string;
+    name?: string;
+    uploaded_at?: string;
+  }>; // Ajout des vraies ressources
   trophies?: { name: string; obtained: boolean; description: string }[];
   isExpanded?: boolean;
   onToggle?: () => void;
@@ -44,6 +50,7 @@ function Cards({
   tasks,
   deadline,
   documentation,
+  ressources = [],
   trophies = [],
   isExpanded = false,
   onToggle,
@@ -57,26 +64,6 @@ function Cards({
   const [hoveredTrophy, setHoveredTrophy] = useState<number | null>(null);
   const expandedCardRef = useRef<HTMLDivElement>(null);
 
-  // S'assurer que la progression est entre 0 et 100
-  const clampedProgress = Math.min(Math.max(progress, 0), 100);
-
-  // Déterminer la couleur de la barre selon la progression
-  const getProgressColor = (progress: number) => {
-    if (progress < 30) return "bg-red-500";
-    if (progress < 70) return "bg-yellow-500";
-    return "bg-green-500";
-  };
-
-  // Déterminer le statut selon la progression
-  const getStatusText = (progress: number) => {
-    if (progress === 0) return "Aucune progression";
-    if (progress <= 20) return "Commencement";
-    if (progress <= 40) return "En cours";
-    if (progress <= 60) return "Développement";
-    if (progress <= 80) return "Finalisation";
-    return "Terminé";
-  };
-
   // Gérer les clics en dehors de la carte étendue
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -85,7 +72,13 @@ function Cards({
         expandedCardRef.current &&
         !expandedCardRef.current.contains(event.target as Node)
       ) {
-        onToggle?.();
+        // Vérifier si le clic est sur une autre carte avant de fermer
+        const target = event.target as HTMLElement;
+        const isClickingOnCard = target.closest('[data-project-card]');
+        
+        if (!isClickingOnCard) {
+          onToggle?.();
+        }
       }
     };
 
@@ -119,12 +112,12 @@ function Cards({
       <>
         {/* Overlay */}
         <div
-          className="fixed inset-0 bg-black/50 z-50 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-50 lg:hidden "
           onClick={closeModal}
         />
 
         {/* Modale */}
-        <div className="fixed inset-4 bg-white rounded-2xl z-50 lg:hidden overflow-hidden">
+        <div className="fixed inset-4 bg-white rounded-2xl z-50 lg:hidden overflow-hidden ">
           <div className="flex flex-col h-full">
             {/* Header de la modale */}
             <div className="flex justify-between items-start p-6 border-b border-gray-200">
@@ -147,114 +140,165 @@ function Cards({
             {/* Contenu de la modale */}
             <div className="flex-1 p-6 overflow-y-auto">
               <div className="space-y-6">
-                {/* Détails du projet */}
+                {/* Description */}
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">
-                    Détails du projet
+                  <h4 className="text-[#0E58D8] font-semibold mb-3">
+                    Description
                   </h4>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <p>• Date de début: {details.startDate}</p>
-                    <p>• Date de fin prévue: {details.endDate}</p>
-                    <p>• Équipe: {details.team}</p>
+                  <p className="text-gray-700 leading-relaxed">{description}</p>
+                </div>
+
+                {/* Dates */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+                    <p className="text-xs text-blue-700">Date de début</p>
+                    <p className="font-semibold text-blue-900 text-sm">
+                      {details.startDate}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+                    <p className="text-xs text-blue-700">Date de fin</p>
+                    <p className="font-semibold text-blue-900 text-sm">
+                      {details.endDate}
+                    </p>
                   </div>
                 </div>
 
-                {/* Deadline */}
+                {/* Ressources */}
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">Deadline</h4>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <p>• Kick off: {deadline.kickOff}</p>
-                    <p>• Follow up: {deadline.followUp}</p>
-                    <p>• Keynote: {deadline.keynote}</p>
-                    <p>• Jours restants: {deadline.daysRemaining} jours</p>
+                  <h4 className="text-[#0E58D8] font-semibold mb-3">
+                    Ressources
+                  </h4>
+                  <div className="space-y-2">
+                    {ressources && ressources.length > 0 ? (
+                      ressources.slice(0, 2).map((ressource, i) => {
+                        // Parser la ressource si c'est une chaîne JSON
+                        const resObj =
+                          typeof ressource === "string"
+                            ? (() => {
+                                try {
+                                  return JSON.parse(ressource);
+                                } catch {
+                                  return {};
+                                }
+                              })()
+                            : ressource;
+
+                        const isValidUrl =
+                          resObj?.url &&
+                          (resObj.url.startsWith("http") ||
+                            resObj.url.startsWith("/"));
+
+                        return (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <span className="text-sm text-gray-700 truncate block">
+                                {resObj.filename ||
+                                  resObj.name ||
+                                  `Ressource ${i + 1}`}
+                              </span>
+                              {resObj.uploaded_at && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Ajouté le{" "}
+                                  {new Date(
+                                    resObj.uploaded_at
+                                  ).toLocaleDateString("fr-FR")}
+                                </p>
+                              )}
+                            </div>
+                            {isValidUrl ? (
+                              <a
+                                href={resObj.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-2 bg-gradient-to-r from-[#0E58D8] to-[#2A6BFF] text-white text-xs font-medium rounded-lg hover:from-[#0E58D8]/90 hover:to-[#2A6BFF]/90 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 cursor-pointer border-0"
+                              >
+                                📥 Télécharger
+                              </a>
+                            ) : (
+                              <span className="text-xs text-gray-400 px-3 py-2 bg-gray-100 rounded-lg font-medium">
+                                Indisponible
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                        <span className="text-sm text-gray-500">
+                          Aucune ressource disponible
+                        </span>
+                      </div>
+                    )}
+                    {ressources && ressources.length > 2 && (
+                      <div className="text-center pt-2">
+                        <span className="text-xs text-gray-400">
+                          +{ressources.length - 2} autre(s) ressource(s)
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Documentation */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">
-                    Documentation
-                  </h4>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                      <p className="text-center text-gray-500">
-                        📄 {documentation.pdfName}
-                      </p>
-                      <p className="text-center text-xs text-gray-400 mt-1">
-                        Lien vers la documentation
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tâches récentes */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">
-                    Tâches récentes
-                  </h4>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    {tasks.map((task, index) => (
-                      <p key={index}>• {task}</p>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Statistiques */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">
-                    Statistiques
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-700">
-                        Progression globale
+                {/* Médailles */}
+                {trophies && trophies.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-[#0E58D8] font-semibold">
+                        Médailles
+                      </h4>
+                      <span className="text-xs text-[#0E58D8] bg-blue-50 px-2 py-1 rounded-full font-medium">
+                        {trophies.length} total
                       </span>
-                      <span className="text-sm font-bold text-gray-800">
-                        {clampedProgress}%
-                      </span>
                     </div>
-                    <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ease-out ${getProgressColor(
-                          clampedProgress
-                        )}`}
-                        style={{ width: `${clampedProgress}%` }}
-                      ></div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {trophies.slice(0, 4).map((trophy, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg"
+                        >
+                          <FontAwesomeIcon
+                            icon={faMedal}
+                            className={
+                              trophy.obtained
+                                ? "text-yellow-400"
+                                : "text-gray-300"
+                            }
+                          />
+                          <span className="text-xs text-blue-900 truncate max-w-[120px]">
+                            {trophy.name}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
-
-                {/* Statut actuel */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">
-                    Statut actuel
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700">
-                      {getStatusText(clampedProgress)}
-                    </span>
-                    <div
-                      className={`w-3 h-3 rounded-full ${getProgressColor(
-                        clampedProgress
-                      )}`}
-                    ></div>
-                  </div>
-                </div>
+                )}
 
                 {/* Actions */}
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">Actions</h4>
-                  <div className="space-y-2">
-                    <Link href={`/projects/${projectId}/details`}>
-                      <button className="w-full px-4 py-2 bg-[#0E58D8] text-white rounded-lg lg:hover:bg-[#0E58D8]/80 transition-colors text-sm cursor-pointer">
+                  <h4 className="text-[#0E58D8] font-semibold mb-3">Actions</h4>
+                  <div className="space-y-3">
+                    <Link
+                      href={
+                        userRole === "admin" || userRole === "advisor"
+                          ? `/admin/projects/${projectId}/details`
+                          : `/projects/${projectId}/details`
+                      }
+                    >
+                      <button className="w-full px-4 py-2 bg-[#0E58D8] text-white rounded-lg lg:hover:bg-[#0E58D8]/80 transition-colors text-sm cursor-pointer mb-3">
                         Voir les détails
                       </button>
                     </Link>
-                    <Link href={`/projects/${projectId}/teamBuilder`}>
-                      <button className="w-full px-4 py-2 bg-green-600 text-white rounded-lg lg:hover:bg-green-700 transition-colors text-sm cursor-pointer">
-                        Mon équipe
-                      </button>
-                    </Link>
+                    <DevelopmentBadge>
+                      <Link href={`/projects/${projectId}/teamBuilder`}>
+                        <button className="w-full px-4 py-2 bg-green-600 text-white rounded-lg lg:hover:bg-green-700 transition-colors text-sm cursor-pointer">
+                          Mon équipe
+                        </button>
+                      </Link>
+                    </DevelopmentBadge>
                     {(userRole === "admin" || userRole === "advisor") && (
                       <>
                         <button
@@ -281,217 +325,218 @@ function Cards({
     );
   }
 
-  // Carte étendue pour desktop
+  // Carte étendue pour desktop - Style Nexus moderne
   if (isExpanded) {
+    const topTrophies = (trophies || []).slice(0, 5);
+
+    // Debug: afficher les ressources reçues
+    console.log(
+      `🔍 Cards - Ressources reçues pour ${projectName}:`,
+      ressources
+    );
+    console.log(`🔍 Cards - Ressources length:`, ressources?.length);
+    console.log(`🔍 Cards - Trophies reçus pour ${projectName}:`, trophies);
+    console.log(`🔍 Cards - Trophies length:`, trophies?.length);
+    console.log(`🔍 Cards - TopTrophies (5 premiers):`, topTrophies);
+
     return (
       <div
-        className="col-span-2 row-span-2 w-full group relative z-20 hidden lg:block"
+        className="col-span-2 w-full group relative z-20 hidden lg:block"
         ref={expandedCardRef}
+        data-project-card
       >
-        <div className="bg-white rounded-2xl p-6 w-full h-full shadow-2xl lg:hover:shadow-3xl transition-all duration-300 ease-out border border-gray-100 lg:hover:border-[#0E58D8]/30 overflow-hidden">
-          <div className="flex flex-col h-full">
-            {/* Header de la carte étendue */}
-            <div className="flex justify-between items-start mb-4 flex-shrink-0">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="font-bold text-gray-800 text-xl lg:group-hover:text-[#0E58D8] transition-colors duration-300 break-words overflow-hidden">
-                    {projectName}
-                  </h3>
-                </div>
-                <p className="text-gray-600 text-base break-words overflow-hidden">
-                  {description}
-                </p>
+        <div className="border border-[#0E58D8]/20 shadow-2xl rounded-2xl overflow-hidden">
+          {/* Header bleu Nexus */}
+          <div className="bg-gradient-to-r from-[#0E58D8] to-[#2A6BFF] px-6 py-5 text-white flex items-center justify-between">
+            <h3 className="text-2xl font-bold truncate">{projectName}</h3>
+            <button
+              onClick={onToggle}
+              className="px-3 py-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Contenu principal */}
+          <div className="bg-white p-6 grid grid-cols-2 gap-6">
+            {/* Colonne gauche */}
+            <div className="space-y-4">
+              {/* Description */}
+              <div>
+                <h4 className="text-[#0E58D8] font-semibold mb-2">
+                  Description
+                </h4>
+                <p className="text-gray-700 leading-relaxed">{description}</p>
               </div>
-              <button
-                onClick={onToggle}
-                className="p-2 lg:hover:bg-gray-100 rounded-lg transition-colors cursor-pointer flex-shrink-0"
-              >
-                ✕
-              </button>
+
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+                  <p className="text-xs text-blue-700">Date de début</p>
+                  <p className="font-semibold text-blue-900 text-sm">
+                    {details.startDate}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
+                  <p className="text-xs text-blue-700">Date de fin</p>
+                  <p className="font-semibold text-blue-900 text-sm">
+                    {details.endDate}
+                  </p>
+                </div>
+              </div>
+
+              {/* Ressources */}
+              <div>
+                <h4 className="text-[#0E58D8] font-semibold mb-2">
+                  Ressources
+                </h4>
+                <div className="space-y-2">
+                  {ressources && ressources.length > 0 ? (
+                    ressources.slice(0, 2).map((ressource, i) => {
+                      // Parser la ressource si c'est une chaîne JSON
+                      const resObj =
+                        typeof ressource === "string"
+                          ? (() => {
+                              try {
+                                return JSON.parse(ressource);
+                              } catch {
+                                return {};
+                              }
+                            })()
+                          : ressource;
+
+                      const isValidUrl =
+                        resObj?.url &&
+                        (resObj.url.startsWith("http") ||
+                          resObj.url.startsWith("/"));
+
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <span className="text-sm text-gray-700 truncate block">
+                              {resObj.filename ||
+                                resObj.name ||
+                                `Ressource ${i + 1}`}
+                            </span>
+                            {resObj.uploaded_at && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Ajouté le{" "}
+                                {new Date(
+                                  resObj.uploaded_at
+                                ).toLocaleDateString("fr-FR")}
+                              </p>
+                            )}
+                          </div>
+                          {isValidUrl ? (
+                            <a
+                              href={resObj.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-2 bg-gradient-to-r from-[#0E58D8] to-[#2A6BFF] text-white text-xs font-medium rounded-lg hover:from-[#0E58D8]/90 hover:to-[#2A6BFF]/90 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 cursor-pointer border-0"
+                            >
+                              📥 Télécharger
+                            </a>
+                          ) : (
+                            <span className="text-xs text-gray-400 px-3 py-2 bg-gray-100 rounded-lg font-medium">
+                              Indisponible
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                      <span className="text-sm text-gray-500">
+                        Aucune ressource disponible
+                      </span>
+                    </div>
+                  )}
+                  {ressources && ressources.length > 2 && (
+                    <div className="text-center pt-2">
+                      <span className="text-xs text-gray-400">
+                        +{ressources.length - 2} autre(s) ressource(s)
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Contenu étendu */}
-            <div className="flex-1 grid grid-cols-2 gap-4 overflow-hidden min-h-0">
-              {/* Colonne gauche */}
-              <div className="space-y-4 overflow-y-auto">
+            {/* Colonne droite */}
+            <div className="space-y-4">
+              {/* Médailles */}
+              {topTrophies.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
-                    Détails du projet
-                  </h4>
-                  <div className="space-y-1 text-xs text-gray-600">
-                    <p>• Date de début: {details.startDate}</p>
-                    <p>• Date de fin prévue: {details.endDate}</p>
-                    <p>• Équipe: {details.team}</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-[#0E58D8] font-semibold">Médailles</h4>
+                    <span className="text-xs text-[#0E58D8] bg-blue-50 px-2 py-1 rounded-full font-medium">
+                      {trophies.length} total
+                    </span>
                   </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
-                    Deadline
-                  </h4>
-                  <div className="space-y-1 text-xs text-gray-600">
-                    <p>• Kick off: {deadline.kickOff}</p>
-                    <p>• Follow up: {deadline.followUp}</p>
-                    <p>• Keynote: {deadline.keynote}</p>
-                    <p>• Jours restants: {deadline.daysRemaining} jours</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
-                    Documentation
-                  </h4>
-                  <div className="space-y-1 text-xs text-gray-600">
-                    <div className="p-2 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                      <p className="text-center text-gray-500">
-                        📄 {documentation.pdfName}
-                      </p>
-                      <p className="text-center text-xs text-gray-400 mt-1">
-                        Lien vers la documentation
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
-                    Tâches récentes
-                  </h4>
-                  <div className="space-y-1 text-xs text-gray-600">
-                    {tasks.map((task, index) => (
-                      <p key={index}>• {task}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {topTrophies.slice(0, 4).map((trophy, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg"
+                      >
+                        <FontAwesomeIcon
+                          icon={faMedal}
+                          className={
+                            trophy.obtained
+                              ? "text-yellow-400"
+                              : "text-gray-300"
+                          }
+                        />
+                        <span className="text-xs text-blue-900 truncate max-w-[120px]">
+                          {trophy.name}
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Colonne droite */}
-              <div className="space-y-4 overflow-y-auto">
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
-                    Statistiques
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium text-gray-700">
-                        Progression globale
-                      </span>
-                      <span className="text-xs font-bold text-gray-800">
-                        {clampedProgress}%
-                      </span>
-                    </div>
-                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ease-out ${getProgressColor(
-                          clampedProgress
-                        )}`}
-                        style={{ width: `${clampedProgress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
-                    Statut actuel
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-gray-700">
-                      {getStatusText(clampedProgress)}
-                    </span>
-                    <div
-                      className={`w-2 h-2 rounded-full ${getProgressColor(
-                        clampedProgress
-                      )}`}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Aperçu des médailles */}
-                {trophies.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-2 text-sm">
-                      Médailles du projet
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-700">
-                          Progression des trophées
-                        </span>
-                        <span className="text-xs font-bold text-gray-800">
-                          {trophies.filter((t) => t.obtained).length}/
-                          {trophies.length}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-6 gap-1">
-                        {trophies.slice(0, 12).map((trophy, index) => (
-                          <div
-                            key={index}
-                            className="flex flex-col items-center"
-                          >
-                            <div className="relative">
-                              <FontAwesomeIcon
-                                icon={faMedal}
-                                size="sm"
-                                className={`${
-                                  trophy.obtained
-                                    ? "text-yellow-400"
-                                    : "text-gray-300 opacity-40"
-                                }`}
-                                onMouseEnter={() => setHoveredTrophy(index)}
-                                onMouseLeave={() => setHoveredTrophy(null)}
-                              />
-                              {/* Tooltip */}
-                              {hoveredTrophy === index && (
-                                <span className="absolute z-10 bottom-6 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-gray-900 text-white text-xs pointer-events-none whitespace-nowrap shadow-lg">
-                                  {trophy.description}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {trophies.length > 12 && (
-                        <p className="text-xs text-gray-500 text-center">
-                          +{trophies.length - 12} autres trophées
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
-                    Actions
-                  </h4>
-                  <div className="flex flex-col gap-1">
-                    <Link href={`/projects/${projectId}/details`}>
-                      <button className="w-full px-3 py-1.5 bg-[#0E58D8] text-white rounded-lg lg:hover:bg-[#0E58D8]/80 transition-colors text-xs cursor-pointer">
-                        Voir les détails
-                      </button>
-                    </Link>
+              {/* Actions */}
+              <div>
+                <h4 className="text-[#0E58D8] font-semibold mb-2">Actions</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <Link
+                    href={
+                      userRole === "admin" || userRole === "advisor"
+                        ? `/admin/projects/${projectId}/details`
+                        : `/projects/${projectId}/details`
+                    }
+                  >
+                    <button className="w-full px-4 py-2 bg-[#0E58D8] text-white rounded-lg hover:bg-[#0E58D8]/90 transition-colors text-sm cursor-pointer">
+                      Voir les détails
+                    </button>
+                  </Link>
+                  <DevelopmentBadge>
                     <Link href={`/projects/${projectId}/teamBuilder`}>
-                      <button className="w-full px-3 py-1.5 bg-green-600 text-white rounded-lg lg:hover:bg-green-700 transition-colors text-xs cursor-pointer">
+                      <button className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm cursor-pointer">
                         Mon équipe
                       </button>
                     </Link>
-                    {(userRole === "admin" || userRole === "advisor") && (
-                      <>
-                        <button
-                          onClick={onEdit}
-                          className="w-full px-3 py-1.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-xs cursor-pointer"
-                        >
-                          Modifier
-                        </button>
-                        <button
-                          onClick={onDelete}
-                          className="w-full px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs cursor-pointer"
-                        >
-                          Supprimer
-                        </button>
-                      </>
-                    )}
-                  </div>
+                  </DevelopmentBadge>
+                  {(userRole === "admin" || userRole === "advisor") && (
+                    <>
+                      <button
+                        onClick={onEdit}
+                        className="w-full px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm cursor-pointer"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        onClick={onDelete}
+                        className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm cursor-pointer"
+                      >
+                        Supprimer
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -501,50 +546,21 @@ function Cards({
     );
   }
 
-  // Carte normale
+  // Carte normale - Nom centré uniquement
   return (
     <div
       className={`w-full group transition-all duration-300 ${
         isBlurred ? "blur-sm" : ""
       }`}
+      data-project-card
     >
       <div
-        className="bg-white rounded-2xl p-6 w-full h-full shadow-sm lg:hover:shadow-xl cursor-pointer lg:hover:scale-105 transition-all duration-300 ease-out border border-gray-100 lg:hover:border-[#0E58D8]/30 relative"
+        className="bg-white rounded-2xl p-10 w-full h-[200px] shadow-sm lg:hover:shadow-xl cursor-pointer lg:hover:scale-105 transition-all duration-300 ease-out border border-gray-100 lg:hover:border-[#0E58D8]/30 flex items-center justify-center"
         onClick={handleCardClick}
       >
-        <div className="flex flex-col h-full">
-          {/* Header de la carte */}
-          <div className="flex-1 min-h-0">
-            <h3 className="font-bold text-gray-800 mb-3 text-xl lg:group-hover:text-[#0E58D8] transition-colors duration-300 break-words overflow-hidden">
-              {projectName}
-            </h3>
-            <p className="text-gray-600 mb-4 leading-relaxed break-words overflow-hidden">
-              {description}
-            </p>
-          </div>
-
-          {/* Section progression */}
-          <div className="space-y-3 mt-auto">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-700">
-                {getStatusText(clampedProgress)}
-              </span>
-              <span className="text-sm font-bold text-gray-800">
-                {clampedProgress}%
-              </span>
-            </div>
-
-            {/* Barre de progression */}
-            <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ease-out ${getProgressColor(
-                  clampedProgress
-                )}`}
-                style={{ width: `${clampedProgress}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
+        <h3 className="text-lg font-extrabold text-[#0E58D8] text-center truncate max-w-full">
+          {projectName}
+        </h3>
       </div>
     </div>
   );

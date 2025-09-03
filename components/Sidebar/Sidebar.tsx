@@ -333,7 +333,7 @@ const Sidebar = () => {
           </div>
 
           {/* Liens */}
-          <nav className="flex flex-col gap-2 md:gap-4">
+          <nav className="flex flex-col gap-2 md:gap-4 px-1">
             {/* Liens visibles pour tous les utilisateurs sauf advisor/admin */}
             {userRole !== "admin" && userRole !== "advisor" && (
               <>

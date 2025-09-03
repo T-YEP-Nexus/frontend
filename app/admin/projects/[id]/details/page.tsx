@@ -24,7 +24,8 @@ export default function AdminProjectDetailsPage() {
   const router = useRouter();
   const projectId = (params?.id as string) || "";
 
-  const { fetchAllProjects, projects, loading, error } = useProjectsData();
+  const { fetchAllProjects, fetchProjectById, projects, loading, error } =
+    useProjectsData();
 
   const [resourcesData, setResourcesData] = useState<{
     project_name: string;
@@ -45,10 +46,11 @@ export default function AdminProjectDetailsPage() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
-    fetchAllProjects();
-    // Dépendances vides pour éviter les rafraîchissements en boucle si la référence change
+    if (projectId) {
+      fetchProjectById(projectId);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [projectId]);
 
   useEffect(() => {
     const fetchResources = async () => {
@@ -108,12 +110,10 @@ export default function AdminProjectDetailsPage() {
           setAllStudents([]);
         }
 
-        // Pré-sélectionner le premier étudiant assigné si dispo
-        if (assignments.length > 0) {
-          setSelectedStudent(String(assignments[0].id_student));
-          setSelectedAssignmentId(String(assignments[0].id));
-          setAdvisorComment(assignments[0].advisor_comment || "");
-        }
+        // Par défaut: ne rien sélectionner, laisser l'utilisateur choisir
+        setSelectedStudent("");
+        setSelectedAssignmentId("");
+        setAdvisorComment("");
       } catch (e: any) {
         setStudentsError(e?.message || "Erreur inconnue");
       } finally {
@@ -210,112 +210,151 @@ export default function AdminProjectDetailsPage() {
         backIcon={<ArrowLeft className="w-4 h-4" />}
       />
 
-      {/* Sélection étudiant */}
-      <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200/50 mb-12 max-w-xl">
-        <h3 className="text-lg font-bold text-blue-900 mb-4">
-          Sélectionner un étudiant
-        </h3>
-        <div className="relative max-w-xl mx-auto" ref={dropdownRef}>
-          <button
-            type="button"
-            onClick={() => setDropdownOpen((o) => !o)}
-            className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 transition-all duration-300 hover:border-blue-400 hover:shadow-md flex items-center justify-between cursor-pointer"
-            disabled={studentsLoading}
-          >
-            <span
-              className={!selectedStudent ? "text-blue-400" : "text-blue-900"}
+      {/* Sélection + Description côte à côte */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        {/* Sélection étudiant */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200/50">
+          <h3 className="text-lg font-bold text-blue-900 mb-4">
+            Sélectionner un étudiant
+          </h3>
+          <div className="relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setDropdownOpen((o) => !o)}
+              className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 bg-white text-blue-900 transition-all duration-300 hover:border-blue-400 hover:shadow-md flex items-center justify-between cursor-pointer"
+              disabled={studentsLoading}
             >
-              {studentsLoading
-                ? "Chargement des étudiants..."
-                : selectedStudent
-                ? (() => {
-                    const found = allStudents.find(
-                      (s) => String(s.id) === String(selectedStudent)
-                    );
-                    const label = found?.profile
-                      ? `${found.profile.first_name} ${found.profile.last_name}`
-                      : found?.first_name && found?.last_name
-                      ? `${found.first_name} ${found.last_name}`
-                      : `Étudiant #${selectedStudent}`;
-                    return label;
-                  })()
-                : "Choisir un étudiant"}
-            </span>
-            <ChevronDown
-              size={20}
-              className={`text-blue-400 transition-transform duration-300 ${
-                dropdownOpen ? "rotate-180" : ""
-              }`}
-            />
-          </button>
+              <span
+                className={!selectedStudent ? "text-blue-400" : "text-blue-900"}
+              >
+                {studentsLoading
+                  ? "Chargement des étudiants..."
+                  : selectedStudent
+                  ? (() => {
+                      const found = allStudents.find(
+                        (s) => String(s.id) === String(selectedStudent)
+                      );
+                      const label = found?.profile
+                        ? `${found.profile.first_name} ${found.profile.last_name}`
+                        : found?.first_name && found?.last_name
+                        ? `${found.first_name} ${found.last_name}`
+                        : `Étudiant #${selectedStudent}`;
+                      return label;
+                    })()
+                  : "Choisir un étudiant"}
+              </span>
+              <ChevronDown
+                size={20}
+                className={`text-blue-400 transition-transform duration-300 ${
+                  dropdownOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
 
-          {dropdownOpen && !studentsLoading && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border-2 border-blue-200 rounded-xl shadow-lg z-50 max-h-72 overflow-y-auto">
-              {assignedStudents.length > 0 && (
-                <div className="px-4 py-2 text-xs text-blue-700 bg-blue-50 border-b border-blue-100">
-                  Étudiants assignés
+            {dropdownOpen && !studentsLoading && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border-2 border-blue-200 rounded-xl shadow-lg z-50 max-h-72 overflow-y-auto">
+                {assignedStudents.length > 0 && (
+                  <div className="px-4 py-2 text-xs text-blue-700 bg-blue-50 border-b border-blue-100">
+                    Étudiants assignés
+                  </div>
+                )}
+                {assignedStudents.map((as) => (
+                  <button
+                    key={as.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedStudent(String(as.id_student));
+                      setSelectedAssignmentId(String(as.id));
+                      setAdvisorComment(as.advisor_comment || "");
+                      setDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-300 cursor-pointer border-b border-blue-100 last:border-b-0"
+                  >
+                    {(() => {
+                      const s = allStudents.find(
+                        (st) => String(st.id) === String(as.id_student)
+                      );
+                      return s?.profile
+                        ? `${s.profile.first_name} ${s.profile.last_name}`
+                        : s?.first_name && s?.last_name
+                        ? `${s.first_name} ${s.last_name}`
+                        : `Étudiant #${as.id_student}`;
+                    })()}
+                  </button>
+                ))}
+
+                <div className="px-4 py-2 text-xs text-blue-700 bg-blue-50 border-y border-blue-100">
+                  Tous les étudiants
                 </div>
-              )}
-              {assignedStudents.map((as) => (
-                <button
-                  key={as.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedStudent(String(as.id_student));
-                    setSelectedAssignmentId(String(as.id));
-                    setAdvisorComment(as.advisor_comment || "");
-                    setDropdownOpen(false);
-                  }}
-                  className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-300 cursor-pointer border-b border-blue-100 last:border-b-0"
-                >
-                  {(() => {
-                    const s = allStudents.find(
-                      (st) => String(st.id) === String(as.id_student)
-                    );
-                    return s?.profile
+                {allStudents.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedStudent(String(s.id));
+                      const foundAssign = assignedStudents.find(
+                        (a) => String(a.id_student) === String(s.id)
+                      );
+                      setSelectedAssignmentId(
+                        foundAssign ? String(foundAssign.id) : ""
+                      );
+                      setAdvisorComment(foundAssign?.advisor_comment || "");
+                      setDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-300 cursor-pointer border-b border-blue-100 last:border-b-0"
+                  >
+                    {s.profile
                       ? `${s.profile.first_name} ${s.profile.last_name}`
-                      : s?.first_name && s?.last_name
+                      : s.first_name && s.last_name
                       ? `${s.first_name} ${s.last_name}`
-                      : `Étudiant #${as.id_student}`;
-                  })()}
-                </button>
-              ))}
-
-              <div className="px-4 py-2 text-xs text-blue-700 bg-blue-50 border-y border-blue-100">
-                Tous les étudiants
+                      : `Étudiant #${s.id}`}
+                  </button>
+                ))}
               </div>
-              {allStudents.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedStudent(String(s.id));
-                    const foundAssign = assignedStudents.find(
-                      (a) => String(a.id_student) === String(s.id)
-                    );
-                    setSelectedAssignmentId(
-                      foundAssign ? String(foundAssign.id) : ""
-                    );
-                    setAdvisorComment(foundAssign?.advisor_comment || "");
-                    setDropdownOpen(false);
-                  }}
-                  className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-300 cursor-pointer border-b border-blue-100 last:border-b-0"
-                >
-                  {s.profile
-                    ? `${s.profile.first_name} ${s.profile.last_name}`
-                    : s.first_name && s.last_name
-                    ? `${s.first_name} ${s.last_name}`
-                    : `Étudiant #${s.id}`}
-                </button>
-              ))}
-            </div>
-          )}
+            )}
 
-          {studentsError && (
-            <p className="text-red-600 text-sm mt-2">{studentsError}</p>
-          )}
+            {studentsError && (
+              <p className="text-red-600 text-sm mt-2">{studentsError}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Description du projet (à droite) */}
+        <div className="bg-white rounded-2xl p-6 shadow-lg border-2 border-blue-200/50">
+          <h3 className="text-lg font-bold text-blue-900 mb-4">
+            Description du projet
+          </h3>
+          <p className="text-gray-700">
+            {resourcesData?.description ||
+              (currentProject as any)?.description ||
+              "Aucune description disponible."}
+          </p>
         </div>
       </div>
+
+      {/* Barre de progression principale (alignée sur la page student) */}
+      {selectedStudent && (
+        <DevelopmentBadge>
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-3">
+                <h2 className="text-white text-xl font-semibold">
+                  Progression globale
+                </h2>
+              </div>
+              <span className="text-white font-bold text-2xl">
+                {(currentProject as any)?.progress ?? 0}%
+              </span>
+            </div>
+            <div className="w-full bg-white/20 rounded-full h-4">
+              <div
+                className="bg-white h-4 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${(currentProject as any)?.progress ?? 0}%` }}
+              ></div>
+            </div>
+          </div>
+        </DevelopmentBadge>
+      )}
 
       {/* Commentaire administrateur (visible après sélection d'un étudiant) */}
       {selectedStudent && (
@@ -347,7 +386,7 @@ export default function AdminProjectDetailsPage() {
                       }
                     );
                   }}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700! cursor-pointer text-white"
                   disabled={!selectedAssignmentId}
                 >
                   {selectedAssignmentId
@@ -362,16 +401,6 @@ export default function AdminProjectDetailsPage() {
 
       {selectedStudent && (
         <>
-          {/* Description */}
-          <MainCard
-            title="Description du projet"
-            icon={<AlertCircle className="w-6 h-6 text-blue-500" />}
-          >
-            <p className="text-gray-700">
-              {resourcesData?.description || "Aucune description disponible."}
-            </p>
-          </MainCard>
-
           {/* Ressources */}
           <div className="mt-8">
             <MainCard
@@ -381,38 +410,56 @@ export default function AdminProjectDetailsPage() {
               {resourcesData?.resources &&
               resourcesData.resources.length > 0 ? (
                 <div className="space-y-2">
-                  {resourcesData.resources.map((res, idx) => (
-                    <div
-                      key={`${res.filename}-${idx}`}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-semibold text-gray-800 truncate">
-                          {res.filename}
-                        </h4>
-                        <p className="text-xs text-gray-500">
-                          Ajouté le{" "}
-                          {new Date(res.uploaded_at).toLocaleDateString(
-                            "fr-FR"
+                  {resourcesData.resources.map((resource, idx) => {
+                    const resObj =
+                      typeof resource === "string"
+                        ? (() => {
+                            try {
+                              return JSON.parse(resource);
+                            } catch {
+                              return {};
+                            }
+                          })()
+                        : resource;
+                    const isValidUrl =
+                      resObj?.url &&
+                      (resObj.url.startsWith("http") ||
+                        resObj.url.startsWith("/"));
+                    return (
+                      <div
+                        key={`${resObj.filename || idx}-${idx}`}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-semibold text-gray-800 truncate">
+                            {resObj.filename || `Ressource ${idx + 1}`}
+                          </h4>
+                          {resObj?.uploaded_at && (
+                            <p className="text-xs text-gray-500">
+                              Ajouté le{" "}
+                              {new Date(resObj.uploaded_at).toLocaleDateString(
+                                "fr-FR"
+                              )}
+                            </p>
                           )}
-                        </p>
-                      </div>
-                      {res.url ? (
-                        <a
-                          href={res.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors font-medium cursor-pointer ml-4"
-                        >
-                          Télécharger
-                        </a>
-                      ) : (
-                        <div className="px-4 py-2 bg-gray-300 text-gray-600 rounded-lg font-medium ml-4">
-                          Indisponible
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        {isValidUrl ? (
+                          <a
+                            href={resObj.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-600 text-white rounded-lg transition-colors font-medium cursor-pointer ml-4"
+                          >
+                            Télécharger
+                          </a>
+                        ) : (
+                          <div className="px-4 py-2 bg-gray-300 text-gray-600 rounded-lg font-medium ml-4">
+                            Indisponible
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
@@ -450,33 +497,91 @@ export default function AdminProjectDetailsPage() {
               </div>
             </MainCard>
             <DevelopmentBadge>
-            <MainCard
-              title="Deadlines"
-              icon={<Clock className="w-6 h-6 text-blue-500" />}
-            >
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-gray-500">Kick off</p>
-                  <p className="font-semibold text-gray-800">
-                    {generalInfo.deadline.kickOff}
-                  </p>
+              <MainCard
+                title="Deadlines"
+                icon={<Clock className="w-6 h-6 text-blue-500" />}
+              >
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-500">Kick off</p>
+                    <p className="font-semibold text-gray-800">
+                      {generalInfo.deadline.kickOff}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Follow up</p>
+                    <p className="font-semibold text-gray-800">
+                      {generalInfo.deadline.followUp}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Keynote</p>
+                    <p className="font-semibold text-gray-800">
+                      {generalInfo.deadline.keynote}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Follow up</p>
-                  <p className="font-semibold text-gray-800">
-                    {generalInfo.deadline.followUp}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Keynote</p>
-                  <p className="font-semibold text-gray-800">
-                    {generalInfo.deadline.keynote}
-                  </p>
-                </div>
-              </div>
-            </MainCard>
+              </MainCard>
             </DevelopmentBadge>
           </div>
+
+          {/* Hot Topics & Compétences (même rendu que côté student) */}
+          {(() => {
+            if (!selectedStudent) return null;
+            const cp: any = currentProject || {};
+            const hotTopics = cp.hotTopics;
+            const skills = cp.skills;
+            if (!hotTopics && !skills) return null;
+            return (
+              <MainCard
+                title="Hot Topics & Compétences mobilisées"
+                icon={<AlertCircle className="w-6 h-6 text-blue-500" />}
+              >
+                <div className="space-y-4">
+                  {Array.isArray(hotTopics) && hotTopics.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="font-semibold text-blue-700 mb-2">
+                        Hot Topics
+                      </h3>
+                      {hotTopics.map((topic: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="p-4 border-l-4 border-yellow-400 bg-yellow-50 rounded-lg mb-2"
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <AlertCircle className="w-5 h-5 text-yellow-500" />
+                            <span className="font-semibold text-yellow-700">
+                              {topic.title}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 text-sm">
+                            {topic.description}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {Array.isArray(skills) && skills.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-blue-700 mb-2">
+                        Compétences impliquées
+                      </h3>
+                      <ul className="flex flex-wrap gap-2">
+                        {skills.map((skill: string, idx: number) => (
+                          <li
+                            key={idx}
+                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                          >
+                            {skill}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </MainCard>
+            );
+          })()}
 
           {/* Médailles */}
           <div className="mt-8">
@@ -524,6 +629,37 @@ export default function AdminProjectDetailsPage() {
               })()}
             </MainCard>
           </div>
+
+          {/* Équipe (si dispo, comme côté student) */}
+          {(() => {
+            if (!selectedStudent) return null;
+            const cp: any = currentProject || {};
+            if (!Array.isArray(cp.team) || cp.team.length === 0) return null;
+            return (
+              <div className="mt-8">
+                <MainCard
+                  title="Équipe"
+                  icon={<Users className="w-6 h-6 text-blue-500" />}
+                >
+                  <div className="space-y-3">
+                    {cp.team.map((member: any, index: number) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-lg">
+                          {member.avatar}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-800">
+                            {member.name}
+                          </p>
+                          <p className="text-sm text-gray-500">{member.role}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </MainCard>
+              </div>
+            );
+          })()}
         </>
       )}
     </div>

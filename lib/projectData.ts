@@ -94,7 +94,7 @@ export const defaultProjectData: Project[] = [
         uploaded_at: "2024-01-15T10:00:00Z"
       },
       {
-        filename: "annexe_tdev500.pdf", 
+        filename: "annexe_tdev500.pdf",
         url: "/resources/annexe_tdev500.pdf",
         description: "Annexe technique",
         uploaded_at: "2024-01-15T10:30:00Z"
@@ -200,7 +200,7 @@ export const getAllProjects = async (): Promise<Project[]> => {
     }
 
     const result: ApiResponse<Project[]> = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.message);
     }
@@ -227,7 +227,7 @@ export const getProjectById = async (projectId: string): Promise<Project | null>
     }
 
     const result: ApiResponse<Project> = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.message);
     }
@@ -252,7 +252,7 @@ export const getProjectsByCreator = async (creatorId: string): Promise<Project[]
     }
 
     const result: ApiResponse<Project[]> = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.message);
     }
@@ -276,7 +276,7 @@ export const getProjectsByPromotion = async (promotionId: string): Promise<Proje
     }
 
     const result: ApiResponse<Project[]> = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.message);
     }
@@ -300,7 +300,7 @@ export const getActiveProjects = async (): Promise<Project[]> => {
     }
 
     const result: ApiResponse<Project[]> = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.message);
     }
@@ -342,9 +342,9 @@ export const createProject = async (projectData: NewProjectInput): Promise<Proje
 
   } catch (error: any) {
     console.error("❌ DEBUG - Erreur dans createProject:", error);
-    
+
     console.warn("Service projects indisponible, simulation de la création:", error);
-    
+
     const newProject: Project = {
       id: `project-${Date.now()}`,
       name: projectData.name,
@@ -358,7 +358,7 @@ export const createProject = async (projectData: NewProjectInput): Promise<Proje
 
     defaultProjectData.push(newProject);
 
-    await new Promise(resolve => setTimeout(resolve, 300)); 
+    await new Promise(resolve => setTimeout(resolve, 300));
     console.log('Projet créé localement (simulation):', newProject);
     return newProject;
   }
@@ -395,14 +395,14 @@ export const createProjectAndAssignToStudents = async (projectDataStudents: NewP
     console.log("🔍 DEBUG - Étape 3: Création des assignations project_student");
     const assignmentPromises = students.map(async (student: any, index: number) => {
       console.log(`🔍 DEBUG - Assignation ${index + 1}/${students.length} - Étudiant ID:`, student.id);
-      
+
       const assignmentData: Partial<ProjectStudent> = {
         id_student: student.id,
         id_project: projectId,
         due_date: projectDataStudents.due_date,
         assigned_at: new Date().toISOString(),
         advisor_comment: projectDataStudents.advisor_comment,
-        score: projectDataStudents.score || [], 
+        score: projectDataStudents.score || [],
         max_score: (projectDataStudents.score && Array.isArray(projectDataStudents.score)) ? projectDataStudents.score.length : 0,
         created_at: new Date().toISOString()
       };
@@ -466,7 +466,7 @@ export const updateProject = async (projectId: string, updates: UpdateProjectInp
     }
 
     const result: ApiResponse<Project> = await response.json();
-    
+
     if (!result.success || !result.data) {
       throw new Error(result.message || 'Failed to update project');
     }
@@ -475,7 +475,7 @@ export const updateProject = async (projectId: string, updates: UpdateProjectInp
     return result.data;
   } catch (error) {
     console.warn("Service projects indisponible, simulation de la mise à jour:", error);
-    
+
     // Simulation de la mise à jour pour les tests
     const existingProject = defaultProjectData.find(p => p.id === projectId);
     if (!existingProject) {
@@ -514,7 +514,7 @@ export const deleteProject = async (projectId: string): Promise<void> => {
     }
 
     const result: ApiResponse<{ deletedProject: Project }> = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.message || 'Failed to delete project');
     }
@@ -522,7 +522,7 @@ export const deleteProject = async (projectId: string): Promise<void> => {
     console.log('Projet supprimé avec succès:', result.data?.deletedProject);
   } catch (error) {
     console.warn("Service projects indisponible, simulation de la suppression:", error);
-    
+
     // Simulation de la suppression pour les tests
     const index = defaultProjectData.findIndex(p => p.id === projectId);
     if (index === -1) {
@@ -530,7 +530,7 @@ export const deleteProject = async (projectId: string): Promise<void> => {
     }
 
     const deletedProject = defaultProjectData.splice(index, 1)[0];
-    
+
     await new Promise(resolve => setTimeout(resolve, 300));
     console.log('Projet supprimé localement (simulation):', deletedProject);
   }
@@ -551,7 +551,7 @@ export const toggleProjectActive = async (projectId: string): Promise<Project> =
     }
 
     const result: ApiResponse<Project> = await response.json();
-    
+
     if (!result.success || !result.data) {
       throw new Error(result.message || 'Failed to toggle project status');
     }
@@ -560,7 +560,7 @@ export const toggleProjectActive = async (projectId: string): Promise<Project> =
     return result.data;
   } catch (error) {
     console.warn("Service projects indisponible, simulation du basculement:", error);
-    
+
     // Simulation du basculement pour les tests
     const project = defaultProjectData.find(p => p.id === projectId);
     if (!project) {
@@ -589,7 +589,7 @@ export const getProjectResources = async (projectId: string): Promise<{ project_
     }
 
     const result: ApiResponse<{ project_name: string;description: string; resources: ProjectResource[]; resources_count: number }> = await response.json();
-    
+
     if (!result.success || !result.data) {
       throw new Error(result.message || 'Failed to fetch project resources');
     }
@@ -597,11 +597,15 @@ export const getProjectResources = async (projectId: string): Promise<{ project_
     return result.data;
   } catch (error) {
     console.warn("Service projects indisponible, utilisation des données par défaut:", error);
-    
-    const project = defaultProjectData.find(p => p.id === projectId);
+
+    // Utiliser le premier projet disponible au lieu de chercher par ID exact
+    const project = defaultProjectData[0]; // Utiliser toujours le premier projet
     if (!project) {
       throw new Error('Project not found');
     }
+
+    console.log("📁 Utilisation des données par défaut pour le projet:", project.name);
+    console.log("📁 Ressources par défaut:", project.ressources);
 
     return {
       project_name: project.name,
@@ -628,7 +632,7 @@ export const addProjectResource = async (projectId: string, resource: Omit<Proje
     }
 
     const result: ApiResponse<{ project: Project; added_resource: ProjectResource }> = await response.json();
-    
+
     if (!result.success || !result.data) {
       throw new Error(result.message || 'Failed to add resource');
     }
@@ -637,7 +641,7 @@ export const addProjectResource = async (projectId: string, resource: Omit<Proje
     return result.data;
   } catch (error) {
     console.warn("Service projects indisponible, simulation de l'ajout de ressource:", error);
-    
+
     const project = defaultProjectData.find(p => p.id === projectId);
     if (!project) {
       throw new Error('Project not found');
@@ -652,7 +656,7 @@ export const addProjectResource = async (projectId: string, resource: Omit<Proje
 
     await new Promise(resolve => setTimeout(resolve, 300));
     console.log('Ressource ajoutée localement (simulation):', newResource);
-    
+
     return {
       project: project,
       added_resource: newResource
@@ -675,7 +679,7 @@ export const removeProjectResource = async (projectId: string, filename: string)
     }
 
     const result: ApiResponse<{ project: Project; removed_resource: ProjectResource }> = await response.json();
-    
+
     if (!result.success || !result.data) {
       throw new Error(result.message || 'Failed to remove resource');
     }
@@ -684,7 +688,7 @@ export const removeProjectResource = async (projectId: string, filename: string)
     return result.data;
   } catch (error) {
     console.warn("Service projects indisponible, simulation de la suppression de ressource:", error);
-    
+
     const project = defaultProjectData.find(p => p.id === projectId);
     if (!project) {
       throw new Error('Project not found');
@@ -699,7 +703,7 @@ export const removeProjectResource = async (projectId: string, filename: string)
 
     await new Promise(resolve => setTimeout(resolve, 300));
     console.log('Ressource supprimée localement (simulation):', removedResource);
-    
+
     return {
       project: project,
       removed_resource: removedResource
@@ -727,8 +731,8 @@ export const filterProjects = (projects: Project[], filters: ProjectFilters): Pr
 
   if (filters.searchTerm) {
     const searchTerm = filters.searchTerm.toLowerCase();
-    filteredProjects = filteredProjects.filter(p => 
-      p.name.toLowerCase().includes(searchTerm) || 
+    filteredProjects = filteredProjects.filter(p =>
+      p.name.toLowerCase().includes(searchTerm) ||
       p.description.toLowerCase().includes(searchTerm)
     );
   }

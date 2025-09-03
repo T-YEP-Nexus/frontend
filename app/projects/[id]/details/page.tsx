@@ -140,7 +140,6 @@ export default function ProjectDetails({
         <div className="flex items-center gap-4 mb-8">
           <ProjectHeader
             title={resourcesData?.project_name}
-            description="Détails du projet"
             backIcon={<ArrowLeft size={20} />}
           />
         </div>
