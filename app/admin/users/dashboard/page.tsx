@@ -812,215 +812,326 @@ export default function AdminDashboard() {
             Liste des utilisateurs
           </h2>
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gradient-to-r from-blue-50 to-blue-100">
-              <tr>
-                <th
-                  className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-200 transition-all duration-300"
-                  onClick={() => handleSort("name")}
-                >
-                  <div className="flex items-center gap-2">
-                    Utilisateur
-                    {sortBy === "name" && (
-                      <span className="text-blue-600 font-bold">
-                        {sortOrder === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                  </div>
-                </th>
-                <th
-                  className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-200 transition-all duration-300"
-                  onClick={() => handleSort("role")}
-                >
-                  <div className="flex items-center gap-2">
-                    Rôle
-                    {sortBy === "role" && (
-                      <span className="text-blue-600 font-bold">
-                        {sortOrder === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                  </div>
-                </th>
-                <th
-                  className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-200 transition-all duration-300"
-                  onClick={() => handleSort("promotion")}
-                >
-                  <div className="flex items-center gap-2">
-                    Promo/Dispo
-                    {sortBy === "promotion" && (
-                      <span className="text-blue-600 font-bold">
-                        {sortOrder === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
-                  Contact
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
-                  Campus
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-blue-200/50">
-              {usersToDisplay.map((user) => (
-                <tr
-                  key={user.id}
-                  className="hover:bg-blue-100/80 transition-all duration-300 cursor-pointer group"
-                >
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
-                        <img
-                          className="h-10 w-10 rounded-full border-2 border-blue-200 group-hover:border-blue-400 transition-all duration-300 shadow-lg group-hover:shadow-xl"
-                          src={user.profileImage || "/images/Avatar.png"}
-                          alt={`${user.first_name} ${user.last_name}`}
-                        />
-                      </div>
-                      <div className="ml-2">
-                        <div className="text-xs font-semibold text-blue-900 group-hover:text-blue-700 transition-colors duration-300 truncate max-w-[120px]">
-                          {user.first_name} {user.last_name}
-                        </div>
-                        {user.student?.student_number && (
-                          <div className="text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
-                            {user.student.student_number}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
+        {/* Version bureau: tableau (masqué sur mobile) */}
+        <div className="hidden md:block">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gradient-to-r from-blue-50 to-blue-100">
+                <tr>
+                  <th
+                    className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-200 transition-all duration-300"
+                    onClick={() => handleSort("name")}
+                  >
                     <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg group-hover:scale-110 transition-transform duration-300">
-                        {getRoleIcon(user.roles_user)}
-                      </div>
-                      <span className="text-xs font-medium text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
-                        {getRoleLabel(user.roles_user)}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="text-xs font-medium text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
-                      {user.roles_user === "student"
-                        ? user.student?.promotion_name ||
-                          "Promotion non définie"
-                        : user.advisor?.major ||
-                          user.student?.major ||
-                          "Spécialité non définie"}
-                    </div>
-                    {user.roles_user === "student" && user.student?.major && (
-                      <div className="text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
-                        {user.student.major}
-                      </div>
-                    )}
-                    {(user.roles_user === "advisor" ||
-                      user.roles_user === "admin") &&
-                      user.advisor?.availability && (
-                        <div className="text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
-                          {user.advisor.availability}
-                        </div>
+                      Utilisateur
+                      {sortBy === "name" && (
+                        <span className="text-blue-600 font-bold">
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </span>
                       )}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-xs text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
-                        <Mail
-                          size={12}
-                          className="text-blue-500 group-hover:text-blue-600 transition-colors duration-300"
-                        />
-                        <span className="truncate max-w-[120px]">
-                          {user.email}
+                    </div>
+                  </th>
+                  <th
+                    className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-200 transition-all duration-300"
+                    onClick={() => handleSort("role")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Rôle
+                      {sortBy === "role" && (
+                        <span className="text-blue-600 font-bold">
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-200 transition-all duration-300"
+                    onClick={() => handleSort("promotion")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Promo/Dispo
+                      {sortBy === "promotion" && (
+                        <span className="text-blue-600 font-bold">
+                          {sortOrder === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
+                    Campus
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-blue-200/50">
+                {usersToDisplay.map((user) => (
+                  <tr
+                    key={user.id}
+                    className="hover:bg-blue-100/80 transition-all duration-300 cursor-pointer group"
+                  >
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <img
+                            className="h-10 w-10 rounded-full border-2 border-blue-200 group-hover:border-blue-400 transition-all duration-300 shadow-lg group-hover:shadow-xl"
+                            src={user.profileImage || "/images/Avatar.png"}
+                            alt={`${user.first_name} ${user.last_name}`}
+                          />
+                        </div>
+                        <div className="ml-2">
+                          <div className="text-xs font-semibold text-blue-900 group-hover:text-blue-700 transition-colors duration-300 truncate max-w-[120px]">
+                            {user.first_name} {user.last_name}
+                          </div>
+                          {user.student?.student_number && (
+                            <div className="text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
+                              {user.student.student_number}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                          {getRoleIcon(user.roles_user)}
+                        </div>
+                        <span className="text-xs font-medium text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
+                          {getRoleLabel(user.roles_user)}
                         </span>
                       </div>
-                      {user.phone && (
-                        <div className="flex items-center gap-2 text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
-                          <Phone
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="text-xs font-medium text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
+                        {user.roles_user === "student"
+                          ? user.student?.promotion_name ||
+                            "Promotion non définie"
+                          : user.advisor?.major ||
+                            user.student?.major ||
+                            "Spécialité non définie"}
+                      </div>
+                      {user.roles_user === "student" && user.student?.major && (
+                        <div className="text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
+                          {user.student.major}
+                        </div>
+                      )}
+                      {(user.roles_user === "advisor" ||
+                        user.roles_user === "admin") &&
+                        user.advisor?.availability && (
+                          <div className="text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
+                            {user.advisor.availability}
+                          </div>
+                        )}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
+                          <Mail
                             size={12}
                             className="text-blue-500 group-hover:text-blue-600 transition-colors duration-300"
                           />
-                          <span className="truncate max-w-[100px]">
-                            {user.phone}
+                          <span className="truncate max-w-[120px]">
+                            {user.email}
                           </span>
                         </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2 text-xs text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
-                      <MapPin
-                        size={12}
-                        className="text-blue-500 group-hover:text-blue-600 transition-colors duration-300"
-                      />
-                      <span className="truncate max-w-[100px]">
-                        {user.campus}
-                      </span>
-                    </div>
-                    {user.advisor?.room && (
-                      <div className="flex items-center gap-2 text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
-                        <Building
+                        {user.phone && (
+                          <div className="flex items-center gap-2 text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
+                            <Phone
+                              size={12}
+                              className="text-blue-500 group-hover:text-blue-600 transition-colors duration-300"
+                            />
+                            <span className="truncate max-w-[100px]">
+                              {user.phone}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2 text-xs text-blue-900 group-hover:text-blue-700 transition-colors duration-300">
+                        <MapPin
                           size={12}
                           className="text-blue-500 group-hover:text-blue-600 transition-colors duration-300"
                         />
-                        <span className="truncate max-w-[80px]">
-                          {user.advisor.room}
+                        <span className="truncate max-w-[100px]">
+                          {user.campus}
                         </span>
                       </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleViewUser(user)}
-                        className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
-                      >
-                        Voir
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          router.push(`/admin/users/edit/${user.id}`)
-                        }
-                        className={`group/btn border font-medium px-3 py-1.5 rounded-lg transition-all duration-300 cursor-pointer text-xs ${
-                          canEditUser(user)
-                            ? "border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white hover:scale-105"
-                            : "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed opacity-50"
-                        }`}
-                        disabled={!canEditUser(user)}
-                        title={getEditButtonMessage(user)}
-                      >
-                        Modifier
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setUserToDelete(user);
-                          setShowDeleteModal(true);
-                        }}
-                        className={`group/btn border font-medium px-3 py-1.5 rounded-lg transition-all duration-300 cursor-pointer text-xs ${
-                          canDeleteUser(user)
-                            ? "border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white hover:scale-105"
-                            : "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed opacity-50"
-                        }`}
-                        disabled={!canDeleteUser(user)}
-                        title={getDeleteButtonMessage(user)}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+                      {user.advisor?.room && (
+                        <div className="flex items-center gap-2 text-xs text-blue-600 group-hover:text-blue-500 transition-colors duration-300">
+                          <Building
+                            size={12}
+                            className="text-blue-500 group-hover:text-blue-600 transition-colors duration-300"
+                          />
+                          <span className="truncate max-w-[80px]">
+                            {user.advisor.room}
+                          </span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewUser(user)}
+                          className="group/btn border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg hover:scale-105 cursor-pointer text-xs"
+                        >
+                          Voir
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            router.push(`/admin/users/edit/${user.id}`)
+                          }
+                          className={`group/btn border font-medium px-3 py-1.5 rounded-lg transition-all duration-300 cursor-pointer text-xs ${
+                            canEditUser(user)
+                              ? "border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white hover:scale-105"
+                              : "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed opacity-50"
+                          }`}
+                          disabled={!canEditUser(user)}
+                          title={getEditButtonMessage(user)}
+                        >
+                          Modifier
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setUserToDelete(user);
+                            setShowDeleteModal(true);
+                          }}
+                          className={`group/btn border font-medium px-3 py-1.5 rounded-lg transition-all duration-300 cursor-pointer text-xs ${
+                            canDeleteUser(user)
+                              ? "border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white hover:scale-105"
+                              : "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed opacity-50"
+                          }`}
+                          disabled={!canDeleteUser(user)}
+                          title={getDeleteButtonMessage(user)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Version mobile: cartes (affichée uniquement sur mobile) */}
+        <div className="md:hidden">
+          <div className="space-y-3 px-3 py-3">
+            {usersToDisplay.map((user) => (
+              <div
+                key={user.id}
+                className="p-4 bg-white rounded-xl border border-blue-200 shadow-sm hover:shadow-md hover:bg-blue-50 transition-all duration-300"
+              >
+                <div className="flex items-center gap-3">
+                  <img
+                    className="h-12 w-12 rounded-full border-2 border-blue-200"
+                    src={user.profileImage || "/images/Avatar.png"}
+                    alt={`${user.first_name} ${user.last_name}`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-blue-900 truncate">
+                        {user.first_name} {user.last_name}
+                      </p>
+                      <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-700 whitespace-nowrap">
+                        {getRoleLabel(user.roles_user)}
+                      </span>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    {user.student?.student_number && (
+                      <p className="text-xs text-blue-600 truncate">
+                        {user.student.student_number}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="text-[11px] text-blue-700">
+                    <span className="block font-medium text-blue-900">
+                      {user.roles_user === "student"
+                        ? "Promotion"
+                        : "Spécialité"}
+                    </span>
+                    <span className="block">
+                      {user.roles_user === "student"
+                        ? user.student?.promotion_name || "Non définie"
+                        : user.advisor?.major ||
+                          user.student?.major ||
+                          "Non définie"}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-blue-700">
+                    <span className="block font-medium text-blue-900">
+                      Campus
+                    </span>
+                    <span className="block truncate">{user.campus}</span>
+                  </div>
+                  <div className="col-span-2 text-[11px] text-blue-700">
+                    <span className="block font-medium text-blue-900">
+                      Contact
+                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="truncate">{user.email}</span>
+                      {user.phone && (
+                        <span className="truncate">• {user.phone}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleViewUser(user)}
+                    className="border border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-300 font-medium px-3 py-1.5 rounded-lg cursor-pointer text-xs"
+                  >
+                    Voir
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => router.push(`/admin/users/edit/${user.id}`)}
+                    className={`border font-medium px-3 py-1.5 rounded-lg transition-all duration-300 cursor-pointer text-xs ${
+                      canEditUser(user)
+                        ? "border-blue-200 text-blue-700 hover:bg-blue-600 hover:border-blue-600 hover:text-white"
+                        : "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed opacity-50"
+                    }`}
+                    disabled={!canEditUser(user)}
+                    title={getEditButtonMessage(user)}
+                  >
+                    Modifier
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setUserToDelete(user);
+                      setShowDeleteModal(true);
+                    }}
+                    className={`ml-auto border font-medium px-3 py-1.5 rounded-lg transition-all duration-300 cursor-pointer text-xs ${
+                      canDeleteUser(user)
+                        ? "border-red-200 text-red-700 hover:bg-red-600 hover:border-red-600 hover:text-white"
+                        : "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed opacity-50"
+                    }`}
+                    disabled={!canDeleteUser(user)}
+                    title={getDeleteButtonMessage(user)}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Bouton Afficher plus */}
@@ -1085,7 +1196,7 @@ export default function AdminDashboard() {
           style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
         >
           <div
-            className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative transform transition-all duration-300 ${
+            className={`bg-white rounded-2xl shadow-2xl w-full max-w-md sm:max-w-xl md:max-w-2xl mx-4 sm:mx-6 max-h-[85vh] overflow-y-auto relative transform transition-all duration-300 ${
               isModalVisible
                 ? "opacity-100 translate-y-0 scale-100"
                 : "opacity-0 translate-y-8 scale-95"
@@ -1097,7 +1208,7 @@ export default function AdminDashboard() {
             }}
           >
             {/* Header de la modale */}
-            <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-6 text-white rounded-t-2xl">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-4 md:p-6 text-white rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-white/20 rounded-xl">
@@ -1122,12 +1233,12 @@ export default function AdminDashboard() {
             </div>
 
             {/* Contenu de la modale */}
-            <div className="p-6 space-y-6">
+            <div className="p-4 md:p-6 space-y-4 md:space-y-6">
               {/* Photo de profil et informations principales */}
               <div className="flex items-start gap-6">
                 <div className="flex-shrink-0">
                   <img
-                    className="h-24 w-24 rounded-full border-4 border-blue-200 shadow-lg"
+                    className="h-20 w-20 md:h-24 md:w-24 rounded-full border-4 border-blue-200 shadow-lg"
                     src={selectedUser.profileImage || "/images/Avatar.png"}
                     alt={`${selectedUser.first_name} ${selectedUser.last_name}`}
                   />
@@ -1153,12 +1264,12 @@ export default function AdminDashboard() {
               </div>
 
               {/* Informations de contact */}
-              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6">
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 md:p-6">
                 <h4 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
                   <Mail size={20} className="text-blue-600" />
                   Informations de contact
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                   <div className="flex items-center gap-3">
                     <Mail size={16} className="text-blue-500" />
                     <div>
@@ -1192,12 +1303,12 @@ export default function AdminDashboard() {
               </div>
 
               {/* Informations académiques/professionnelles */}
-              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6">
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 md:p-6">
                 <h4 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
                   <GraduationCap size={20} className="text-blue-600" />
                   Informations académiques
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                   <div className="flex items-center gap-3">
                     <MapPin size={16} className="text-blue-500" />
                     <div>

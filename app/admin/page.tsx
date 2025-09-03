@@ -431,15 +431,15 @@ export default function AdminDashboard() {
       {/* Statistiques détaillées et Activité récente */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Statistiques détaillées */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-blue-200/50">
-          <h2 className="font-bold text-2xl text-blue-900 mb-6 flex items-center gap-3">
+        <div className="bg-white rounded-2xl shadow-lg p-4 md:p-8 border border-blue-200/50">
+          <h2 className="font-bold text-xl md:text-2xl text-blue-900 mb-4 md:mb-6 flex items-center gap-3">
             <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
               <BarChart3 className="w-6 h-6 text-blue-600" />
             </div>
             Statistiques détaillées
           </h2>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl">
+          <div className="space-y-4 md:space-y-6">
+            <div className="flex items-center justify-between p-3 md:p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg">
                   <GraduationCap size={20} className="text-blue-600" />
@@ -452,7 +452,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-blue-900">
+                <p className="text-xl md:text-2xl font-bold text-blue-900">
                   {stats.students}
                 </p>
                 <p className="text-blue-600 text-sm">
@@ -464,7 +464,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl">
+            <div className="flex items-center justify-between p-3 md:p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-xl">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-green-100 to-green-200 rounded-lg">
                   <UserCheck size={20} className="text-green-600" />
@@ -477,7 +477,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-green-900">
+                <p className="text-xl md:text-2xl font-bold text-green-900">
                   {stats.advisors}
                 </p>
                 <p className="text-green-600 text-sm">
@@ -489,7 +489,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl">
+            <div className="flex items-center justify-between p-3 md:p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg">
                   <Shield size={20} className="text-purple-600" />
@@ -502,7 +502,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-purple-900">
+                <p className="text-xl md:text-2xl font-bold text-purple-900">
                   {stats.admins}
                 </p>
                 <p className="text-purple-600 text-sm">
@@ -514,7 +514,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl">
+            <div className="flex items-center justify-between p-3 md:p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg">
                   <Target size={20} className="text-orange-600" />
@@ -527,7 +527,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-orange-900">
+                <p className="text-xl md:text-2xl font-bold text-orange-900">
                   {stats.totalProjects > 0
                     ? Math.round(
                         (stats.activeProjects / stats.totalProjects) * 100

@@ -102,7 +102,7 @@ export default function Informations() {
     <div className="min-h-screen px-3 sm:px-4 lg:px-16 py-4 sm:py-6 lg:py-8">
       <Header title="Informations Générales" />
 
-      <div className="max-w-6xl mx-auto flex flex-col gap-4 sm:gap-6 mt-6 sm:mt-8">
+      <div className=" mx-auto flex flex-col gap-4 sm:gap-6 mt-6 sm:mt-8">
         {informations.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-lg p-8 sm:p-12 text-center border border-gray-200/50">
             <div className="text-gray-400 text-4xl sm:text-6xl mb-4">📢</div>

@@ -418,7 +418,7 @@ export default function TrombinoscopePage() {
     <div className="min-h-screen px-3 sm:px-4 lg:px-16 py-4 sm:py-6 lg:py-8">
       <Header title="Trombinoscope" />
 
-      <div className="max-w-7xl mx-auto">
+      <div className=" mx-auto">
         {/* Sélecteur de promotion pour admin/advisor */}
         {(userRole === "admin" || userRole === "advisor") && (
           <div className="mb-8">
@@ -477,16 +477,8 @@ export default function TrombinoscopePage() {
               {students.map((student) => (
                 <div
                   key={student.id}
-                  className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 group ${
-                    userRole === "student"
-                      ? ""
-                      : "hover:shadow-xl hover:scale-105 cursor-pointer"
-                  }`}
-                  onClick={
-                    userRole === "student"
-                      ? undefined
-                      : () => handleViewStudent(student)
-                  }
+                  className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 group hover:shadow-xl hover:scale-105 cursor-pointer`}
+                  onClick={() => handleViewStudent(student)}
                 >
                   <div className="flex flex-col items-center text-center">
                     {/* Avatar */}
@@ -565,7 +557,7 @@ export default function TrombinoscopePage() {
           style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
         >
           <div
-            className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative transform transition-all duration-300 ${
+            className={`bg-white rounded-2xl shadow-2xl w-full max-w-md sm:max-w-xl md:max-w-2xl mx-4 sm:mx-6 max-h-[85vh] overflow-y-auto relative transform transition-all duration-300 ${
               isModalVisible
                 ? "opacity-100 translate-y-0 scale-100"
                 : "opacity-0 translate-y-8 scale-95"
@@ -577,7 +569,7 @@ export default function TrombinoscopePage() {
             }}
           >
             {/* Header de la modale */}
-            <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-6 text-white rounded-t-2xl">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-700 p-4 md:p-6 text-white rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-white/20 rounded-xl">
@@ -600,7 +592,7 @@ export default function TrombinoscopePage() {
             </div>
 
             {/* Contenu de la modale */}
-            <div className="p-6 space-y-6">
+            <div className="p-4 md:p-6 space-y-4 md:space-y-6">
               {/* Indicateur de chargement */}
               {isModalLoading && (
                 <div className="flex items-center justify-center py-8">
@@ -614,9 +606,9 @@ export default function TrombinoscopePage() {
               )}
 
               {/* Photo de profil et informations principales */}
-              <div className="flex items-start gap-6">
+              <div className="flex items-start gap-4 md:gap-6">
                 <div className="flex-shrink-0">
-                  <div className="h-24 w-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-bold border-4 border-blue-200 shadow-lg">
+                  <div className="h-20 w-20 md:h-24 md:w-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl md:text-3xl font-bold border-4 border-blue-200 shadow-lg">
                     {selectedStudent.avatar ||
                       `${selectedStudent.first_name
                         .charAt(0)
@@ -626,42 +618,32 @@ export default function TrombinoscopePage() {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-blue-900 mb-2">
+                  <h3 className="text-xl md:text-2xl font-bold text-blue-900 mb-2">
                     {selectedStudent.first_name} {selectedStudent.last_name}
                   </h3>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
                       <GraduationCap size={20} className="text-blue-600" />
                     </div>
-                    <span className="text-lg font-semibold text-blue-700">
+                    <span className="text-base md:text-lg font-semibold text-blue-700">
                       Étudiant
                     </span>
                   </div>
-                  {selectedStudent.student_number && (
-                    <div className="text-blue-600 font-medium mb-1">
-                      Numéro étudiant: {selectedStudent.student_number}
-                    </div>
-                  )}
                   {selectedStudent.promotion && (
                     <div className="text-blue-600 font-medium mb-1">
                       Promotion: {selectedStudent.promotion}
-                    </div>
-                  )}
-                  {selectedStudent.major && (
-                    <div className="text-blue-600 font-medium">
-                      Spécialité: {selectedStudent.major}
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Informations de contact */}
-              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6">
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 md:p-6">
                 <h4 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
                   <Mail size={20} className="text-blue-600" />
                   Informations de contact
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                   <div className="flex items-center gap-3">
                     <Mail size={16} className="text-blue-500" />
                     <div>
@@ -669,7 +651,7 @@ export default function TrombinoscopePage() {
                       <p className="text-blue-900">{selectedStudent.email}</p>
                     </div>
                   </div>
-                  {selectedStudent.phone && (
+                  {userRole !== "student" && selectedStudent.phone && (
                     <div className="flex items-center gap-3">
                       <Phone size={16} className="text-blue-500" />
                       <div>
@@ -680,7 +662,7 @@ export default function TrombinoscopePage() {
                       </div>
                     </div>
                   )}
-                  {selectedStudent.campus && (
+                  {userRole !== "student" && selectedStudent.campus && (
                     <div className="flex items-center gap-3">
                       <MapPin size={16} className="text-blue-500" />
                       <div>
@@ -693,7 +675,7 @@ export default function TrombinoscopePage() {
                       </div>
                     </div>
                   )}
-                  {selectedStudent.address && (
+                  {userRole !== "student" && selectedStudent.address && (
                     <div className="flex items-center gap-3">
                       <Home size={16} className="text-blue-500" />
                       <div>
@@ -709,67 +691,71 @@ export default function TrombinoscopePage() {
                 </div>
               </div>
 
-              {/* Informations académiques */}
-              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6">
-                <h4 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
-                  <BookOpen size={20} className="text-blue-600" />
-                  Informations académiques
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {selectedStudent.promotion && (
-                    <div className="flex items-center gap-3">
-                      <GraduationCap size={16} className="text-blue-500" />
-                      <div>
-                        <p className="text-sm text-blue-600 font-medium">
-                          Promotion
-                        </p>
-                        <p className="text-blue-900">
-                          {selectedStudent.promotion}
-                        </p>
+              {/* Informations académiques (cachées pour les étudiants) */}
+              {userRole !== "student" && (
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 md:p-6">
+                  <h4 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                    <BookOpen size={20} className="text-blue-600" />
+                    Informations académiques
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                    {selectedStudent.promotion && (
+                      <div className="flex items-center gap-3">
+                        <GraduationCap size={16} className="text-blue-500" />
+                        <div>
+                          <p className="text-sm text-blue-600 font-medium">
+                            Promotion
+                          </p>
+                          <p className="text-blue-900">
+                            {selectedStudent.promotion}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {selectedStudent.major && (
-                    <div className="flex items-center gap-3">
-                      <BookOpen size={16} className="text-blue-500" />
-                      <div>
-                        <p className="text-sm text-blue-600 font-medium">
-                          Spécialité
-                        </p>
-                        <p className="text-blue-900">{selectedStudent.major}</p>
+                    )}
+                    {selectedStudent.major && (
+                      <div className="flex items-center gap-3">
+                        <BookOpen size={16} className="text-blue-500" />
+                        <div>
+                          <p className="text-sm text-blue-600 font-medium">
+                            Spécialité
+                          </p>
+                          <p className="text-blue-900">
+                            {selectedStudent.major}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {selectedStudent.student_number && (
-                    <div className="flex items-center gap-3">
-                      <Calendar size={16} className="text-blue-500" />
-                      <div>
-                        <p className="text-sm text-blue-600 font-medium">
-                          Numéro étudiant
-                        </p>
-                        <p className="text-blue-900">
-                          {selectedStudent.student_number}
-                        </p>
+                    )}
+                    {selectedStudent.student_number && (
+                      <div className="flex items-center gap-3">
+                        <Calendar size={16} className="text-blue-500" />
+                        <div>
+                          <p className="text-sm text-blue-600 font-medium">
+                            Numéro étudiant
+                          </p>
+                          <p className="text-blue-900">
+                            {selectedStudent.student_number}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {selectedStudent.created_at && (
-                    <div className="flex items-center gap-3">
-                      <Calendar size={16} className="text-blue-500" />
-                      <div>
-                        <p className="text-sm text-blue-600 font-medium">
-                          Date de création
-                        </p>
-                        <p className="text-blue-900">
-                          {new Date(
-                            selectedStudent.created_at
-                          ).toLocaleDateString("fr-FR")}
-                        </p>
+                    )}
+                    {selectedStudent.created_at && (
+                      <div className="flex items-center gap-3">
+                        <Calendar size={16} className="text-blue-500" />
+                        <div>
+                          <p className="text-sm text-blue-600 font-medium">
+                            Date de création
+                          </p>
+                          <p className="text-blue-900">
+                            {new Date(
+                              selectedStudent.created_at
+                            ).toLocaleDateString("fr-FR")}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Boutons d'action */}
               <div className="flex gap-4 pt-6 border-t border-blue-200">

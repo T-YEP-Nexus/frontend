@@ -59,6 +59,29 @@ export function useProjectsData() {
     // fetchProjectsByPromotion(promotionId);
   }, []);
 
+  const fetchActiveProjects = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:3003/projects/active/list");
+
+      if (!response.ok) {
+        throw new Error("Erreur lors du chargement des projets actifs");
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        setProjects(result.data);
+      } else {
+        throw new Error(result.message || "Erreur lors du chargement des projets");
+      }
+    } catch (err: any) {
+      setError(err.message || "Erreur inconnue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Nouvelle fonction pour récupérer le profil par user ID
   const getProfileByUserId = async (userId: string) => {
     console.log("🔍 DEBUG - Récupération profil pour user:", userId);
@@ -563,5 +586,6 @@ export function useProjectsData() {
     creationResult,
     createAndAssignProject,
     resetCreationState
+    fetchActiveProjects // Exposer la fonction
   };
 }
