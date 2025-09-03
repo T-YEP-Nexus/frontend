@@ -38,6 +38,9 @@ export default function AdminProjectDetailsPage() {
   const [assignedStudents, setAssignedStudents] = useState<any[]>([]);
   const [allStudents, setAllStudents] = useState<any[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [medals, setMedals] = useState<string>("");
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>("");
   const [advisorComment, setAdvisorComment] = useState<string>("");
   const [studentsLoading, setStudentsLoading] = useState<boolean>(false);
@@ -58,6 +61,7 @@ export default function AdminProjectDetailsPage() {
         const data = await getProjectResources(projectId);
         setResourcesData(data);
       } catch (e) {
+        console.error("❌ Error fetching resources:", e);
         // noop: fallback déjà géré par getProjectResources
       }
     };
@@ -84,6 +88,7 @@ export default function AdminProjectDetailsPage() {
         setStudentsLoading(true);
         setStudentsError(null);
 
+      
         // Étudiants assignés à ce projet
         const assignmentsRes = await fetch(
           `http://localhost:3003/project-students/project/${projectId}`
@@ -97,6 +102,7 @@ export default function AdminProjectDetailsPage() {
         // Étudiants de la promotion du projet (avec profil)
         const cp: any =
           projects.find((p: any) => String(p.id) === String(projectId)) || {};
+        
         if (cp?.id_promotion) {
           const studentsRes = await fetch(
             `http://localhost:3004/students/promotion/${cp.id_promotion}`
@@ -115,23 +121,25 @@ export default function AdminProjectDetailsPage() {
         setSelectedAssignmentId("");
         setAdvisorComment("");
       } catch (e: any) {
+        console.error("❌ Error fetching students:", e);
         setStudentsError(e?.message || "Erreur inconnue");
       } finally {
         setStudentsLoading(false);
       }
     };
     if (projectId) fetchStudents();
-    // Dépend de projects et projectId (pas de currentProject pour éviter l’usage avant déclaration)
+    // Dépend de projects et projectId (pas de currentProject pour éviter l'usage avant déclaration)
   }, [projectId, projects]);
 
   const currentProject = useMemo(() => {
-    return projects.find((p: any) => String(p.id) === String(projectId));
+    const project = projects.find((p: any) => String(p.id) === String(projectId));
+    return project;
   }, [projects, projectId]);
 
   // Détails mock/compat si backend ne fournit pas tout
   const generalInfo = useMemo(() => {
     const cp: any = currentProject || {};
-    return {
+    const info = {
       startDate: cp?.details?.startDate
         ? new Date(cp.details.startDate).toLocaleDateString("fr-FR")
         : currentProject?.created_at
@@ -176,7 +184,60 @@ export default function AdminProjectDetailsPage() {
           : "-",
       },
     };
+    return info;
   }, [currentProject]);
+
+  
+
+  // Fonction pour gérer la sélection d'un étudiant assigné
+  const handleSelectAssignedStudent = (assignment: any) => {
+
+  
+  const studentId = String(assignment.id_student);
+  const assignmentId = String(assignment.id);
+  const comment = assignment.advisor_comment || "";
+  const startDate = assignment.assigned_at || "";
+  const endDate = assignment.due_date || "";
+  const assignmentScore = assignment.score || []; // Récupérer le score
+  
+  // Trouver les données complètes de l'étudiant
+  const studentData = allStudents.find(
+    (st) => String(st.id) === studentId
+  );
+  
+  setStartDate(assignment.assigned_at);
+  setEndDate(assignment.due_date);
+  setMedals(assignmentScore); 
+  
+  setSelectedStudent(studentId);
+  setSelectedAssignmentId(assignmentId);
+  setAdvisorComment(comment);
+  setDropdownOpen(false);
+  
+};
+
+  // Fonction pour gérer la sélection d'un étudiant de la liste générale
+  const handleSelectGeneralStudent = (student: any) => {
+
+    
+    const studentId = String(student.id);
+    
+    // Chercher si cet étudiant a une assignation
+    const foundAssign = assignedStudents.find(
+      (a) => String(a.id_student) === studentId
+    );
+    
+    const assignmentId = foundAssign ? String(foundAssign.id) : "";
+    const comment = foundAssign?.advisor_comment || "";
+    
+
+    
+    setSelectedStudent(studentId);
+    setSelectedAssignmentId(assignmentId);
+    setAdvisorComment(comment);
+    setDropdownOpen(false);
+    
+  };
 
   if (loading) return <AdminLoading message="Chargement..." />;
 
@@ -206,7 +267,7 @@ export default function AdminProjectDetailsPage() {
           currentProject?.name ||
           "Détails du projet"
         }
-        description="Vue administrateur - sélection d’un étudiant"
+        description="Vue administrateur - sélection d'un étudiant"
         backIcon={<ArrowLeft className="w-4 h-4" />}
       />
 
@@ -262,12 +323,7 @@ export default function AdminProjectDetailsPage() {
                   <button
                     key={as.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedStudent(String(as.id_student));
-                      setSelectedAssignmentId(String(as.id));
-                      setAdvisorComment(as.advisor_comment || "");
-                      setDropdownOpen(false);
-                    }}
+                    onClick={() => handleSelectAssignedStudent(as)}
                     className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-300 cursor-pointer border-b border-blue-100 last:border-b-0"
                   >
                     {(() => {
@@ -290,17 +346,7 @@ export default function AdminProjectDetailsPage() {
                   <button
                     key={s.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedStudent(String(s.id));
-                      const foundAssign = assignedStudents.find(
-                        (a) => String(a.id_student) === String(s.id)
-                      );
-                      setSelectedAssignmentId(
-                        foundAssign ? String(foundAssign.id) : ""
-                      );
-                      setAdvisorComment(foundAssign?.advisor_comment || "");
-                      setDropdownOpen(false);
-                    }}
+                    onClick={() => handleSelectGeneralStudent(s)}
                     className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-300 cursor-pointer border-b border-blue-100 last:border-b-0"
                   >
                     {s.profile
@@ -374,17 +420,32 @@ export default function AdminProjectDetailsPage() {
               <div className="flex justify-end">
                 <Button
                   onClick={async () => {
-                    if (!selectedAssignmentId) return;
-                    await fetch(
-                      `http://localhost:3003/project-students/${selectedAssignmentId}`,
-                      {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          advisor_comment: advisorComment,
-                        }),
+                    if (!selectedAssignmentId) {
+                      return;
+                    }
+                    
+                    
+                    try {
+                      const response = await fetch(
+                        `http://localhost:3003/project-students/${selectedAssignmentId}`,
+                        {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            advisor_comment: advisorComment,
+                          }),
+                        }
+                      );
+                      
+                      const result = await response.json();
+                      
+                      if (response.ok) {
+                      } else {
+                        console.error("❌ Error saving comment:", result);
                       }
-                    );
+                    } catch (error) {
+                      console.error("❌ Network error saving comment:", error);
+                    }
                   }}
                   className="bg-blue-600 hover:bg-blue-700! cursor-pointer text-white"
                   disabled={!selectedAssignmentId}
@@ -481,7 +542,7 @@ export default function AdminProjectDetailsPage() {
                   <div>
                     <p className="text-sm text-gray-500">Date de début</p>
                     <p className="font-semibold text-gray-800">
-                      {generalInfo.startDate}
+                      {startDate}
                     </p>
                   </div>
                 </div>
@@ -490,7 +551,7 @@ export default function AdminProjectDetailsPage() {
                   <div>
                     <p className="text-sm text-gray-500">Date de fin</p>
                     <p className="font-semibold text-gray-800">
-                      {generalInfo.endDate}
+                      {endDate}
                     </p>
                   </div>
                 </div>
@@ -585,50 +646,94 @@ export default function AdminProjectDetailsPage() {
 
           {/* Médailles */}
           <div className="mt-8">
-            <MainCard
-              title="Médailles du projet"
-              icon={<Users className="w-6 h-6 text-blue-500" />}
-            >
-              {(() => {
-                const cp: any = currentProject || {};
-                const medals: any[] = cp?.medals || cp?.trophies || [];
-                if (!Array.isArray(medals) || medals.length === 0) {
-                  return (
-                    <p className="text-gray-500">Aucune médaille définie.</p>
-                  );
-                }
-                return (
-                  <div>
-                    <p className="text-sm text-gray-600 mb-4">
-                      {Array.isArray(medals)
-                        ? medals.filter(
-                            (m: any) => m.obtained || m.obtained === true
-                          ).length
-                        : 0}
-                      /{medals.length}
-                    </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                      {medals.map((m: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-                        >
-                          <p className="font-semibold text-gray-800 truncate">
-                            {m.name || m.title || `Médaille ${idx + 1}`}
-                          </p>
-                          {m.description && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {m.description}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-            </MainCard>
+  <MainCard
+    title="Médailles du projet"
+    icon={<Users className="w-6 h-6 text-blue-500" />}
+  >
+    {(() => {
+      const medalsList = Array.isArray(medals) ? medals : [];
+      
+      if (medalsList.length === 0) {
+        return (
+          <p className="text-gray-500">Aucune médaille définie pour cette assignation.</p>
+        );
+      }
+      
+      const obtainedCount = medalsList.filter((m: any) => m.state === true).length;
+      
+      
+      
+      const handleToggleMedal = (medalIdx: number) => {
+        setMedals((prev: any) => {
+          if (!Array.isArray(prev)) return prev;
+          const newMedals = prev.map((m: any, i: number) => i === medalIdx ? { ...m, state: !m.state } : m);
+          if (selectedAssignmentId) {
+            fetch(`http://localhost:3003/project-students/${selectedAssignmentId}/grade`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ score: newMedals }),
+            })
+              .then((res) => res.json())
+              .then((result) => {
+                console.log('sauvegardées dans la BDD (response):', result);
+              })
+              .catch((err) => {
+                console.error('Erreur lors de la sauvegarde des médailles:', err);
+              });
+          }
+          return newMedals;
+        });
+      };
+
+      return (
+        <div>
+          <p className="text-sm text-gray-600 mb-4">
+            {obtainedCount}/{medalsList.length} médailles obtenues
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {medalsList.map((medal: any, idx: number) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleToggleMedal(idx)}
+                className={`p-4 rounded-lg border-2 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer ${
+                  medal.state 
+                    ? 'bg-green-50 border-green-200 shadow-md' 
+                    : 'bg-gray-50 border-gray-200'
+                }`}
+                title="Cliquer pour changer l'état de la médaille"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-3 h-3 rounded-full ${
+                    medal.state ? 'bg-green-500' : 'bg-gray-300'
+                  }`}></div>
+                  <p className={`font-semibold truncate ${
+                    medal.state ? 'text-green-800' : 'text-gray-600'
+                  }`}>
+                    {medal.name || `Médaille ${idx + 1}`}
+                  </p>
+                </div>
+                {medal.description && (
+                  <p className={`text-xs mt-1 ${
+                    medal.state ? 'text-green-600' : 'text-gray-500'
+                  }`}>
+                    {medal.description}
+                  </p>
+                )}
+                <p className={`text-xs mt-1 font-medium ${
+                  medal.state ? 'text-green-700' : 'text-gray-400'
+                }`}>
+                  {medal.state ? '✅ Obtenue' : '⏳ En attente'}
+                </p>
+              </button>
+            ))}
           </div>
+        </div>
+      );
+    })()}
+  </MainCard>
+</div>
+
 
           {/* Équipe (si dispo, comme côté student) */}
           {(() => {
