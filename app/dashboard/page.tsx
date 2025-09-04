@@ -773,33 +773,6 @@ export default function Dashboard() {
                   isClickable={true}
                 />
               </div>
-
-              {/* Détail du prochain événement si disponible */}
-              {upcomingEvents.length > 0 && (
-                <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                  <h4 className="font-semibold text-orange-900 text-sm mb-2">
-                    Prochain événement :
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-orange-600" />
-                    <span className="text-orange-800 text-sm font-medium">
-                      {upcomingEvents[0]?.title}
-                    </span>
-                    <span className="text-orange-600 text-xs">
-                      {upcomingEvents[0]?.startIso
-                        ? new Date(
-                            upcomingEvents[0].startIso
-                          ).toLocaleDateString("fr-FR", {
-                            day: "numeric",
-                            month: "short",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : ""}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           </section>
 
