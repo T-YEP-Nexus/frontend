@@ -48,7 +48,9 @@ export default function CreateInformationPage() {
     const fetchUsers = async () => {
       setUsersLoading(true);
       try {
-        const res = await fetch("http://localhost:3004/profiles");
+        const res = await fetch("http://localhost:3004/profiles", {
+          credentials: "include",
+        });
         const data = await res.json();
         const filtered = (data.data || []).filter(
           (user: User) =>

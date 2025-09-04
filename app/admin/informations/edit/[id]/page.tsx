@@ -112,7 +112,10 @@ export default function EditInformationPage() {
       setUsersLoading(true);
 
       // Récupérer tous les profils utilisateurs
-      const profilesResponse = await fetch("http://localhost:3004/profiles");
+      const profilesResponse = await fetch("http://localhost:3004/profiles", {
+        credentials: "include",
+      });
+
       if (!profilesResponse.ok) {
         throw new Error("Erreur lors de la récupération des profils");
       }
@@ -123,13 +126,19 @@ export default function EditInformationPage() {
       }
 
       // Récupérer tous les conseillers
-      const advisorsResponse = await fetch("http://localhost:3004/advisors");
+      const advisorsResponse = await fetch("http://localhost:3004/advisors", {
+        credentials: "include",
+      });
+
       const advisorsData = advisorsResponse.ok
         ? await advisorsResponse.json()
         : { success: false, data: [] };
 
       // Récupérer tous les administrateurs
-      const adminsResponse = await fetch("http://localhost:3004/admins");
+      const adminsResponse = await fetch("http://localhost:3004/admins", {
+        credentials: "include",
+      });
+
       const adminsData = adminsResponse.ok
         ? await adminsResponse.json()
         : { success: false, data: [] };
