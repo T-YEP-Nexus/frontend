@@ -326,13 +326,31 @@ function Cards({
                   <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
                     <p className="text-xs text-blue-700">Date de début</p>
                     <p className="font-semibold text-blue-900 text-sm">
-                      {details.startDate}
+                      {details.startDate
+                        ? new Date(details.startDate).toLocaleDateString(
+                            "fr-FR",
+                            {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            }
+                          )
+                        : "-"}
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
                     <p className="text-xs text-blue-700">Date de fin</p>
                     <p className="font-semibold text-blue-900 text-sm">
-                      {details.endDate}
+                      {details.endDate
+                        ? new Date(details.endDate).toLocaleDateString(
+                            "fr-FR",
+                            {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            }
+                          )
+                        : "-"}
                     </p>
                   </div>
                 </div>
@@ -555,13 +573,28 @@ function Cards({
                 <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
                   <p className="text-xs text-blue-700">Date de début</p>
                   <p className="font-semibold text-blue-900 text-sm">
-                    {details.startDate}
+                    {details.startDate
+                      ? new Date(details.startDate).toLocaleDateString(
+                          "fr-FR",
+                          {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          }
+                        )
+                      : "-"}
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
                   <p className="text-xs text-blue-700">Date de fin</p>
                   <p className="font-semibold text-blue-900 text-sm">
-                    {details.endDate}
+                    {details.endDate
+                      ? new Date(details.endDate).toLocaleDateString("fr-FR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })
+                      : "-"}
                   </p>
                 </div>
               </div>
@@ -775,8 +808,26 @@ function Cards({
 
         {/* Dates en bas */}
         <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-100">
-          <span>Début: {details.startDate}</span>
-          <span>Fin: {details.endDate}</span>
+          <span>
+            Début:{" "}
+            {details.startDate
+              ? new Date(details.startDate).toLocaleDateString("fr-FR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })
+              : "-"}
+          </span>
+          <span>
+            Fin:{" "}
+            {details.endDate
+              ? new Date(details.endDate).toLocaleDateString("fr-FR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })
+              : "-"}
+          </span>
         </div>
       </div>
     </div>

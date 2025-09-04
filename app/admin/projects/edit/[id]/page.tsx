@@ -26,7 +26,9 @@ import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 import AdminButton from "@/components/admin/buttons/AdminButton";
 import AdminLoading from "@/components/admin/AdminLoading";
 import DateTimelineSelector from "@/components/ui/DateTimelineSelector";
-import type { Project } from "@/lib/projectData";
+import type { Project, ProjectWithDetails } from "@/lib/projectData";
+import { uploadFileToSupabase, UploadResult } from "@/lib/supabaseStorage";
+import { Upload, FileUp, CheckCircle2, XCircle } from "lucide-react";
 
 interface Medal {
   name: string;
@@ -49,7 +51,7 @@ interface EditFormData {
   assigned_at: string;
   due_date: string;
   advisor_comment: string | null;
-  medals: Medal[];
+  score: Medal[];
   resources: Resource[];
   max_score: number | string;
   is_active: boolean;
@@ -68,7 +70,7 @@ export default function EditProjectPage() {
     assigned_at: "",
     due_date: "",
     advisor_comment: null,
-    medals: [{ name: "", description: "", state: false }],
+    score: [{ name: "", description: "", state: false }],
     resources: [
       {
         name: "",
@@ -81,7 +83,7 @@ export default function EditProjectPage() {
     is_active: true,
     created_at: new Date().toISOString(),
   });
-  const [project, setProject] = useState<Project | null>(null);
+  const [project, setProject] = useState<ProjectWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +91,16 @@ export default function EditProjectPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [promotionDropdownOpen, setPromotionDropdownOpen] = useState(false);
   const promotionDropdownRef = useRef<HTMLDivElement>(null);
+  const medalsContainerRef = useRef<HTMLDivElement>(null);
+
+  // États pour l'upload de fichiers
+  const [uploadingFiles, setUploadingFiles] = useState<Record<number, boolean>>(
+    {}
+  );
+  const [uploadErrors, setUploadErrors] = useState<Record<number, string>>({});
+  const [uploadSuccess, setUploadSuccess] = useState<Record<number, string>>(
+    {}
+  );
 
   // Hook pour récupérer les promotions
   const {
@@ -125,34 +137,46 @@ export default function EditProjectPage() {
         // Récupération du vrai projet depuis l'API
         console.log("Récupération du projet avec l'ID:", projectId);
 
-        const { getProjectById } = await import("@/lib/projectData");
-        const projectData = await getProjectById(projectId);
+        const { getProjectWithDetails } = await import("@/lib/projectData");
+        const projectData = await getProjectWithDetails(projectId);
 
         if (!projectData) {
           throw new Error("Projet non trouvé");
         }
 
-        console.log("Projet récupéré:", projectData);
+        console.log("🔍 DEBUG - Projet récupéré:", projectData);
+        console.log("🔍 DEBUG - Médailles du projet:", projectData.score);
+        console.log("🔍 DEBUG - Promotions disponibles:", promotions);
 
         setProject(projectData);
-        setFormData({
+
+        // Trouver le nom de la promotion à partir de l'ID
+        const promotionName =
+          promotions?.find(
+            (p) => String(p.id) === String(projectData.id_promotion)
+          )?.name || "";
+
+        console.log(
+          "🔍 DEBUG - ID promotion du projet:",
+          projectData.id_promotion
+        );
+        console.log("🔍 DEBUG - Nom de la promotion trouvé:", promotionName);
+        console.log(
+          "🔍 DEBUG - assigned_at du projet:",
+          projectData.assigned_at
+        );
+        console.log("🔍 DEBUG - due_date du projet:", projectData.due_date);
+
+        const formDataToSet = {
           name: projectData.name || "",
           description: projectData.description || "",
-          promotion: projectData.id_promotion || "",
-          assigned_at: "", // À récupérer depuis projectData.ressources si disponible
-          due_date: "", // À récupérer depuis projectData.ressources si disponible
-          advisor_comment: null,
-          medals:
-            projectData.ressources && projectData.ressources.length > 0
-              ? projectData.ressources
-                  .filter(
-                    (r) => r.description && r.description.includes("médaille")
-                  )
-                  .map((r, index) => ({
-                    name: r.description || `Médaille ${index + 1}`,
-                    description: r.description || "",
-                    state: false,
-                  }))
+          promotion: promotionName,
+          assigned_at: projectData.assigned_at || "",
+          due_date: projectData.due_date || "",
+          advisor_comment: projectData.advisor_comment || null,
+          score:
+            projectData.score && projectData.score.length > 0
+              ? projectData.score
               : [{ name: "", description: "", state: false }],
           resources:
             projectData.ressources && projectData.ressources.length > 0
@@ -160,21 +184,31 @@ export default function EditProjectPage() {
                   name: r.filename || r.description || "",
                   url: r.url || "",
                   description: r.description || "",
-                  category: "project" as const,
+                  category: "project" as "kickoff" | "bootstrap" | "project",
                 }))
               : [
                   {
                     name: "",
                     url: "",
                     description: "",
-                    category: "project",
+                    category: "project" as "kickoff" | "bootstrap" | "project",
                   },
                 ],
-          max_score: "",
+          max_score: projectData.max_score || "",
           is_active:
             projectData.is_active !== undefined ? projectData.is_active : true,
           created_at: projectData.created_at,
-        });
+        };
+
+        console.log(
+          "🔍 DEBUG - Données du formulaire à définir:",
+          formDataToSet
+        );
+        console.log(
+          "🔍 DEBUG - Médailles finales du formulaire:",
+          formDataToSet.score
+        );
+        setFormData(formDataToSet);
       } catch (err) {
         console.error("Erreur lors de la récupération du projet:", err);
         setError(err instanceof Error ? err.message : "Erreur inconnue");
@@ -183,12 +217,10 @@ export default function EditProjectPage() {
       }
     };
 
-    if (projectId) {
+    if (projectId && !promotionsLoading) {
       fetchProject();
     }
-  }, [projectId]);
-
-  const medalsContainerRef = useRef<HTMLDivElement>(null);
+  }, [projectId, promotions, promotionsLoading]);
 
   // Gestion des changements de formulaire
   const handleInputChange = (
@@ -249,7 +281,7 @@ export default function EditProjectPage() {
   const addMedal = () => {
     setFormData((prev) => ({
       ...prev,
-      medals: [...prev.medals, { name: "", description: "", state: false }],
+      score: [...prev.score, { name: "", description: "", state: false }],
     }));
 
     // Scroll vers la nouvelle médaille après un court délai
@@ -273,7 +305,7 @@ export default function EditProjectPage() {
   const removeMedal = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      medals: prev.medals.filter((_, i) => i !== index),
+      score: prev.score.filter((_, i) => i !== index),
     }));
   };
 
@@ -284,7 +316,7 @@ export default function EditProjectPage() {
   ) => {
     setFormData((prev) => ({
       ...prev,
-      medals: prev.medals.map((medal, i) =>
+      score: prev.score.map((medal, i) =>
         i === index ? { ...medal, [field]: value } : medal
       ),
     }));
@@ -330,8 +362,65 @@ export default function EditProjectPage() {
     }));
   };
 
+  // Fonction pour gérer l'upload de fichier
+  const handleFileUpload = async (index: number, file: File) => {
+    if (!file) return;
+
+    setUploadingFiles((prev) => ({ ...prev, [index]: true }));
+    setUploadErrors((prev) => ({ ...prev, [index]: "" }));
+    setUploadSuccess((prev) => ({ ...prev, [index]: "" }));
+
+    try {
+      // Upload vers Supabase avec un dossier spécifique pour les projets
+      const result: UploadResult = await uploadFileToSupabase(
+        file,
+        "project-storage", // nom de votre bucket
+        "projects/" // dossier dans le bucket
+      );
+
+      if (result.success && result.url) {
+        // Mettre à jour la ressource avec l'URL obtenue
+        setFormData((prev) => ({
+          ...prev,
+          resources: prev.resources.map((resource, i) =>
+            i === index
+              ? {
+                  ...resource,
+                  url: result.url!,
+                  name: resource.name || file.name, // Utilise le nom du fichier si pas de nom
+                  file: file,
+                }
+              : resource
+          ),
+        }));
+
+        setUploadSuccess((prev) => ({
+          ...prev,
+          [index]: `Fichier uploadé avec succès: ${result.fileName}`,
+        }));
+      } else {
+        setUploadErrors((prev) => ({
+          ...prev,
+          [index]: result.error || "Erreur lors de l'upload",
+        }));
+      }
+    } catch (error) {
+      setUploadErrors((prev) => ({
+        ...prev,
+        [index]: error instanceof Error ? error.message : "Erreur inconnue",
+      }));
+    } finally {
+      setUploadingFiles((prev) => ({ ...prev, [index]: false }));
+    }
+  };
+
   // Validation du formulaire
   const validateForm = (): boolean => {
+    console.log(
+      "🔍 DEBUG - Validation du formulaire - Toutes les médailles:",
+      formData.score
+    );
+
     if (!formData.name.trim()) {
       setError("Le nom du projet est requis");
       return false;
@@ -357,14 +446,40 @@ export default function EditProjectPage() {
       return false;
     }
     if (
-      formData.medals.some(
+      formData.score.some(
         (medal) => !medal.name.trim() || !medal.description.trim()
       )
     ) {
       setError("Toutes les médailles doivent avoir un nom et une description");
       return false;
     }
+
+    // Validation des ressources
+    const validResources = formData.resources.filter(
+      (r) => r.name.trim() && r.url.trim()
+    );
+    if (validResources.length > 0) {
+      const invalidResources = validResources.filter((r) => {
+        const filename = r.name.includes(".") ? r.name : `${r.name}.pdf`;
+        return !filename.match(/\.(pdf|doc|docx|txt|md|jpg|jpeg|png|gif)$/i);
+      });
+
+      if (invalidResources.length > 0) {
+        setError(
+          "Toutes les ressources doivent avoir une extension de fichier valide (PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF)"
+        );
+        return false;
+      }
+    }
+
     return true;
+  };
+
+  // Fonction utilitaire pour trouver l'ID de la promotion à partir de son nom
+  const getPromotionIdByName = (name: string) => {
+    if (!promotions) return null;
+    const promo = promotions.find((p) => p.name === name);
+    return promo ? String(promo.id) : null;
   };
 
   // Sauvegarde du projet
@@ -378,25 +493,53 @@ export default function EditProjectPage() {
       setError(null);
       setSuccess(null);
 
-      // TODO: Implémenter l'appel API pour sauvegarder le projet
-      console.log("Sauvegarde du projet avec l'ID:", projectId);
-      console.log("Données du projet à sauvegarder:", {
+      const promotionId = getPromotionIdByName(formData.promotion);
+      if (!promotionId) {
+        setError("Promotion invalide ou non trouvée.");
+        setSaving(false);
+        return;
+      }
+
+      // Appel à la fonction utilitaire pour mettre à jour le projet
+      const { updateProject } = await import("@/lib/projectData");
+
+      console.log("🔍 DEBUG - Médailles à envoyer:", formData.score);
+
+      // Debug des ressources
+      console.log(
+        "🔍 DEBUG - Toutes les ressources du formulaire:",
+        formData.resources
+      );
+      const validResources = formData.resources.filter(
+        (r) => r.name.trim() && r.url.trim()
+      );
+      console.log(
+        "🔍 DEBUG - Ressources valides (avec nom et URL):",
+        validResources
+      );
+
+      const resourcesToSend = validResources.map((r) => ({
+        filename: r.name.includes(".") ? r.name : `${r.name}.pdf`,
+        url: r.url,
+        uploaded_at: new Date().toISOString(),
+      }));
+      console.log("🔍 DEBUG - Ressources finales à envoyer:", resourcesToSend);
+
+      await updateProject(projectId, {
         name: formData.name,
         description: formData.description,
-        promotion: formData.promotion,
+        ressources: resourcesToSend,
         assigned_at: formData.assigned_at,
         due_date: formData.due_date,
-        advisor_comment: formData.advisor_comment,
-        medals: formData.medals.filter(
-          (medal) => medal.name.trim() && medal.description.trim()
-        ),
-        resources: formData.resources,
-        max_score: formData.max_score,
+        score: formData.score,
+        max_score: Number(formData.max_score),
         is_active: formData.is_active,
-        created_at: formData.created_at,
+        id_promotion: promotionId,
+        advisor_comment: formData.advisor_comment,
       });
 
-      setSuccess("Projet modifié avec succès ! (API à implémenter)");
+      setSuccess("Projet modifié avec succès !");
+      console.log("Projet modifié avec les données:", formData);
 
       // Rediriger après 2 secondes
       setTimeout(() => {
@@ -678,7 +821,36 @@ export default function EditProjectPage() {
                       />
                     </div>
 
+                    {/* Upload de fichier OU URL manuelle */}
                     <div className="group">
+                      <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
+                        Fichier de la ressource
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleFileUpload(index, file);
+                            }
+                          }}
+                          accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif"
+                          disabled={uploadingFiles[index]}
+                          className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+
+                        {/* Indicateur de chargement */}
+                        {uploadingFiles[index] && (
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                            <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* URL manuelle (si pas de fichier uploadé) */}
+                    <div className="group md:col-span-2">
                       <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
                         URL de la ressource
                       </label>
@@ -689,16 +861,15 @@ export default function EditProjectPage() {
                           updateResource(index, "url", e.target.value)
                         }
                         className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
-                        placeholder="https://..."
+                        placeholder="https://... (généré automatiquement lors de l'upload ou à saisir manuellement)"
+                        readOnly={uploadingFiles[index]}
                       />
                     </div>
 
-                    <div className="group">
-                      <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                        Type de fichier accepté
-                      </label>
-                      <div className="px-4 py-3 border-2 border-emerald-200 rounded-xl bg-emerald-50/30 text-emerald-700 text-xs">
-                        PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
+                    {/* Types de fichiers acceptés */}
+                    <div className="group md:col-span-2">
+                      <div className="px-4 py-2 border-2 border-emerald-200 rounded-xl bg-emerald-50/30 text-emerald-700 text-xs">
+                        Types acceptés: PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
                       </div>
                     </div>
                   </div>
@@ -727,7 +898,7 @@ export default function EditProjectPage() {
             </h3>
             <div className="space-y-6">
               <div className="space-y-4">
-                {formData.medals.map((medal, index) => (
+                {formData.score.map((medal, index) => (
                   <div
                     key={index}
                     className="space-y-3 p-4 border-2 border-pink-200 rounded-xl bg-pink-50/50 group"
@@ -736,7 +907,7 @@ export default function EditProjectPage() {
                       <h4 className="text-sm font-semibold text-pink-900">
                         Médaille {index + 1}
                       </h4>
-                      {formData.medals.length > 1 && (
+                      {formData.score.length > 1 && (
                         <Button
                           type="button"
                           onClick={() => removeMedal(index)}

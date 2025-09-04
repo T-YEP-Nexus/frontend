@@ -21,6 +21,14 @@ export interface Project {
   created_at: string;
 }
 
+export interface ProjectWithDetails extends Project {
+  assigned_at?: string;
+  due_date?: string;
+  advisor_comment?: string | null;
+  score?: Medal[];
+  max_score?: number | null;
+}
+
 interface ProjectStudent {
   id: string;
   id_student: string;
@@ -78,6 +86,11 @@ export interface UpdateProjectInput {
   ressources?: ProjectResource[];
   is_active?: boolean;
   id_promotion?: string;
+  assigned_at?: string;
+  due_date?: string;
+  advisor_comment?: string | null;
+  score?: Medal[];
+  max_score?: number | null;
 }
 
 // Données de projet par défaut pour les tests/fallback
@@ -239,6 +252,116 @@ export const getProjectById = async (projectId: string): Promise<Project | null>
     console.warn("Service projects indisponible, utilisation des données par défaut:", error);
     const defaultProject = defaultProjectData.find(p => p.id === projectId);
     return defaultProject || null;
+  }
+};
+
+// Fonction pour récupérer les données complètes du projet avec ses assignations
+export const getProjectWithDetails = async (projectId: string): Promise<ProjectWithDetails | null> => {
+  try {
+    console.log('🔍 DEBUG - Récupération des détails du projet:', projectId);
+
+    // Récupérer les données de base du projet
+    const project = await getProjectById(projectId);
+    if (!project) {
+      console.log('❌ DEBUG - Projet non trouvé');
+      return null;
+    }
+
+    console.log('✅ DEBUG - Projet de base récupéré:', project);
+
+    // Récupérer les assignations du projet
+    const assignmentsUrl = `${PROJECT_SERVICE_BASE_URL}/project-students/project/${projectId}`;
+    console.log('🔍 DEBUG - URL des assignations:', assignmentsUrl);
+
+    const assignmentsResponse = await fetchWithTimeout(assignmentsUrl);
+
+    if (!assignmentsResponse.ok) {
+      console.warn('⚠️ DEBUG - Impossible de récupérer les assignations du projet, status:', assignmentsResponse.status);
+      return project as ProjectWithDetails;
+    }
+
+    const assignmentsResult: ApiResponse<ProjectStudent[]> = await assignmentsResponse.json();
+    console.log('🔍 DEBUG - Résultat des assignations:', assignmentsResult);
+
+    if (!assignmentsResult.success || !assignmentsResult.data || assignmentsResult.data.length === 0) {
+      console.log('⚠️ DEBUG - Aucune assignation trouvée pour le projet');
+      return project as ProjectWithDetails;
+    }
+
+    // Prendre les données de la première assignation (elles devraient être identiques pour toutes)
+    const firstAssignment = assignmentsResult.data[0];
+    console.log('✅ DEBUG - Première assignation:', firstAssignment);
+    console.log('🔍 DEBUG - assigned_at brut:', firstAssignment.assigned_at);
+    console.log('🔍 DEBUG - due_date brut:', firstAssignment.due_date);
+
+    // Convertir les dates au format datetime-local pour les inputs HTML
+    const formatDateForInput = (dateString: string | null): string => {
+      if (!dateString) return "";
+      try {
+        const date = new Date(dateString);
+        // Vérifier que la date est valide
+        if (isNaN(date.getTime())) {
+          console.warn('Date invalide:', dateString);
+          return "";
+        }
+        // Convertir au format YYYY-MM-DDTHH:MM pour datetime-local
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      } catch (error) {
+        console.warn('Erreur lors de la conversion de la date:', dateString, error);
+        return "";
+      }
+    };
+
+    const formattedAssignedAt = formatDateForInput(firstAssignment.assigned_at);
+    const formattedDueDate = formatDateForInput(firstAssignment.due_date);
+
+    console.log('🔍 DEBUG - assigned_at formaté:', formattedAssignedAt);
+    console.log('🔍 DEBUG - due_date formaté:', formattedDueDate);
+
+    // Parser les ressources si elles sont stockées comme des chaînes JSON
+    console.log('🔍 DEBUG - Ressources brutes:', project.ressources);
+    let parsedRessources = project.ressources;
+    if (Array.isArray(project.ressources) && project.ressources.length > 0) {
+      try {
+        // Vérifier si le premier élément est une chaîne JSON
+        if (typeof project.ressources[0] === 'string') {
+          console.log('🔍 DEBUG - Parsing des ressources JSON...');
+          parsedRessources = project.ressources.map((resource: any) => {
+            try {
+              return typeof resource === 'string' ? JSON.parse(resource) : resource;
+            } catch (e) {
+              console.warn('Erreur lors du parsing de la ressource:', resource);
+              return resource;
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('Erreur lors du parsing des ressources:', error);
+      }
+    }
+    console.log('🔍 DEBUG - Ressources parsées:', parsedRessources);
+
+    const result = {
+      ...project,
+      ressources: parsedRessources,
+      assigned_at: formattedAssignedAt,
+      due_date: formattedDueDate,
+      advisor_comment: firstAssignment.advisor_comment,
+      score: firstAssignment.score,
+      max_score: firstAssignment.max_score,
+    };
+
+    console.log('✅ DEBUG - Résultat final:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ DEBUG - Erreur lors de la récupération des détails du projet:', error);
+    throw error;
   }
 };
 
@@ -413,6 +536,7 @@ export const createProjectAndAssignToStudents = async (projectDataStudents: NewP
 
       const assignmentResponse = await fetchWithTimeout("http://localhost:3003/project-students", {
         method: "POST",
+        credentials: 'include',
         body: JSON.stringify(assignmentData),
       });
 

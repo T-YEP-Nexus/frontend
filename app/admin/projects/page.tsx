@@ -553,19 +553,14 @@ export default function AdminProjectsPage() {
               progress={0}
               description={project.description}
               details={{
-                startDate: project.details?.startDate
-                  ? new Date(project.details.startDate).toLocaleDateString(
-                      "fr-FR"
-                    )
-                  : new Date(project.created_at).toLocaleDateString("fr-FR"),
-                endDate: project.details?.endDate
-                  ? new Date(project.details.endDate).toLocaleDateString(
-                      "fr-FR"
-                    )
-                  : new Date(
-                      new Date(project.created_at).getTime() +
-                        30 * 24 * 60 * 60 * 1000
-                    ).toLocaleDateString("fr-FR"),
+                startDate:
+                  project.assigned_at ||
+                  project.details?.startDate ||
+                  project.created_at,
+                endDate:
+                  project.due_date ||
+                  project.details?.endDate ||
+                  project.created_at,
                 team:
                   project.details?.team ||
                   (project.students && project.students.length > 0
@@ -575,45 +570,32 @@ export default function AdminProjectsPage() {
                     : "-"),
               }}
               deadline={{
-                kickOff: project.deadline?.kickOff
-                  ? new Date(project.deadline.kickOff).toLocaleDateString(
-                      "fr-FR"
-                    )
-                  : new Date(project.created_at).toLocaleDateString("fr-FR"),
-                followUp: project.deadline?.followUp
-                  ? new Date(project.deadline.followUp).toLocaleDateString(
-                      "fr-FR"
-                    )
-                  : new Date(
-                      new Date(project.created_at).getTime() +
-                        15 * 24 * 60 * 60 * 1000
-                    ).toLocaleDateString("fr-FR"),
-                keynote: project.deadline?.keynote
-                  ? new Date(project.deadline.keynote).toLocaleDateString(
-                      "fr-FR"
-                    )
-                  : new Date(
-                      new Date(project.created_at).getTime() +
-                        30 * 24 * 60 * 60 * 1000
-                    ).toLocaleDateString("fr-FR"),
-                daysRemaining: project.deadline?.keynote
-                  ? Math.max(
-                      0,
-                      Math.floor(
-                        (new Date(project.deadline.keynote).getTime() -
-                          Date.now()) /
-                          (1000 * 60 * 60 * 24)
-                      )
-                    )
-                  : Math.max(
-                      0,
-                      30 -
-                        Math.floor(
-                          (Date.now() -
-                            new Date(project.created_at).getTime()) /
-                            (1000 * 60 * 60 * 24)
-                        )
-                    ),
+                kickOff:
+                  project.assigned_at ||
+                  project.deadline?.kickOff ||
+                  project.created_at,
+                followUp:
+                  project.deadline?.followUp ||
+                  new Date(
+                    new Date(
+                      project.assigned_at || project.created_at
+                    ).getTime() +
+                      15 * 24 * 60 * 60 * 1000
+                  ).toLocaleDateString("fr-FR"),
+                keynote:
+                  project.due_date ||
+                  project.deadline?.keynote ||
+                  project.created_at,
+                daysRemaining: Math.max(
+                  0,
+                  Math.floor(
+                    (new Date(
+                      project.due_date || project.created_at
+                    ).getTime() -
+                      Date.now()) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                ),
               }}
               documentation={{
                 pdfUrl: project.documentation?.pdfUrl || "#",
