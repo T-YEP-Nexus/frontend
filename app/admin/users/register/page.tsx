@@ -96,7 +96,10 @@ const RegisterPage = () => {
   const getPromotionIdByName = async (name: string) => {
     try {
       const response = await fetch(
-        `http://localhost:3004/promotion/name/${name}`
+        `http://localhost:3004/promotion/name/${name}`,
+        {
+          credentials: "include",
+        }
       );
       if (!response.ok) {
         throw new Error("Erreur lors de la récupération de la promotions");

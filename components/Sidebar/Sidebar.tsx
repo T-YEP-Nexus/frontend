@@ -107,6 +107,7 @@ const Sidebar = () => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -134,6 +135,7 @@ const Sidebar = () => {
               headers: {
                 "Content-Type": "application/json",
               },
+              credentials: "include",
             }
           );
 
@@ -153,7 +155,10 @@ const Sidebar = () => {
 
             // Récupérer toutes les promotions pour convertir l'ID en nom
             const promotionsRes = await fetch(
-              "http://localhost:3004/promotions"
+              "http://localhost:3004/promotions",
+              {
+                credentials: "include",
+              }
             );
             if (promotionsRes.ok) {
               const promotionsData = await promotionsRes.json();

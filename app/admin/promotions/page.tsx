@@ -116,7 +116,10 @@ export default function AdminPromotionsPage() {
           );
 
           const response = await fetch(
-            `http://localhost:3004/students/promotion/${promotion.id}`
+            `http://localhost:3004/students/promotion/${promotion.id}`,
+            {
+              credentials: "include",
+            }
           );
 
           console.log(`Response status pour ${promotion.id}:`, response.status);
@@ -235,6 +238,7 @@ export default function AdminPromotionsPage() {
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
         }
       );
 

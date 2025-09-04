@@ -286,11 +286,12 @@ export default function AdminProjectDetailsPage() {
                       const found = allStudents.find(
                         (s) => String(s.id) === String(selectedStudent)
                       );
-                      const label = found?.profile
-                        ? `${found.profile.first_name} ${found.profile.last_name}`
-                        : found?.first_name && found?.last_name
-                        ? `${found.first_name} ${found.last_name}`
-                        : `Étudiant #${selectedStudent}`;
+                      const label =
+                        found?.profile?.first_name && found?.profile?.last_name
+                          ? `${found.profile.first_name} ${found.profile.last_name}`
+                          : found?.first_name && found?.last_name
+                          ? `${found.first_name} ${found.last_name}`
+                          : `Étudiant #${selectedStudent}`;
                       return label;
                     })()
                   : "Choisir un étudiant"}
@@ -321,7 +322,7 @@ export default function AdminProjectDetailsPage() {
                       const s = allStudents.find(
                         (st) => String(st.id) === String(as.id_student)
                       );
-                      return s?.profile
+                      return s?.profile?.first_name && s?.profile?.last_name
                         ? `${s.profile.first_name} ${s.profile.last_name}`
                         : s?.first_name && s?.last_name
                         ? `${s.first_name} ${s.last_name}`
@@ -340,7 +341,7 @@ export default function AdminProjectDetailsPage() {
                     onClick={() => handleSelectGeneralStudent(s)}
                     className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-300 cursor-pointer border-b border-blue-100 last:border-b-0"
                   >
-                    {s.profile
+                    {s.profile?.first_name && s.profile?.last_name
                       ? `${s.profile.first_name} ${s.profile.last_name}`
                       : s.first_name && s.last_name
                       ? `${s.first_name} ${s.last_name}`

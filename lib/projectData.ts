@@ -153,7 +153,8 @@ const isServiceAvailable = async (url: string): Promise<boolean> => {
 
     const response = await fetch(url, {
       method: 'HEAD',
-      signal: controller.signal
+      signal: controller.signal,
+      credentials: 'include'
     });
 
     clearTimeout(timeoutId);
@@ -175,7 +176,8 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}): Promise
       headers: {
         'Content-Type': 'application/json',
         ...options.headers
-      }
+      },
+      credentials: 'include'
     });
 
     clearTimeout(timeoutId);

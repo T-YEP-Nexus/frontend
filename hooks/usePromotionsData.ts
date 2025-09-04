@@ -25,7 +25,9 @@ const usePromotionsData = (): UsePromotionsDataReturn => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`http://localhost:3004/promotions`);
+      const response = await fetch(`http://localhost:3004/promotions`, {
+        credentials: 'include'
+      });
 
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status}`);

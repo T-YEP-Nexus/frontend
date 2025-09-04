@@ -46,7 +46,6 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
   onEdit,
   onDelete,
 }) => {
-
   if (!open || !event || typeof event !== "object") {
     console.log("ModalEventDetails: Données invalides", { open, event });
     return null;
@@ -153,7 +152,9 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
           );
           try {
             console.log("Appel API pour toutes les promotions");
-            const response = await fetch(`http://localhost:3004/promotions`);
+            const response = await fetch(`http://localhost:3004/promotions`, {
+              credentials: "include",
+            });
             console.log("Réponse API promotions:", response.status);
             if (response.ok) {
               const data = await response.json();
@@ -181,7 +182,10 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
           try {
             console.log(`Appel API pour créateur: ${event.id_creator}`);
             const response = await fetch(
-              `http://localhost:3001/users/${event.id_creator}`
+              `http://localhost:3001/users/${event.id_creator}`,
+              {
+                credentials: "include",
+              }
             );
             console.log(`Réponse API créateur:`, response.status);
             if (response.ok) {

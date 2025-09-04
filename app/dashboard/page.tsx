@@ -148,14 +148,19 @@ export default function Dashboard() {
         let fetchedEvents: BackendEvent[] = [];
         if (finalRole === "student") {
           const res = await fetch(
-            `http://localhost:3002/events/student/${userId}`
+            `http://localhost:3002/events/student/${userId}`,
+            {
+              credentials: "include",
+            }
           );
           if (res.ok) {
             const json = await res.json();
             fetchedEvents = Array.isArray(json.data) ? json.data : [];
           }
         } else {
-          const res = await fetch("http://localhost:3002/events");
+          const res = await fetch("http://localhost:3002/events", {
+            credentials: "include",
+          });
           if (res.ok) {
             const json = await res.json();
             fetchedEvents = Array.isArray(json.data) ? json.data : [];
@@ -165,7 +170,9 @@ export default function Dashboard() {
 
         // Charger projets (liste simple)
         try {
-          const pr = await fetch("http://localhost:3003/projects");
+          const pr = await fetch("http://localhost:3003/projects", {
+            credentials: "include",
+          });
           if (pr.ok) {
             const pj = await pr.json();
             setProjects(Array.isArray(pj.data) ? pj.data : []);

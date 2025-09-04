@@ -91,9 +91,15 @@ export default function TrombinoscopePage() {
       // Récupérer toutes les informations de l'étudiant en parallèle
       const [profileResponse, studentResponse, userResponse] =
         await Promise.all([
-          fetch(`http://localhost:3004/profile/${student.id}`),
-          fetch(`http://localhost:3004/student/profile/${student.id}`),
-          fetch("http://localhost:3001/users"),
+          fetch(`http://localhost:3004/profile/${student.id}`, {
+            credentials: "include",
+          }),
+          fetch(`http://localhost:3004/student/profile/${student.id}`, {
+            credentials: "include",
+          }),
+          fetch("http://localhost:3001/users", {
+            credentials: "include",
+          }),
         ]);
 
       const profileData = profileResponse.ok
@@ -171,6 +177,7 @@ export default function TrombinoscopePage() {
               {
                 method: "GET",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include",
               }
             );
             if (studentRes.ok) {
@@ -188,7 +195,10 @@ export default function TrombinoscopePage() {
 
               // Récupérer toutes les promotions pour convertir l'ID en nom
               const promotionsRes = await fetch(
-                "http://localhost:3004/promotions"
+                "http://localhost:3004/promotions",
+                {
+                  credentials: "include",
+                }
               );
               if (promotionsRes.ok) {
                 const promotionsData = await promotionsRes.json();
@@ -242,6 +252,7 @@ export default function TrombinoscopePage() {
               {
                 method: "GET",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include",
               }
             );
             if (promotionsRes.ok) {
@@ -296,6 +307,7 @@ export default function TrombinoscopePage() {
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
           }
         );
 
@@ -315,7 +327,10 @@ export default function TrombinoscopePage() {
 
             // Récupérer les profils utilisateurs
             const profilesResponse = await fetch(
-              "http://localhost:3004/profiles"
+              "http://localhost:3004/profiles",
+              {
+                credentials: "include",
+              }
             );
             if (!profilesResponse.ok) {
               throw new Error("Erreur lors de la récupération des profils");
@@ -327,7 +342,9 @@ export default function TrombinoscopePage() {
             }
 
             // Récupérer tous les utilisateurs pour avoir les emails
-            const usersResponse = await fetch("http://localhost:3001/users");
+            const usersResponse = await fetch("http://localhost:3001/users", {
+              credentials: "include",
+            });
             const usersData = usersResponse.ok
               ? await usersResponse.json()
               : { success: false, data: [] };

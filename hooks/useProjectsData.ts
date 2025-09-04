@@ -58,7 +58,9 @@ export function useProjectsData() {
   const fetchActiveProjects = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:3003/projects/active/list");
+      const response = await fetch("http://localhost:3003/projects/active/list", {
+        credentials: 'include'
+      });
 
       if (!response.ok) {
         throw new Error("Erreur lors du chargement des projets actifs");
@@ -80,7 +82,9 @@ export function useProjectsData() {
 
   const getProfileByUserId = async (userId: string) => {
     console.log("🔍 DEBUG - Récupération profil pour user:", userId);
-    const response = await fetch(`http://localhost:3004/profile/user/${userId}`);
+    const response = await fetch(`http://localhost:3004/profile/user/${userId}`, {
+      credentials: 'include'
+    });
 
     console.log("🔍 DEBUG - Réponse API profil:", response.status, response.ok);
 
@@ -100,7 +104,9 @@ export function useProjectsData() {
 
   const getStudentByProfileId = async (profileId: string) => {
     console.log("🔍 DEBUG - Récupération étudiant pour profil:", profileId);
-    const response = await fetch(`http://localhost:3004/student/profile/${profileId}`);
+    const response = await fetch(`http://localhost:3004/student/profile/${profileId}`, {
+      credentials: 'include'
+    });
 
     console.log("🔍 DEBUG - Réponse API étudiant:", response.status, response.ok);
 
@@ -124,7 +130,9 @@ export function useProjectsData() {
   };
 
   const getPromotionIdByStudent = async (studentId: string) => {
-    const response = await fetch(`http://localhost:3004/student/${studentId}`);
+    const response = await fetch(`http://localhost:3004/student/${studentId}`, {
+      credentials: 'include'
+    });
 
     console.log("🔍 DEBUG - Réponse API promotion par étudiant:", response.status, response.ok);
 
@@ -154,6 +162,7 @@ export function useProjectsData() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(projectData),
+        credentials: 'include'
       });
 
       if (!projectResponse.ok) {
@@ -174,7 +183,9 @@ export function useProjectsData() {
 
       // Étape 2: Récupérer tous les étudiants de la promotion
       console.log("🔍 DEBUG - Étape 2: Récupération des étudiants de la promotion");
-      const studentsResponse = await fetch(`http://localhost:3004/students/promotion/${projectData.id_promotion}`);
+      const studentsResponse = await fetch(`http://localhost:3004/students/promotion/${projectData.id_promotion}`, {
+        credentials: 'include'
+      });
 
       if (!studentsResponse.ok) {
         throw new Error("Erreur lors de la récupération des étudiants de la promotion");
@@ -212,6 +223,7 @@ export function useProjectsData() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(assignmentData),
+          credentials: 'include'
         });
 
         if (!assignmentResponse.ok) {
@@ -350,7 +362,9 @@ export function useProjectsData() {
     try {
       console.log("🔍 DEBUG - Récupération projets pour promotion:", promotionId);
       setLoading(true);
-      const response = await fetch(`http://localhost:3003/projects/promotion/${promotionId}`);
+      const response = await fetch(`http://localhost:3003/projects/promotion/${promotionId}`, {
+        credentials: 'include'
+      });
 
       console.log("🔍 DEBUG - Réponse API promotion:", response.status, response.ok);
 
@@ -378,7 +392,9 @@ export function useProjectsData() {
   // Fonction pour récupérer l'id de promotion avec son nom
   const getPromotionIdByName = async (promotionName: string): Promise<string> => {
     console.log("🔍 DEBUG - Recherche promotion par nom:", promotionName);
-    const response = await fetch(`http://localhost:3003/promotion/name/${promotionName}`);
+    const response = await fetch(`http://localhost:3003/promotion/name/${promotionName}`, {
+      credentials: 'include'
+    });
 
     console.log("🔍 DEBUG - Réponse API promotion par nom:", response.status, response.ok);
 
@@ -430,7 +446,9 @@ export function useProjectsData() {
       }
 
       console.log("🔍 DEBUG - Appel API pour étudiant:", `http://localhost:3003/project-students/student/${userId}`);
-      const response = await fetch(`http://localhost:3003/project-students/student/${userId}`);
+      const response = await fetch(`http://localhost:3003/project-students/student/${userId}`, {
+        credentials: 'include'
+      });
 
       console.log("🔍 DEBUG - Réponse API project-students:", response.status, response.ok);
 
@@ -458,7 +476,9 @@ export function useProjectsData() {
             console.log(`🔍 DEBUG - Traitement assignation ${index}:`, assignment);
             console.log(`🔍 DEBUG - Appel projet ID: ${assignment.id_project}`);
 
-            const projectResponse = await fetch(`http://localhost:3003/projects/${assignment.id_project}`);
+            const projectResponse = await fetch(`http://localhost:3003/projects/${assignment.id_project}`, {
+              credentials: 'include'
+            });
             console.log(`🔍 DEBUG - Réponse projet ${assignment.id_project}:`, projectResponse.status, projectResponse.ok);
 
             if (projectResponse.ok) {
@@ -501,7 +521,9 @@ export function useProjectsData() {
     try {
       console.log("🔍 DEBUG - Récupération projet par ID:", projectId);
       setLoading(true);
-      const response = await fetch(`http://localhost:3003/projects/${projectId}`);
+      const response = await fetch(`http://localhost:3003/projects/${projectId}`, {
+        credentials: 'include'
+      });
 
       console.log("🔍 DEBUG - Réponse API projet par ID:", response.status, response.ok);
 
@@ -530,7 +552,9 @@ export function useProjectsData() {
     try {
       console.log("🔍 DEBUG - Récupération de tous les projets");
       setLoading(true);
-      const response = await fetch("http://localhost:3003/projects");
+      const response = await fetch("http://localhost:3003/projects", {
+        credentials: 'include'
+      });
 
       console.log("🔍 DEBUG - Réponse API tous projets:", response.status, response.ok);
 

@@ -144,7 +144,9 @@ export default function AdminProjectsPage() {
       setUsersError(null);
 
       // Récupérer tous les profils utilisateurs
-      const profilesResponse = await fetch("http://localhost:3004/profiles");
+      const profilesResponse = await fetch("http://localhost:3004/profiles", {
+        credentials: "include",
+      });
       if (!profilesResponse.ok) {
         throw new Error("Erreur lors de la récupération des profils");
       }
@@ -155,13 +157,17 @@ export default function AdminProjectsPage() {
       }
 
       // Récupérer tous les étudiants
-      const studentsResponse = await fetch("http://localhost:3004/students");
+      const studentsResponse = await fetch("http://localhost:3004/students", {
+        credentials: "include",
+      });
       const studentsData = studentsResponse.ok
         ? await studentsResponse.json()
         : { success: false, data: [] };
 
       // Récupérer tous les utilisateurs pour avoir les emails
-      const usersResponse = await fetch("http://localhost:3001/users");
+      const usersResponse = await fetch("http://localhost:3001/users", {
+        credentials: "include",
+      });
       const usersData = usersResponse.ok
         ? await usersResponse.json()
         : { success: false, data: [] };
@@ -414,6 +420,7 @@ export default function AdminProjectsPage() {
         `http://localhost:3003/projects/${projectToDelete}`,
         {
           method: "DELETE",
+          credentials: "include",
         }
       );
       if (!res.ok) {

@@ -6,6 +6,7 @@ import { getUserProfileData } from '@/lib/userData'
 export const useRoleRedirect = () => {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
+  const [hasRedirected, setHasRedirected] = useState(false)
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -29,12 +30,19 @@ export const useRoleRedirect = () => {
           return
         }
 
+        // Éviter les redirections en boucle
+        if (hasRedirected) {
+          setIsLoading(false)
+          return
+        }
+
         // Cas particulier : dashboard
         if (
           (userRole === 'admin' || userRole === 'advisor') &&
           pathname === '/dashboard'
         ) {
           console.log('Hook - Admin/advisor sur dashboard, redirection vers /admin')
+          setHasRedirected(true)
           router.push('/admin')
           return
         }
@@ -48,6 +56,7 @@ export const useRoleRedirect = () => {
           !pathname.startsWith('/trombinoscope')
         ) {
           console.log('Hook - Admin/advisor sur page client, redirection vers /admin' + pathname)
+          setHasRedirected(true)
           const adminPath = '/admin' + pathname
           router.push(adminPath)
           return
@@ -61,7 +70,7 @@ export const useRoleRedirect = () => {
     }
 
     checkUserRole()
-  }, [router])
+  }, [router, hasRedirected])
 
   return { isLoading }
 }
