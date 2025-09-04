@@ -319,12 +319,74 @@ export const getUserData = async (userId: string): Promise<UserProfile> => {
 
 // Fonction pour mettre à jour les données utilisateur
 export const updateUserData = async (userId: string, updates: Partial<UserProfile>): Promise<UserProfile> => {
-  // Simulation d'un délai d'API
-  await new Promise(resolve => setTimeout(resolve, 200));
+  try {
+    console.log("Mise à jour des données utilisateur:", { userId, updates });
 
-  // Pour l'instant, retourne les données mises à jour
-  // Plus tard, cela pourrait faire un appel API réel
-  return { ...defaultUserData, ...updates };
+    // D'abord, récupérer le profil existant pour obtenir l'ID du profil
+    const existingProfile = await getUserProfileData(userId);
+    if (!existingProfile || !existingProfile.id) {
+      throw new Error("Profil utilisateur non trouvé");
+    }
+
+    // Préparer les données à envoyer (mapper les noms de champs)
+    const updateData: any = {};
+    if (updates.firstName !== undefined) updateData.first_name = updates.firstName;
+    if (updates.lastName !== undefined) updateData.last_name = updates.lastName;
+    if (updates.phone !== undefined) updateData.phone = updates.phone;
+    if (updates.address !== undefined) updateData.address = updates.address;
+    if (updates.campus !== undefined) updateData.campus = updates.campus;
+    if (updates.role !== undefined) updateData.roles_user = updates.role;
+
+    console.log("Données à envoyer au service:", updateData);
+
+    // Appel API pour mettre à jour le profil
+    const response = await fetch(`http://localhost:3004/profile/${existingProfile.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("Réponse du service profile:", result);
+
+    if (!result.success) {
+      throw new Error(result.message || "Échec de la mise à jour");
+    }
+
+    // Retourner les données mises à jour
+    const updatedProfile = result.data;
+    const updatedUserData: UserProfile = {
+      id: userId,
+      firstName: updatedProfile.first_name || updates.firstName || defaultUserData.firstName,
+      lastName: updatedProfile.last_name || updates.lastName || defaultUserData.lastName,
+      email: getUserEmailFromToken() || defaultUserData.email,
+      phone: updatedProfile.phone || updates.phone || defaultUserData.phone,
+      address: updatedProfile.address || updates.address || defaultUserData.address,
+      campus: updatedProfile.campus || updates.campus || defaultUserData.campus,
+      role: updatedProfile.roles_user || updates.role || defaultUserData.role,
+      profileImage: updates.profileImage || defaultUserData.profileImage,
+      stats: updates.stats || defaultUserData.stats,
+      chartData: updates.chartData || defaultUserData.chartData,
+      studentNumber: updates.studentNumber || defaultUserData.studentNumber,
+      promotion: updates.promotion || defaultUserData.promotion,
+      major: updates.major || defaultUserData.major,
+    };
+
+    console.log("Données utilisateur mises à jour:", updatedUserData);
+    return updatedUserData;
+
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour des données utilisateur:", error);
+    throw error;
+  }
 };
 
 // Fonction pour mettre à jour l'image de profil
