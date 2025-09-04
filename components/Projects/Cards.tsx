@@ -749,7 +749,7 @@ function Cards({
     );
   }
 
-  // Carte normale - Nom centré uniquement
+  // Carte normale - Titre, description tronquée et dates
   return (
     <div
       className={`w-full group transition-all duration-300 ${
@@ -758,12 +758,26 @@ function Cards({
       data-project-card
     >
       <div
-        className="bg-white rounded-2xl p-10 w-full h-[200px] shadow-sm lg:hover:shadow-xl cursor-pointer lg:hover:scale-105 transition-all duration-300 ease-out border border-gray-100 lg:hover:border-[#0E58D8]/30 flex items-center justify-center"
+        className="bg-white rounded-2xl p-6 w-full h-[200px] shadow-sm lg:hover:shadow-xl cursor-pointer lg:hover:scale-105 transition-all duration-300 ease-out border border-gray-100 lg:hover:border-[#0E58D8]/30 flex flex-col justify-between"
         onClick={handleCardClick}
       >
-        <h3 className="text-lg font-extrabold text-[#0E58D8] text-center truncate max-w-full">
-          {projectName}
-        </h3>
+        {/* Titre */}
+        <div className="flex-1">
+          <h3 className="text-lg font-extrabold text-[#0E58D8] mb-2 leading-tight">
+            {projectName}
+          </h3>
+
+          {/* Description tronquée à 2 lignes */}
+          <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
+            {description}
+          </p>
+        </div>
+
+        {/* Dates en bas */}
+        <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-100">
+          <span>Début: {details.startDate}</span>
+          <span>Fin: {details.endDate}</span>
+        </div>
       </div>
     </div>
   );
