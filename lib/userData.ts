@@ -135,7 +135,8 @@ const isServiceAvailable = async (url: string): Promise<boolean> => {
 
     const response = await fetch(url, {
       method: 'HEAD',
-      signal: controller.signal
+      signal: controller.signal,
+      credentials: 'include'
     });
 
     clearTimeout(timeoutId);
@@ -158,7 +159,8 @@ export const getUserProfileData = async (userId: string) => {
       headers: {
         "Content-Type": "application/json",
       },
-      signal: controller.signal
+      signal: controller.signal,
+      credentials: 'include'
     });
 
     clearTimeout(timeoutId);
@@ -200,7 +202,8 @@ export const getStudentData = async (userId: string) => {
       headers: {
         "Content-Type": "application/json",
       },
-      signal: controller.signal
+      signal: controller.signal,
+      credentials: 'include'
     });
 
     clearTimeout(timeoutId);
@@ -255,7 +258,9 @@ export const getUserData = async (userId: string): Promise<UserProfile> => {
     let promotionName = "";
     if (profileData.roles_user === "student" && studentData?.id_promotion) {
       try {
-        const promotionsRes = await fetch("http://localhost:3004/promotions");
+        const promotionsRes = await fetch("http://localhost:3004/promotions", {
+          credentials: 'include'
+        });
         if (promotionsRes.ok) {
           const promotionsData = await promotionsRes.json();
           console.log("Promotions disponibles dans userData:", promotionsData);
@@ -334,7 +339,8 @@ export const updateProfileImage = async (userId: string, imageUrl: string): Prom
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ profileImage: imageUrl }),
-      signal: controller.signal
+      signal: controller.signal,
+      credentials: 'include'
     });
 
     clearTimeout(timeoutId);
@@ -386,7 +392,8 @@ export async function createCompleteUser(input: NewUserInput) {
       body: JSON.stringify({
         email: input.email,
         password: input.password
-      })
+      }),
+      credentials: 'include'
     });
     if (!resUser.ok) {
       const err = await resUser.json();
@@ -408,7 +415,8 @@ export async function createCompleteUser(input: NewUserInput) {
         is_active: input.is_active,
         roles_user: input.roles_user
 
-      })
+      }),
+      credentials: 'include'
     });
     if (!resProfile.ok) {
       const err = await resProfile.json();
@@ -428,7 +436,8 @@ export async function createCompleteUser(input: NewUserInput) {
           student_number: input.student_number,
           id_promotion: input.id_promotion,
           major: input.major
-        })
+        }),
+        credentials: 'include'
       });
       if (!resStudent.ok) {
         const err = await resStudent.json();
@@ -446,7 +455,8 @@ export async function createCompleteUser(input: NewUserInput) {
           room: input.room,
           availability: input.availability,
           specialty: input.specialty
-        })
+        }),
+        credentials: 'include'
       });
       if (!resAdvisor.ok) {
         const err = await resAdvisor.json();
@@ -461,7 +471,8 @@ export async function createCompleteUser(input: NewUserInput) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id_user_profile: profileData!.id
-        })
+        }),
+        credentials: 'include'
       });
       if (!resAdmin.ok) {
         const err = await resAdmin.json();

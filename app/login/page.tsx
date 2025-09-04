@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import LogoAndTitle from "@/components/Login/LogoAndTitle";
 import Link from "next/link";
@@ -29,6 +29,7 @@ export default function LoginPage() {
           email,
           password,
         }),
+        credentials: "include",
       });
 
       const data = await response.json();
@@ -51,6 +52,7 @@ export default function LoginPage() {
               headers: {
                 "Content-Type": "application/json",
               },
+              credentials: "include",
             }
           );
 
@@ -165,7 +167,9 @@ export default function LoginPage() {
                   type="email"
                   placeholder="exemple@epitech.eu"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setEmail(e.target.value)
+                  }
                   className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
                   required
                   disabled={isLoading}
@@ -187,7 +191,9 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder="Ton mot de passe"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setPassword(e.target.value)
+                  }
                   className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-2xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
                   required
                   disabled={isLoading}

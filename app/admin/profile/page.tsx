@@ -119,14 +119,19 @@ const AdminProfilePage = () => {
       setStatsLoading(true);
 
       // Récupérer tous les étudiants
-      const studentsResponse = await fetch("http://localhost:3004/students");
+      const studentsResponse = await fetch("http://localhost:3004/students", {
+        credentials: "include",
+      });
       const studentsData = studentsResponse.ok
         ? await studentsResponse.json()
         : { success: false, data: [] };
 
       // Récupérer tous les projets actifs
       const projectsResponse = await fetch(
-        "http://localhost:3003/projects/active/list"
+        "http://localhost:3003/projects/active/list",
+        {
+          credentials: "include",
+        }
       );
       const projectsData = projectsResponse.ok
         ? await projectsResponse.json()
@@ -134,7 +139,10 @@ const AdminProfilePage = () => {
 
       // Récupérer toutes les promotions
       const promotionsResponse = await fetch(
-        "http://localhost:3004/promotions"
+        "http://localhost:3004/promotions",
+        {
+          credentials: "include",
+        }
       );
       const promotionsData = promotionsResponse.ok
         ? await promotionsResponse.json()
@@ -274,6 +282,7 @@ const AdminProfilePage = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          credentials: "include",
         });
 
         const data = await response.json();
@@ -343,7 +352,10 @@ const AdminProfilePage = () => {
 
       // Utiliser la nouvelle route pour récupérer les étudiants par promotion
       const studentsResponse = await fetch(
-        `http://localhost:3004/students/promotion/${selectedPromotionData.id}`
+        `http://localhost:3004/students/promotion/${selectedPromotionData.id}`,
+        {
+          credentials: "include",
+        }
       );
       if (!studentsResponse.ok) {
         const errorText = await studentsResponse.text();
@@ -371,7 +383,9 @@ const AdminProfilePage = () => {
       }
 
       // Récupérer les profils utilisateurs
-      const profilesResponse = await fetch("http://localhost:3004/profiles");
+      const profilesResponse = await fetch("http://localhost:3004/profiles", {
+        credentials: "include",
+      });
       if (!profilesResponse.ok) {
         throw new Error("Erreur lors de la récupération des profils");
       }
@@ -382,7 +396,9 @@ const AdminProfilePage = () => {
       }
 
       // Récupérer tous les utilisateurs pour avoir les emails
-      const usersResponse = await fetch("http://localhost:3001/users");
+      const usersResponse = await fetch("http://localhost:3001/users", {
+        credentials: "include",
+      });
       const usersData = usersResponse.ok
         ? await usersResponse.json()
         : { success: false, data: [] };
@@ -459,7 +475,10 @@ const AdminProfilePage = () => {
 
       // Récupérer les données complètes du profil étudiant
       const profileResponse = await fetch(
-        `http://localhost:3004/profile/${studentId}`
+        `http://localhost:3004/profile/${studentId}`,
+        {
+          credentials: "include",
+        }
       );
       if (!profileResponse.ok) {
         throw new Error("Erreur lors de la récupération du profil");
@@ -472,7 +491,10 @@ const AdminProfilePage = () => {
 
       // Récupérer les données étudiant spécifiques
       const studentResponse = await fetch(
-        `http://localhost:3004/student/profile/${studentId}`
+        `http://localhost:3004/student/profile/${studentId}`,
+        {
+          credentials: "include",
+        }
       );
       const studentData = studentResponse.ok
         ? await studentResponse.json()
@@ -558,7 +580,10 @@ const AdminProfilePage = () => {
     try {
       // Récupérer les données complètes du profil étudiant
       const profileResponse = await fetch(
-        `http://localhost:3004/profile/${studentId}`
+        `http://localhost:3004/profile/${studentId}`,
+        {
+          credentials: "include",
+        }
       );
       if (!profileResponse.ok) {
         throw new Error("Erreur lors de la récupération du profil");
@@ -571,7 +596,10 @@ const AdminProfilePage = () => {
 
       // Récupérer les données étudiant spécifiques
       const studentResponse = await fetch(
-        `http://localhost:3004/student/profile/${studentId}`
+        `http://localhost:3004/student/profile/${studentId}`,
+        {
+          credentials: "include",
+        }
       );
       const studentData = studentResponse.ok
         ? await studentResponse.json()
@@ -579,7 +607,10 @@ const AdminProfilePage = () => {
 
       // Récupérer les données utilisateur pour l'email
       const userResponse = await fetch(
-        `http://localhost:3001/users/${profileData.data.id_user}`
+        `http://localhost:3001/users/${profileData.data.id_user}`,
+        {
+          credentials: "include",
+        }
       );
       const userData = userResponse.ok
         ? await userResponse.json()
@@ -591,7 +622,10 @@ const AdminProfilePage = () => {
         try {
           // Récupérer toutes les promotions
           const promotionsResponse = await fetch(
-            "http://localhost:3004/promotions"
+            "http://localhost:3004/promotions",
+            {
+              credentials: "include",
+            }
           );
           if (promotionsResponse.ok) {
             const promotionsData = await promotionsResponse.json();

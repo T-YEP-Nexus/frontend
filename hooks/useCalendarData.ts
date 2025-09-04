@@ -37,14 +37,16 @@ export function useCalendarData() {
   const fetchAllEvents = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:3002/events");
-      
+      const response = await fetch("http://localhost:3002/events", {
+        credentials: 'include'
+      });
+
       if (!response.ok) {
         throw new Error("Erreur lors du chargement des événements");
       }
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         setEvents(result.data);
       } else {
@@ -61,19 +63,21 @@ export function useCalendarData() {
     try {
       setLoading(true);
       const userId = studentId || getUserIdFromToken();
-      
+
       if (!userId) {
         throw new Error("Utilisateur non authentifié");
       }
 
-      const response = await fetch(`http://localhost:3002/events/student/${userId}`);
-      
+      const response = await fetch(`http://localhost:3002/events/student/${userId}`, {
+        credentials: 'include'
+      });
+
       if (!response.ok) {
         throw new Error("Erreur lors du chargement des événements de l'étudiant");
       }
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         setEvents(result.data);
       } else {
@@ -89,14 +93,16 @@ export function useCalendarData() {
   const fetchEventById = useCallback(async (eventId: number) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3002/events/${eventId}`);
-      
+      const response = await fetch(`http://localhost:3002/events/${eventId}`, {
+        credentials: 'include'
+      });
+
       if (!response.ok) {
         throw new Error("Erreur lors du chargement de l'événement");
       }
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         setEvents([result.data]);
       } else {
@@ -112,14 +118,16 @@ export function useCalendarData() {
   const fetchEventsByType = useCallback(async (eventType: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3002/events/type/${eventType}`);
-      
+      const response = await fetch(`http://localhost:3002/events/type/${eventType}`, {
+        credentials: 'include'
+      });
+
       if (!response.ok) {
         throw new Error("Erreur lors du chargement des événements par type");
       }
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         setEvents([result.data]);
       } else {
@@ -135,7 +143,9 @@ export function useCalendarData() {
   const fetchStudentAgenda = useCallback(async (studentId: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3002/agenda/student/${studentId}`);
+      const response = await fetch(`http://localhost:3002/agenda/student/${studentId}`, {
+        credentials: 'include'
+      });
       if (!response.ok) {
         throw new Error("Erreur lors du chargement de l'agenda de l'étudiant");
       }
@@ -160,18 +170,19 @@ export function useCalendarData() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(eventData),
+        credentials: 'include'
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Erreur lors de la création de l'événement");
       }
-      
+
       const result = await response.json();
       if (!result.success) {
         throw new Error(result.message || "Erreur lors de la création de l'événement");
       }
-      
+
       return result.data;
     } catch (err: any) {
       setError(err.message || "Erreur inconnue lors de la création");
@@ -183,6 +194,7 @@ export function useCalendarData() {
     try {
       const response = await fetch(`http://localhost:3002/events/${eventId}`, {
         method: "DELETE",
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -194,7 +206,7 @@ export function useCalendarData() {
       if (!result.success) {
         throw new Error(result.message || "Erreur lors de la suppression de l'événement");
       }
-      
+
     } catch (err: any) {
       throw new Error(err.message || "Erreur inconnue lors de la suppression");
     }
@@ -214,6 +226,7 @@ export function useCalendarData() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(dataToSend),
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -248,6 +261,7 @@ export function useCalendarData() {
           id_student: userId,
           id_event: eventId,
         }),
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -259,7 +273,7 @@ export function useCalendarData() {
       if (!result.success) {
         throw new Error(result.message || "Erreur lors de l'inscription");
       }
-      
+
     } catch (err: any) {
       throw new Error(err.message || "Erreur lors de l'inscription");
     }
@@ -280,6 +294,7 @@ export function useCalendarData() {
         body: JSON.stringify({
           id_student: userId,
         }),
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -291,7 +306,7 @@ export function useCalendarData() {
       if (!result.success) {
         throw new Error(result.message || "Erreur lors de l'inscription au créneau");
       }
-      
+
       return result.data;
     } catch (err: any) {
       throw new Error(err.message || "Erreur lors de l'inscription au créneau");
@@ -313,6 +328,7 @@ export function useCalendarData() {
         body: JSON.stringify({
           id_student: userId,
         }),
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -324,7 +340,7 @@ export function useCalendarData() {
       if (!result.success) {
         throw new Error(result.message || "Erreur lors de la désinscription du créneau");
       }
-      
+
       return result.data;
     } catch (err: any) {
       throw new Error(err.message || "Erreur lors de la désinscription du créneau");
@@ -351,7 +367,9 @@ export function useCalendarData() {
         throw new Error("Utilisateur non authentifié");
       }
 
-      const assignmentsResponse = await fetch(`http://localhost:3002/event-students/student/${userId}`);
+      const assignmentsResponse = await fetch(`http://localhost:3002/event-students/student/${userId}`, {
+        credentials: 'include'
+      });
       if (!assignmentsResponse.ok) {
         throw new Error("Erreur lors de la récupération des inscriptions");
       }
@@ -365,6 +383,7 @@ export function useCalendarData() {
 
       const response = await fetch(`http://localhost:3002/event-students/${assignment.id}`, {
         method: "DELETE",
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -382,7 +401,9 @@ export function useCalendarData() {
       const userId = getUserIdFromToken();
       if (!userId) return false;
 
-      const response = await fetch(`http://localhost:3002/event-students/student/${userId}`);
+      const response = await fetch(`http://localhost:3002/event-students/student/${userId}`, {
+        credentials: 'include'
+      });
       if (!response.ok) return false;
 
       const result = await response.json();
@@ -392,10 +413,10 @@ export function useCalendarData() {
     }
   }, []);
 
-  return { 
-    events, 
-    loading, 
-    error, 
+  return {
+    events,
+    loading,
+    error,
     fetchAllEvents,
     fetchEventsByStudent,
     fetchEventById,
@@ -412,4 +433,4 @@ export function useCalendarData() {
   };
 }
 
-export type { CalendarEvent }; 
+export type { CalendarEvent };

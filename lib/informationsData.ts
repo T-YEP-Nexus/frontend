@@ -38,6 +38,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}): Promise
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'include'
     });
 
     clearTimeout(timeoutId);
@@ -60,7 +61,9 @@ export const getInformations = async (): Promise<Information[]> => {
 
 // GET active-only (client-side filtering)
 export async function getActiveInformations(): Promise<InformationWithCreator[]> {
-  const response = await fetch(`${PROFILE_SERVICE_BASE_URL}/informations`);
+  const response = await fetch(`${PROFILE_SERVICE_BASE_URL}/informations`, {
+    credentials: 'include'
+  });
 
   if (!response.ok) {
     throw new Error("Erreur lors du chargement des informations");
@@ -72,7 +75,9 @@ export async function getActiveInformations(): Promise<InformationWithCreator[]>
   const enriched = await Promise.all(
     data.map(async (info: any): Promise<InformationWithCreator> => {
       try {
-        const profileRes = await fetch(`${PROFILE_SERVICE_BASE_URL}/profile/${info.id_creator}`);
+        const profileRes = await fetch(`${PROFILE_SERVICE_BASE_URL}/profile/${info.id_creator}`, {
+          credentials: 'include'
+        });
         const profileResult = await profileRes.json();
 
         let fullName = "Inconnu";

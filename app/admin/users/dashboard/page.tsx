@@ -155,7 +155,9 @@ export default function AdminDashboard() {
       setError(null);
 
       // Récupérer tous les profils utilisateurs
-      const profilesResponse = await fetch("http://localhost:3004/profiles");
+      const profilesResponse = await fetch("http://localhost:3004/profiles", {
+        credentials: "include",
+      });
       if (!profilesResponse.ok) {
         throw new Error("Erreur lors de la récupération des profils");
       }
@@ -166,19 +168,25 @@ export default function AdminDashboard() {
       }
 
       // Récupérer tous les étudiants
-      const studentsResponse = await fetch("http://localhost:3004/students");
+      const studentsResponse = await fetch("http://localhost:3004/students", {
+        credentials: "include",
+      });
       const studentsData = studentsResponse.ok
         ? await studentsResponse.json()
         : { success: false, data: [] };
 
       // Récupérer tous les conseillers
-      const advisorsResponse = await fetch("http://localhost:3004/advisors");
+      const advisorsResponse = await fetch("http://localhost:3004/advisors", {
+        credentials: "include",
+      });
       const advisorsData = advisorsResponse.ok
         ? await advisorsResponse.json()
         : { success: false, data: [] };
 
       // Récupérer tous les utilisateurs pour avoir les emails
-      const usersResponse = await fetch("http://localhost:3001/users");
+      const usersResponse = await fetch("http://localhost:3001/users", {
+        credentials: "include",
+      });
       const usersData = usersResponse.ok
         ? await usersResponse.json()
         : { success: false, data: [] };
@@ -278,7 +286,10 @@ export default function AdminDashboard() {
 
         // Vérifier si l'utilisateur est admin ou advisor
         const response = await fetch(
-          `http://localhost:3004/profile/user/${userId}`
+          `http://localhost:3004/profile/user/${userId}`,
+          {
+            credentials: "include",
+          }
         );
         console.log("userId!!!!!!!!!!bastian", userId);
         if (response.ok) {
@@ -656,7 +667,10 @@ export default function AdminDashboard() {
       if (userToDelete.student) {
         const studentResponse = await fetch(
           `http://localhost:3004/student/${userToDelete.student.id}`,
-          { method: "DELETE" }
+          {
+            method: "DELETE",
+            credentials: "include",
+          }
         );
         if (!studentResponse.ok) {
           const errorData = await studentResponse.json();
@@ -669,7 +683,10 @@ export default function AdminDashboard() {
       if (userToDelete.advisor) {
         const advisorResponse = await fetch(
           `http://localhost:3004/advisor/${userToDelete.advisor.id}`,
-          { method: "DELETE" }
+          {
+            method: "DELETE",
+            credentials: "include",
+          }
         );
         if (!advisorResponse.ok) {
           const errorData = await advisorResponse.json();
@@ -682,7 +699,10 @@ export default function AdminDashboard() {
       // 2. Supprimer le profil utilisateur
       const profileResponse = await fetch(
         `http://localhost:3004/profile/${userToDelete.id}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
       );
       if (!profileResponse.ok) {
         const errorData = await profileResponse.json();
@@ -694,7 +714,10 @@ export default function AdminDashboard() {
       // 3. Supprimer l'utilisateur
       const userResponse = await fetch(
         `http://localhost:3001/users/${userToDelete.id_user}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
       );
       if (!userResponse.ok) {
         const errorData = await userResponse.json();

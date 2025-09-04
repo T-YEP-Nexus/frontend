@@ -132,9 +132,15 @@ export default function AdminDashboard() {
       setError(null);
 
       // Récupérer les statistiques des utilisateurs
-      const profilesResponse = await fetch("http://localhost:3004/profiles");
-      const studentsResponse = await fetch("http://localhost:3004/students");
-      const advisorsResponse = await fetch("http://localhost:3004/advisors");
+      const profilesResponse = await fetch("http://localhost:3004/profiles", {
+        credentials: "include",
+      });
+      const studentsResponse = await fetch("http://localhost:3004/students", {
+        credentials: "include",
+      });
+      const advisorsResponse = await fetch("http://localhost:3004/advisors", {
+        credentials: "include",
+      });
 
       const profilesData = profilesResponse.ok
         ? await profilesResponse.json()
@@ -147,14 +153,19 @@ export default function AdminDashboard() {
         : { success: false, data: [] };
 
       // Récupérer les projets
-      const projectsResponse = await fetch("http://localhost:3003/projects");
+      const projectsResponse = await fetch("http://localhost:3003/projects", {
+        credentials: "include",
+      });
       const projectsData = projectsResponse.ok
         ? await projectsResponse.json()
         : { success: false, data: [] };
 
       // Récupérer les promotions
       const promotionsResponse = await fetch(
-        "http://localhost:3004/promotions"
+        "http://localhost:3004/promotions",
+        {
+          credentials: "include",
+        }
       );
       const promotionsData = promotionsResponse.ok
         ? await promotionsResponse.json()
@@ -245,7 +256,10 @@ export default function AdminDashboard() {
 
         // Vérifier si l'utilisateur est admin
         const response = await fetch(
-          `http://localhost:3004/profile/user/${userId}`
+          `http://localhost:3004/profile/user/${userId}`,
+          {
+            credentials: "include",
+          }
         );
         if (response.ok) {
           const userData = await response.json();

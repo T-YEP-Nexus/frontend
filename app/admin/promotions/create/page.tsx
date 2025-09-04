@@ -40,6 +40,7 @@ export default function CreatePromotionPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
+        credentials: "include",
       });
       console.log(response);
       // Vérifier si la réponse est en JSON

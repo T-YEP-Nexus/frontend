@@ -158,7 +158,10 @@ const EditUserPage = () => {
         );
         // Récupérer le profil utilisateur
         const profilesResponse = await fetch(
-          `http://localhost:3004/profile/${userId}`
+          `http://localhost:3004/profile/${userId}`,
+          {
+            credentials: "include",
+          }
         );
         if (!profilesResponse.ok) {
           const errorText = await profilesResponse.text();
@@ -175,7 +178,10 @@ const EditUserPage = () => {
 
         // Récupérer les données étudiant si applicable
         const studentsResponse = await fetch(
-          `http://localhost:3004/student/profile/${userId}`
+          `http://localhost:3004/student/profile/${userId}`,
+          {
+            credentials: "include",
+          }
         );
         const studentsData = studentsResponse.ok
           ? await studentsResponse.json()
@@ -183,7 +189,10 @@ const EditUserPage = () => {
 
         // Récupérer toutes les promotions pour convertir l'ID en nom
         const promotionsResponse = await fetch(
-          "http://localhost:3004/promotions"
+          "http://localhost:3004/promotions",
+          {
+            credentials: "include",
+          }
         );
         const promotionsData = promotionsResponse.ok
           ? await promotionsResponse.json()
@@ -200,7 +209,10 @@ const EditUserPage = () => {
 
         // Récupérer les données conseiller si applicable
         const advisorsResponse = await fetch(
-          `http://localhost:3004/advisor/profile/${userId}`
+          `http://localhost:3004/advisor/profile/${userId}`,
+          {
+            credentials: "include",
+          }
         );
         const advisorsData = advisorsResponse.ok
           ? await advisorsResponse.json()
@@ -208,7 +220,10 @@ const EditUserPage = () => {
 
         // Récupérer l'email original depuis la table user
         const userResponse = await fetch(
-          `http://localhost:3001/users/${profileData.data.id_user}`
+          `http://localhost:3001/users/${profileData.data.id_user}`,
+          {
+            credentials: "include",
+          }
         );
         const userData = userResponse.ok
           ? await userResponse.json()
@@ -488,6 +503,7 @@ const EditUserPage = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(profileUpdateData),
+          credentials: "include",
         }
       );
 
@@ -506,7 +522,10 @@ const EditUserPage = () => {
         if (userData?.student && formData.role !== "student") {
           const deleteStudentResponse = await fetch(
             `http://localhost:3004/student/${userData.student.id}`,
-            { method: "DELETE" }
+            {
+              method: "DELETE",
+              credentials: "include",
+            }
           );
           if (!deleteStudentResponse.ok) {
             const errorData = await deleteStudentResponse.json();
@@ -521,7 +540,10 @@ const EditUserPage = () => {
         if (userData?.advisor && formData.role !== "advisor") {
           const deleteAdvisorResponse = await fetch(
             `http://localhost:3004/advisor/${userData.advisor.id}`,
-            { method: "DELETE" }
+            {
+              method: "DELETE",
+              credentials: "include",
+            }
           );
           if (!deleteAdvisorResponse.ok) {
             const errorData = await deleteAdvisorResponse.json();
@@ -551,6 +573,7 @@ const EditUserPage = () => {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify(studentUpdateData),
+              credentials: "include",
             }
           );
 
@@ -575,6 +598,7 @@ const EditUserPage = () => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(studentCreateData),
+            credentials: "include",
           });
 
           if (!studentResponse.ok) {
@@ -602,6 +626,7 @@ const EditUserPage = () => {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify(advisorUpdateData),
+              credentials: "include",
             }
           );
 
@@ -627,6 +652,7 @@ const EditUserPage = () => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(advisorCreateData),
+            credentials: "include",
           });
 
           if (!advisorResponse.ok) {
@@ -671,6 +697,7 @@ const EditUserPage = () => {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify(userUpdateData),
+              credentials: "include",
             }
           );
 

@@ -38,7 +38,7 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
   };
 
   console.log("MOREZ :", project);
-  
+
   // State pour les ressources
   type ProjectResource = {
     filename: string;
@@ -71,7 +71,7 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
       // D'abord, essayer de récupérer depuis localStorage
       const retrievedData = localStorage.getItem("studentData");
       console.log("Données localStorage récupérées:", retrievedData);
-      
+
       if (retrievedData) {
         const parsedData = JSON.parse(retrievedData);
         console.log("Données localStorage parsées:", parsedData);
@@ -82,22 +82,28 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
       // Si pas de données dans localStorage, faire l'appel API
       console.log("Aucune donnée localStorage, récupération via API...");
       const userId = getUserIdFromToken();
-      
+
       if (!userId) {
         console.log("Pas d'ID utilisateur trouvé");
         return null;
       }
 
       // Récupérer les données utilisateur
-      const userRes = await fetch(`http://localhost:3004/profile/user/${userId}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const userRes = await fetch(
+        `http://localhost:3004/profile/user/${userId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
 
       if (!userRes.ok) {
-        throw new Error("Erreur lors de la récupération des données utilisateur");
+        throw new Error(
+          "Erreur lors de la récupération des données utilisateur"
+        );
       }
 
       const userData = await userRes.json();
@@ -112,13 +118,14 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
             headers: {
               "Content-Type": "application/json",
             },
+            credentials: "include",
           }
         );
 
         if (studentRes.ok) {
           const studentApiData = await studentRes.json();
           console.log("Données étudiant API récupérées:", studentApiData);
-          
+
           // Sauvegarder dans localStorage pour les prochaines fois
           localStorage.setItem("studentData", JSON.stringify(studentApiData));
           setStudentData(studentApiData);
@@ -128,7 +135,10 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
 
       return null;
     } catch (error) {
-      console.error("Erreur lors de la récupération des données étudiant:", error);
+      console.error(
+        "Erreur lors de la récupération des données étudiant:",
+        error
+      );
       return null;
     }
   }, []);
@@ -136,13 +146,13 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
   React.useEffect(() => {
     const initializeData = async () => {
       setLoading(true);
-      
+
       // Attendre un peu pour laisser le temps à la sidebar de sauvegarder les données
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       // Récupérer les données étudiant
       await fetchStudentData();
-      
+
       setLoading(false);
     };
 
@@ -160,20 +170,23 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
     };
 
     // Écouter les changements de localStorage depuis d'autres onglets/fenêtres
-    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
 
     // Vérifier périodiquement les changements dans le même onglet
     const checkInterval = setInterval(() => {
       const currentData = localStorage.getItem("studentData");
       if (currentData && currentData !== JSON.stringify(studentData)) {
-        console.log("Changement détecté dans localStorage (polling):", currentData);
+        console.log(
+          "Changement détecté dans localStorage (polling):",
+          currentData
+        );
         const parsedData = JSON.parse(currentData);
         setStudentData(parsedData);
       }
     }, 1000); // Vérifier toutes les secondes
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
       clearInterval(checkInterval);
     };
   }, [studentData]);
@@ -188,7 +201,10 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
       try {
         // Récupérer les assignations du projet pour obtenir les médailles
         const assignmentsRes = await fetch(
-          `http://localhost:3003/project-students/project/${params.id}`
+          `http://localhost:3003/project-students/project/${params.id}`,
+          {
+            credentials: "include",
+          }
         );
         const assignmentsJson = assignmentsRes.ok
           ? await assignmentsRes.json()
@@ -197,13 +213,13 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
 
         // Prendre la première assignation pour récupérer les médailles
         if (assignments.length > 0 && studentData?.data?.id) {
-          for(const assign of assignments) {
+          for (const assign of assignments) {
             console.log("Assignation trouvée:", assign);
-            if(assign.id_student === studentData.data.id) {
+            if (assign.id_student === studentData.data.id) {
               setMedals(assign.score || []);
               console.log("Médailles pour l'étudiant:", assign.score);
               break; // Sortir de la boucle une fois qu'on a trouvé l'assignation
-            } 
+            }
           }
         }
       } catch (error) {
@@ -213,7 +229,7 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
     };
 
     fetchResources();
-    
+
     // Ne récupérer les médailles que si on a les données étudiant
     if (studentData?.data?.id) {
       fetchMedals();
