@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import Image from "next/image";
 import { X, Upload, Camera, User, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 
 interface ImageUploadModalProps {
   isOpen: boolean;
@@ -127,7 +128,7 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
             </button>
           </div>
         </div>
-
+        <DevelopmentBadge>
         {/* Contenu */}
         <div className="p-6 space-y-8">
           {/* Prévisualisation avec animation */}
@@ -234,8 +235,9 @@ const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
                 </button>
               ))}
             </div>
+            </div>
           </div>
-        </div>
+        </DevelopmentBadge>
 
         {/* Actions avec style amélioré */}
         <div className="flex gap-3 p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
