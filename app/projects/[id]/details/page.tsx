@@ -23,6 +23,7 @@ import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
 import TrophyGrid from "@/components/ui/TrophyGrid";
 import { Project, getProjectResources } from "@/lib/projectData";
+import { getUserIdFromToken } from "@/lib/auth";
 
 export default function ProjectDetails({ params }: { params: { id: string } }) {
   // Récupération de l'id depuis les params
@@ -37,6 +38,7 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
   };
 
   console.log("MOREZ :", project);
+  
   // State pour les ressources
   type ProjectResource = {
     filename: string;
@@ -55,6 +57,126 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
     null
   );
   const [medals, setMedals] = React.useState<any[]>([]);
+  const [studentData, setStudentData] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  // État local pour les tâches
+  const [tasks, setTasks] = React.useState<string[]>([]);
+  const [newTask, setNewTask] = React.useState("");
+  const tasksContainerRef = React.useRef<HTMLDivElement>(null);
+
+  // Fonction pour récupérer les données étudiant
+  const fetchStudentData = React.useCallback(async () => {
+    try {
+      // D'abord, essayer de récupérer depuis localStorage
+      const retrievedData = localStorage.getItem("studentData");
+      console.log("Données localStorage récupérées:", retrievedData);
+      
+      if (retrievedData) {
+        const parsedData = JSON.parse(retrievedData);
+        console.log("Données localStorage parsées:", parsedData);
+        setStudentData(parsedData);
+        return parsedData;
+      }
+
+      // Si pas de données dans localStorage, faire l'appel API
+      console.log("Aucune donnée localStorage, récupération via API...");
+      const userId = getUserIdFromToken();
+      
+      if (!userId) {
+        console.log("Pas d'ID utilisateur trouvé");
+        return null;
+      }
+
+      // Récupérer les données utilisateur
+      const userRes = await fetch(`http://localhost:3004/profile/user/${userId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!userRes.ok) {
+        throw new Error("Erreur lors de la récupération des données utilisateur");
+      }
+
+      const userData = await userRes.json();
+      console.log("Données utilisateur récupérées:", userData);
+
+      // Si c'est un étudiant, récupérer ses données complètes
+      if (userData.data.roles_user === "student") {
+        const studentRes = await fetch(
+          `http://localhost:3004/student/profile/${userData.data.id}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (studentRes.ok) {
+          const studentApiData = await studentRes.json();
+          console.log("Données étudiant API récupérées:", studentApiData);
+          
+          // Sauvegarder dans localStorage pour les prochaines fois
+          localStorage.setItem("studentData", JSON.stringify(studentApiData));
+          setStudentData(studentApiData);
+          return studentApiData;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Erreur lors de la récupération des données étudiant:", error);
+      return null;
+    }
+  }, []);
+
+  React.useEffect(() => {
+    const initializeData = async () => {
+      setLoading(true);
+      
+      // Attendre un peu pour laisser le temps à la sidebar de sauvegarder les données
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Récupérer les données étudiant
+      await fetchStudentData();
+      
+      setLoading(false);
+    };
+
+    initializeData();
+  }, [fetchStudentData]);
+
+  // Écouter les changements dans localStorage
+  React.useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "studentData" && e.newValue) {
+        console.log("Changement détecté dans localStorage:", e.newValue);
+        const parsedData = JSON.parse(e.newValue);
+        setStudentData(parsedData);
+      }
+    };
+
+    // Écouter les changements de localStorage depuis d'autres onglets/fenêtres
+    window.addEventListener('storage', handleStorageChange);
+
+    // Vérifier périodiquement les changements dans le même onglet
+    const checkInterval = setInterval(() => {
+      const currentData = localStorage.getItem("studentData");
+      if (currentData && currentData !== JSON.stringify(studentData)) {
+        console.log("Changement détecté dans localStorage (polling):", currentData);
+        const parsedData = JSON.parse(currentData);
+        setStudentData(parsedData);
+      }
+    }, 1000); // Vérifier toutes les secondes
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(checkInterval);
+    };
+  }, [studentData]);
 
   React.useEffect(() => {
     const fetchResources = async () => {
@@ -74,10 +196,15 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
         const assignments = assignmentsJson.success ? assignmentsJson.data : [];
 
         // Prendre la première assignation pour récupérer les médailles
-        if (assignments.length > 0) {
-          const firstAssignment = assignments[0];
-          setMedals(firstAssignment.score || []);
-          console.log("Médailles:", firstAssignment.score);
+        if (assignments.length > 0 && studentData?.data?.id) {
+          for(const assign of assignments) {
+            console.log("Assignation trouvée:", assign);
+            if(assign.id_student === studentData.data.id) {
+              setMedals(assign.score || []);
+              console.log("Médailles pour l'étudiant:", assign.score);
+              break; // Sortir de la boucle une fois qu'on a trouvé l'assignation
+            } 
+          }
         }
       } catch (error) {
         console.error("❌ Error fetching medals:", error);
@@ -86,14 +213,15 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
     };
 
     fetchResources();
-    fetchMedals();
-  }, [params.id]);
+    
+    // Ne récupérer les médailles que si on a les données étudiant
+    if (studentData?.data?.id) {
+      fetchMedals();
+    }
+  }, [params.id, studentData?.data?.id]);
 
   console.log("Ressources Data:", resourcesData);
-  // État local pour les tâches
-  const [tasks, setTasks] = React.useState<string[]>([]);
-  const [newTask, setNewTask] = React.useState("");
-  const tasksContainerRef = React.useRef<HTMLDivElement>(null);
+  console.log("Student Data dans details:", studentData);
 
   // Fonction pour ajouter une tâche
   const addTask = () => {
