@@ -1,7 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Clock, Users, MapPin, FileText, Tag, Trash2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import {
+  X,
+  Calendar,
+  Clock,
+  Users,
+  MapPin,
+  FileText,
+  Tag,
+  Trash2,
+} from "lucide-react";
 
 interface EventDetails {
   id: string;
@@ -37,8 +47,8 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
   onDelete,
 }) => {
   // Protection supplémentaire contre les données invalides
-  if (!open || !event || typeof event !== 'object') {
-    console.log('ModalEventDetails: Données invalides', { open, event });
+  if (!open || !event || typeof event !== "object") {
+    console.log("ModalEventDetails: Données invalides", { open, event });
     return null;
   }
 
@@ -54,7 +64,7 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
         day: "numeric",
       });
     } catch (error) {
-      console.error('Erreur formatage date:', error);
+      console.error("Erreur formatage date:", error);
       return "Date invalide";
     }
   };
@@ -69,7 +79,7 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
         minute: "2-digit",
       });
     } catch (error) {
-      console.error('Erreur formatage heure:', error);
+      console.error("Erreur formatage heure:", error);
       return "Heure invalide";
     }
   };
@@ -140,23 +150,33 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
       if (event) {
         // Récupérer les noms des promotions
         if (event.target_promotions && event.target_promotions.length > 0) {
-          console.log('Tentative de récupération des noms de promotions:', event.target_promotions);
+          console.log(
+            "Tentative de récupération des noms de promotions:",
+            event.target_promotions
+          );
           try {
-            console.log('Appel API pour toutes les promotions');
+            console.log("Appel API pour toutes les promotions");
             const response = await fetch(`http://localhost:3004/promotions`);
-            console.log('Réponse API promotions:', response.status);
+            console.log("Réponse API promotions:", response.status);
             if (response.ok) {
               const data = await response.json();
-              console.log('Données promotions:', data);
+              console.log("Données promotions:", data);
               if (data.success && data.data) {
-                const promotionMap = new Map(data.data.map((promo: any) => [promo.id, promo.name]));
-                const names = event.target_promotions.map(promoId => promotionMap.get(promoId) || promoId);
-                console.log('Noms des promotions récupérés:', names);
+                const promotionMap = new Map(
+                  data.data.map((promo: any) => [promo.id, promo.name])
+                );
+                const names: string[] = event.target_promotions.map(
+                  (promoId) => {
+                    const value = promotionMap.get(promoId);
+                    return typeof value === "string" ? value : String(promoId);
+                  }
+                );
+                console.log("Noms des promotions récupérés:", names);
                 setPromotionNames(names);
               }
             }
           } catch (error) {
-            console.error('Erreur récupération promotions:', error);
+            console.error("Erreur récupération promotions:", error);
           }
         }
 
@@ -164,22 +184,24 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
         if (event.id_creator) {
           try {
             console.log(`Appel API pour créateur: ${event.id_creator}`);
-                         const response = await fetch(`http://localhost:3001/users/${event.id_creator}`);
+            const response = await fetch(
+              `http://localhost:3001/users/${event.id_creator}`
+            );
             console.log(`Réponse API créateur:`, response.status);
             if (response.ok) {
-                             const data = await response.json();
-               console.log(`Données créateur:`, data);
-               // L'auth-service retourne directement l'utilisateur, pas de profile imbriqué
-               if (data.data) {
-                 // Utiliser l'email comme nom du créateur pour l'instant
-                 // Ou on pourrait faire un appel supplémentaire au profile-service
-                 const creatorEmail = data.data.email;
-                 console.log(`Email du créateur:`, creatorEmail);
-                 setCreatorName(creatorEmail);
-               }
+              const data = await response.json();
+              console.log(`Données créateur:`, data);
+              // L'auth-service retourne directement l'utilisateur, pas de profile imbriqué
+              if (data.data) {
+                // Utiliser l'email comme nom du créateur pour l'instant
+                // Ou on pourrait faire un appel supplémentaire au profile-service
+                const creatorEmail = data.data.email;
+                console.log(`Email du créateur:`, creatorEmail);
+                setCreatorName(creatorEmail);
+              }
             }
           } catch (error) {
-            console.error('Erreur récupération créateur:', error);
+            console.error("Erreur récupération créateur:", error);
           }
         }
       }
@@ -188,13 +210,15 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
     fetchNames();
   }, [event]);
 
-  return (
+  if (typeof window === "undefined") return null;
+
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl w-full max-w-5xl max-h-[95vh] shadow-2xl relative overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6 text-white relative">
-          <button 
-            className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 text-xl p-2 rounded-full transition-all duration-200" 
+        <div className="bg-gradient-to-r from-[#0E58D8] to-[#2A6BFF] px-8 py-6 text-white relative">
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/20 text-xl p-2 rounded-full transition-all duration-200"
             onClick={onClose}
           >
             <X size={20} />
@@ -214,7 +238,6 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
 
         {/* Body - Scrollable content */}
         <div className="overflow-y-auto max-h-[calc(95vh-180px)] p-8">
-
           {/* Event Type Badge */}
           {event.event_type && (
             <div className="mb-8">
@@ -231,176 +254,181 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Event Details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Date and Time */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <Calendar className="text-blue-600" size={20} />
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Date et heure
-                </h3>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Clock size={16} className="text-gray-500" />
-                  <span className="text-gray-700">
-                    {event.start && formatDate(event.start)}
-                  </span>
+            {/* Left Column - Event Details */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Date and Time */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <Calendar className="text-blue-600" size={20} />
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Date et heure
+                  </h3>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock size={16} className="text-gray-500" />
-                  <span className="text-gray-700">
-                    De {event.start && formatTime(event.start)} à{" "}
-                    {event.end && formatTime(event.end)}
-                  </span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} className="text-gray-500" />
+                    <span className="text-gray-700">
+                      {event.start && formatDate(event.start)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} className="text-gray-500" />
+                    <span className="text-gray-700">
+                      De {event.start && formatTime(event.start)} à{" "}
+                      {event.end && formatTime(event.end)}
+                    </span>
+                  </div>
                 </div>
               </div>
+
+              {/* Description */}
+              {event.description && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <FileText className="text-blue-600" size={20} />
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Description
+                    </h3>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">
+                    {event.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Location */}
+              {event.location && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <MapPin className="text-blue-600" size={20} />
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Lieu
+                    </h3>
+                  </div>
+                  <p className="text-gray-700">{event.location}</p>
+                </div>
+              )}
+
+              {/* Report */}
+              {event.report && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <FileText className="text-blue-600" size={20} />
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Rapport
+                    </h3>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed">
+                    {event.report}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Description */}
-            {event.description && (
-              <div className="bg-gray-50 rounded-xl p-4">
+            {/* Right Column - Additional Info */}
+            <div className="space-y-6">
+              {/* Target Promotions */}
+              <div className="bg-blue-50 rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <FileText className="text-blue-600" size={20} />
+                  <Users className="text-blue-600" size={20} />
                   <h3 className="text-lg font-semibold text-gray-900">
-                    Description
+                    Promotions ciblées
                   </h3>
                 </div>
-                <p className="text-gray-700 leading-relaxed">
-                  {event.description}
-                </p>
-              </div>
-            )}
-
-            {/* Location */}
-            {event.location && (
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <MapPin className="text-blue-600" size={20} />
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Lieu
-                  </h3>
-                </div>
-                <p className="text-gray-700">{event.location}</p>
-              </div>
-            )}
-
-            {/* Report */}
-            {event.report && (
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <FileText className="text-blue-600" size={20} />
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Rapport
-                  </h3>
-                </div>
-                <p className="text-gray-700 leading-relaxed">{event.report}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Right Column - Additional Info */}
-          <div className="space-y-6">
-            {/* Target Promotions */}
-            <div className="bg-blue-50 rounded-xl p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <Users className="text-blue-600" size={20} />
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Promotions ciblées
-                </h3>
-              </div>
-                             {promotionNames.length > 0 ? (
-                 <div className="space-y-2">
-                   {promotionNames.map((name, index) => (
-                     <span
-                       key={index}
-                       className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full mr-2 mb-2"
-                     >
-                       {name}
-                     </span>
-                   ))}
-                 </div>
-               ) : event.target_promotions && event.target_promotions.length > 0 ? (
-                 <div className="space-y-2">
-                   {event.target_promotions.map((promo, index) => (
-                     <span
-                       key={index}
-                       className="inline-block bg-gray-100 text-gray-600 text-sm px-3 py-1 rounded-full mr-2 mb-2"
-                     >
-                       {promo}
-                     </span>
-                   ))}
-                 </div>
-               ) : (
-                 <p className="text-blue-600 font-medium">
-                   Toutes les promotions
-                 </p>
-               )}
-            </div>
-
-            {/* Slots Information */}
-            {event.slots && event.slots.length > 0 && (
-              <div className="bg-green-50 rounded-xl p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <Clock className="text-green-600" size={20} />
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Créneaux disponibles
-                  </h3>
-                </div>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {event.slots.map((slot, index) => (
-                    <div
-                      key={index}
-                      className={`flex items-center justify-between p-2 rounded-lg text-sm ${
-                        slot.user
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      <span>
-                        {new Date(slot.start).toLocaleTimeString("fr-FR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}{" "}
-                        -{" "}
-                        {new Date(slot.end).toLocaleTimeString("fr-FR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                {promotionNames.length > 0 ? (
+                  <div className="space-y-2">
+                    {promotionNames.map((name, index) => (
+                      <span
+                        key={index}
+                        className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full mr-2 mb-2"
+                      >
+                        {name}
                       </span>
-                      <span className="text-xs">
-                        {slot.user ? "Réservé" : "Libre"}
+                    ))}
+                  </div>
+                ) : event.target_promotions &&
+                  event.target_promotions.length > 0 ? (
+                  <div className="space-y-2">
+                    {event.target_promotions.map((promo, index) => (
+                      <span
+                        key={index}
+                        className="inline-block bg-gray-100 text-gray-600 text-sm px-3 py-1 rounded-full mr-2 mb-2"
+                      >
+                        {promo}
                       </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Metadata */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                Informations
-              </h3>
-              <div className="space-y-2 text-sm text-gray-600">
-                {event.created_at && (
-                  <p>
-                    Créé le : {new Date(event.created_at).toLocaleDateString("fr-FR")}
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-blue-600 font-medium">
+                    Toutes les promotions
                   </p>
                 )}
-                {event.updated_at && (
-                  <p>
-                    Modifié le : {new Date(event.updated_at).toLocaleDateString("fr-FR")}
-                  </p>
-                )}
-                                 {event.id_creator && (
-                   <p>Créateur : {creatorName || event.id_creator}</p>
-                 )}
+              </div>
+
+              {/* Slots Information */}
+              {event.slots && event.slots.length > 0 && (
+                <div className="bg-green-50 rounded-xl p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Clock className="text-green-600" size={20} />
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Créneaux disponibles
+                    </h3>
+                  </div>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {event.slots.map((slot, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-center justify-between p-2 rounded-lg text-sm ${
+                          slot.user
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        <span>
+                          {new Date(slot.start).toLocaleTimeString("fr-FR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}{" "}
+                          -{" "}
+                          {new Date(slot.end).toLocaleTimeString("fr-FR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                        <span className="text-xs">
+                          {slot.user ? "Réservé" : "Libre"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Metadata */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  Informations
+                </h3>
+                <div className="space-y-2 text-sm text-gray-600">
+                  {event.created_at && (
+                    <p>
+                      Créé le :{" "}
+                      {new Date(event.created_at).toLocaleDateString("fr-FR")}
+                    </p>
+                  )}
+                  {event.updated_at && (
+                    <p>
+                      Modifié le :{" "}
+                      {new Date(event.updated_at).toLocaleDateString("fr-FR")}
+                    </p>
+                  )}
+                  {event.id_creator && (
+                    <p>Créateur : {creatorName || event.id_creator}</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
 
         {/* Footer avec boutons d'action */}
@@ -427,7 +455,8 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

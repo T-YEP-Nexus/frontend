@@ -152,25 +152,6 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Résumé des filtres actifs */}
-      {hasActiveFilters && !isExpanded && (
-        <div className="flex flex-wrap gap-1 pt-2 border-t border-gray-100">
-          {/* Afficher les promotions uniquement pour admins/advisors */}
-          {(userRole === "admin" || userRole === "advisor") &&
-            selectedPromotions.map((promoId) => {
-              const promo = promotions.find((p) => p.id === promoId);
-              return promo ? (
-                <span
-                  key={promoId}
-                  className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium"
-                >
-                  {promo.name}
-                </span>
-              ) : null;
-            })}
-        </div>
-      )}
     </div>
   );
 };

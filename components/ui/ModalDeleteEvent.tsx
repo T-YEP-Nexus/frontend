@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { X, Trash2, AlertTriangle, Calendar, Clock } from "lucide-react";
 
 interface ModalDeleteEventProps {
@@ -9,7 +10,7 @@ interface ModalDeleteEventProps {
   event: {
     id: string | number;
     title: string;
-    start?: Date | string; 
+    start?: Date | string;
     end?: Date | string;
     event_datetime?: string;
     duration_minutes?: number;
@@ -27,12 +28,13 @@ const ModalDeleteEvent: React.FC<ModalDeleteEventProps> = ({
   open,
   onClose,
   onConfirm,
-  loading = false, 
+  loading = false,
   event,
 }) => {
   if (!open || !event) return null;
+  if (typeof window === "undefined") return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[95vh] shadow-2xl relative overflow-hidden">
         {/* Header (design de la branche feat) */}
@@ -131,7 +133,8 @@ const ModalDeleteEvent: React.FC<ModalDeleteEventProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
