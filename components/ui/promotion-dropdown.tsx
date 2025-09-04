@@ -31,7 +31,6 @@ const PromotionDropdown: React.FC<PromotionDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fermer le dropdown quand on clique en dehors
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
