@@ -369,10 +369,10 @@ const EditUserPage = () => {
     }
   };
 
-  const handlePromotionChange = (promotion: string) => {
+  const handlePromotionChange = (promotion: string | null) => {
     setFormData((prev) => ({
       ...prev,
-      promotion,
+      promotion: promotion || "",
     }));
 
     // Effacer l'erreur du champ promotion
@@ -561,7 +561,7 @@ const EditUserPage = () => {
         if (userData?.student) {
           // Mettre à jour l'étudiant existant
           const studentUpdateData = {
-            id_promotion: getPromotionIdByName(formData.promotion || ""),
+            id_promotion: formData.promotion || "",
             major: formData.major,
           };
 
@@ -578,6 +578,7 @@ const EditUserPage = () => {
           );
 
           if (!studentResponse.ok) {
+            console.log("LOGDATA:",formData.promotion);
             const errorData = await studentResponse.json();
             throw new Error(
               errorData.message ||
