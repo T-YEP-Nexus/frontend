@@ -176,69 +176,8 @@ const SlotManager: React.FC<SlotManagerProps> = ({
           <Clock className="w-5 h-5 text-blue-600" />
           Gestion des créneaux
         </h3>
-        <button
-          type="button"
-          onClick={() => setShowCustomSlotForm(!showCustomSlotForm)}
-          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-        >
-          <Plus size={16} />
-          Créneau personnalisé
-        </button>
       </div>
 
-      {/* Formulaire de créneau personnalisé */}
-      {showCustomSlotForm && (
-        <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-          <h4 className="font-medium text-gray-900">Ajouter un créneau personnalisé</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Début</label>
-              <input
-                type="time"
-                value={customSlotStart}
-                onChange={(e) => setCustomSlotStart(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fin</label>
-              <input
-                type="time"
-                value={customSlotEnd}
-                onChange={(e) => setCustomSlotEnd(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Places max</label>
-              <input
-                type="number"
-                min="1"
-                max="10"
-                value={customSlotMaxUsers}
-                onChange={(e) => setCustomSlotMaxUsers(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={addCustomSlot}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
-            >
-              Ajouter
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowCustomSlotForm(false)}
-              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200"
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Liste des créneaux */}
       <div className="space-y-2 max-h-60 overflow-y-auto">

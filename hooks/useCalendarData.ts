@@ -104,7 +104,7 @@ export function useCalendarData() {
       const result = await response.json();
 
       if (result.success) {
-        setEvents([result.data]);
+        setEvents(Array.isArray(result.data) ? result.data : [result.data]);
       } else {
         throw new Error(result.message || "Erreur lors du chargement de l'événement");
       }
@@ -129,7 +129,7 @@ export function useCalendarData() {
       const result = await response.json();
 
       if (result.success) {
-        setEvents([result.data]);
+        setEvents(Array.isArray(result.data) ? result.data : [result.data]);
       } else {
         throw new Error(result.message || "Erreur lors du chargement des événements");
       }

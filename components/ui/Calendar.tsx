@@ -373,20 +373,84 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
           isRegistered,
           actions: {
             onRegister: async (id: number) => {
-              await registerToEvent(id);
-              refreshCalendarData();
+              try {
+                await registerToEvent(id);
+                // Mise à jour optimiste du state local
+                setEvents(prevEvents => 
+                  prevEvents.map(event => 
+                    event.id === id 
+                      ? { ...event, registration_id: Date.now() } // ID temporaire
+                      : event
+                  )
+                );
+              } catch (error) {
+                console.error("Erreur lors de l'inscription:", error);
+                refreshCalendarData();
+              }
             },
             onRegisterSlot: async (id: number, slotIndex: number) => {
-              await registerToSlot(id, slotIndex);
-              refreshCalendarData();
+              try {
+                await registerToSlot(id, slotIndex);
+                // Mise à jour optimiste du state local
+                setEvents(prevEvents => 
+                  prevEvents.map(event => 
+                    event.id === id 
+                      ? { 
+                          ...event, 
+                          registration_id: Date.now(),
+                          slots: event.slots?.map((slot: any, index: number) => 
+                            index === slotIndex 
+                              ? { ...slot, user: 'current_user' }
+                              : slot
+                          )
+                        }
+                      : event
+                  )
+                );
+              } catch (error) {
+                console.error("Erreur lors de l'inscription au créneau:", error);
+                refreshCalendarData();
+              }
             },
             onUnregister: async (id: number) => {
-              await unregisterFromEvent(id);
-              refreshCalendarData();
+              try {
+                await unregisterFromEvent(id);
+                // Mise à jour optimiste du state local
+                setEvents(prevEvents => 
+                  prevEvents.map(event => 
+                    event.id === id 
+                      ? { ...event, registration_id: undefined }
+                      : event
+                  )
+                );
+              } catch (error) {
+                console.error("Erreur lors de la désinscription:", error);
+                refreshCalendarData();
+              }
             },
             onUnregisterSlot: async (id: number, slotIndex: number) => {
-              await unregisterFromSlot(id, slotIndex);
-              refreshCalendarData();
+              try {
+                await unregisterFromSlot(id, slotIndex);
+                // Mise à jour optimiste du state local
+                setEvents(prevEvents => 
+                  prevEvents.map(event => 
+                    event.id === id 
+                      ? { 
+                          ...event, 
+                          registration_id: undefined,
+                          slots: event.slots?.map((slot: any, index: number) => 
+                            index === slotIndex 
+                              ? { ...slot, user: null }
+                              : slot
+                          )
+                        }
+                      : event
+                  )
+                );
+              } catch (error) {
+                console.error("Erreur lors de la désinscription du créneau:", error);
+                refreshCalendarData();
+              }
             },
           },
         });
@@ -396,22 +460,67 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
 
   const handleDeleteEvent = async (eventId: number) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer cet événement ?")) {
-      await deleteEvent(eventId);
-      refreshCalendarData();
-      setShowEventDetailsModal(false);
-      setDeleteModalOpen(false);
-      setEventToDelete(null);
+      try {
+        await deleteEvent(eventId);
+        setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
+        setShowEventDetailsModal(false);
+        setDeleteModalOpen(false);
+        setEventToDelete(null);
+      } catch (error) {
+        console.error("Erreur lors de la suppression de l'événement:", error);
+        refreshCalendarData();
+      }
     }
   };
 
   const handleRegisterSlot = async (eventId: number, slotIndex: number) => {
-    await registerToSlot(eventId, slotIndex);
-    refreshCalendarData();
+    try {
+      await registerToSlot(eventId, slotIndex);
+      // Mise à jour optimiste du state local
+      setEvents(prevEvents => 
+        prevEvents.map(event => 
+          event.id === eventId 
+            ? { 
+                ...event, 
+                registration_id: Date.now(),
+                slots: event.slots?.map((slot: any, index: number) => 
+                  index === slotIndex 
+                    ? { ...slot, user: 'current_user' }
+                    : slot
+                )
+              }
+            : event
+        )
+      );
+    } catch (error) {
+      console.error("Erreur lors de l'inscription au créneau:", error);
+      refreshCalendarData();
+    }
   };
 
   const handleUnregisterSlot = async (eventId: number, slotIndex: number) => {
-    await unregisterFromSlot(eventId, slotIndex);
-    refreshCalendarData();
+    try {
+      await unregisterFromSlot(eventId, slotIndex);
+      // Mise à jour optimiste du state local
+      setEvents(prevEvents => 
+        prevEvents.map(event => 
+          event.id === eventId 
+            ? { 
+                ...event, 
+                registration_id: undefined,
+                slots: event.slots?.map((slot: any, index: number) => 
+                  index === slotIndex 
+                    ? { ...slot, user: null }
+                    : slot
+                )
+              }
+            : event
+        )
+      );
+    } catch (error) {
+      console.error("Erreur lors de la désinscription du créneau:", error);
+      refreshCalendarData();
+    }
   };
 
   const handleEventDrop = async (dropInfo: EventDropArg) => {
@@ -427,10 +536,54 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
     }
 
     try {
-      await updateEvent(eventId, {
+      // Trouver l'événement original pour récupérer ses slots
+      const originalEvent = backendEvents.find(e => e.id === eventId);
+      let updatedSlots = originalEvent?.slots;
+
+      // Si l'événement a des slots, recalculer leurs horaires
+      if (originalEvent && originalEvent.slots && Array.isArray(originalEvent.slots)) {
+        const originalStartTime = new Date(originalEvent.event_datetime);
+        const newStartTime = newStartDate;
+        const timeDifference = newStartTime.getTime() - originalStartTime.getTime();
+
+        // Recalculer chaque slot avec le décalage horaire
+        updatedSlots = originalEvent.slots.map((slot: any) => ({
+          ...slot,
+          start: new Date(new Date(slot.start).getTime() + timeDifference).toISOString(),
+          end: new Date(new Date(slot.end).getTime() + timeDifference).toISOString()
+        }));
+
+        console.log(`🕐 Recalcul des slots pour l'événement ${eventId}:`);
+        console.log(`   Ancien horaire: ${originalStartTime.toLocaleTimeString()}`);
+        console.log(`   Nouvel horaire: ${newStartTime.toLocaleTimeString()}`);
+        console.log(`   Décalage: ${timeDifference / (1000 * 60)} minutes`);
+      }
+
+      // Mise à jour optimiste de l'interface
+      setEvents(prevEvents => 
+        prevEvents.map(event => 
+          event.id === eventId 
+            ? { 
+                ...event, 
+                start: newStartDate.toISOString(),
+                slots: updatedSlots 
+              }
+            : event
+        )
+      );
+
+      // Envoyer la mise à jour au backend avec les nouveaux slots
+      const updateData: any = {
         start: newStartDate.toISOString(),
-      } as Partial<CalendarEvent>);
-      refreshCalendarData();
+      };
+
+      // Inclure les slots recalculés s'ils existent
+      if (updatedSlots) {
+        updateData.slots = updatedSlots;
+      }
+
+      await updateEvent(eventId, updateData as Partial<CalendarEvent>);
+      
     } catch (error: any) {
       console.error(
         "Erreur lors de la mise à jour de l'événement:",
@@ -438,6 +591,8 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
       );
       alert("La mise à jour de l'événement a échoué.");
       dropInfo.revert();
+      
+      refreshCalendarData();
     }
   };
 
@@ -642,12 +797,26 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
           defaultEnd={modalData?.end}
           eventToEdit={eventToEdit}
           createEvent={async (data) => {
-            await createEvent(data);
-            refreshCalendarData();
+            try {
+              const newEvent = await createEvent(data);
+              setEvents(prevEvents => [...prevEvents, newEvent]);
+            } catch (error) {
+              console.error("Erreur lors de la création de l'événement:", error);
+              refreshCalendarData();
+            }
           }}
           updateEvent={async (id, data) => {
-            await updateEvent(id, data);
-            refreshCalendarData();
+            try {
+              const updatedEvent = await updateEvent(id, data);
+              setEvents(prevEvents => 
+                prevEvents.map(event => 
+                  event.id === id ? { ...event, ...updatedEvent } : event
+                )
+              );
+            } catch (error) {
+              console.error("Erreur lors de la mise à jour de l'événement:", error);
+              refreshCalendarData();
+            }
           }}
           deleteEvent={handleDeleteEvent}
         />
