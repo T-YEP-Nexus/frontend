@@ -140,6 +140,7 @@ const Sidebar = () => {
           if (studentRes.ok) {
             const studentData = await studentRes.json();
             console.log("Données étudiant dans sidebar:", studentData);
+            localStorage.setItem("studentData", JSON.stringify(studentData));
             console.log("Données étudiant complètes:", studentData.data);
             console.log(
               "ID promotion étudiant:",
