@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMedal } from "@fortawesome/free-solid-svg-icons";
 import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
+import { getUserIdFromToken } from "@/lib/auth";
 
 interface CardsProps {
   projectName: string;
@@ -62,6 +63,179 @@ function Cards({
 }: CardsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const expandedCardRef = useRef<HTMLDivElement>(null);
+  const [medals, setMedals] = useState<any[]>([]);
+  const [studentData, setStudentData] = useState<any>(null);
+
+  // Fonction pour récupérer les données étudiant
+  const fetchStudentData = React.useCallback(async () => {
+    try {
+      // D'abord, essayer de récupérer depuis localStorage
+      const retrievedData = localStorage.getItem("studentData");
+      console.log("Données localStorage récupérées dans Cards:", retrievedData);
+
+      if (retrievedData) {
+        const parsedData = JSON.parse(retrievedData);
+        console.log("Données localStorage parsées dans Cards:", parsedData);
+        setStudentData(parsedData);
+        return parsedData;
+      }
+
+      // Si pas de données dans localStorage, faire l'appel API
+      console.log(
+        "Aucune donnée localStorage, récupération via API dans Cards..."
+      );
+      const userId = getUserIdFromToken();
+
+      if (!userId) {
+        console.log("Pas d'ID utilisateur trouvé dans Cards");
+        return null;
+      }
+
+      // Récupérer les données utilisateur
+      const userRes = await fetch(
+        `http://localhost:3004/profile/user/${userId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+
+      if (!userRes.ok) {
+        throw new Error(
+          "Erreur lors de la récupération des données utilisateur"
+        );
+      }
+
+      const userData = await userRes.json();
+      console.log("Données utilisateur récupérées dans Cards:", userData);
+
+      // Si c'est un étudiant, récupérer ses données complètes
+      if (userData.data.roles_user === "student") {
+        const studentRes = await fetch(
+          `http://localhost:3004/student/profile/${userData.data.id}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
+
+        if (studentRes.ok) {
+          const studentApiData = await studentRes.json();
+          console.log(
+            "Données étudiant API récupérées dans Cards:",
+            studentApiData
+          );
+
+          // Sauvegarder dans localStorage pour les prochaines fois
+          localStorage.setItem("studentData", JSON.stringify(studentApiData));
+          setStudentData(studentApiData);
+          return studentApiData;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error(
+        "Erreur lors de la récupération des données étudiant dans Cards:",
+        error
+      );
+      return null;
+    }
+  }, []);
+
+  // Fonction pour récupérer les médailles
+  const fetchMedals = React.useCallback(async () => {
+    if (!projectId || !studentData?.data?.id) {
+      return;
+    }
+
+    try {
+      // Récupérer les assignations du projet pour obtenir les médailles
+      const assignmentsRes = await fetch(
+        `http://localhost:3003/project-students/project/${projectId}`,
+        {
+          credentials: "include",
+        }
+      );
+      const assignmentsJson = assignmentsRes.ok
+        ? await assignmentsRes.json()
+        : { success: false, data: [] };
+      const assignments = assignmentsJson.success ? assignmentsJson.data : [];
+
+      // Prendre la première assignation pour récupérer les médailles
+      if (assignments.length > 0) {
+        for (const assign of assignments) {
+          console.log("Assignation trouvée dans Cards:", assign);
+          if (assign.id_student === studentData.data.id) {
+            setMedals(assign.score || []);
+            console.log("Médailles pour l'étudiant dans Cards:", assign.score);
+            break; // Sortir de la boucle une fois qu'on a trouvé l'assignation
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error fetching medals in Cards:", error);
+      setMedals([]);
+    }
+  }, [projectId, studentData?.data?.id]);
+
+  // Initialiser les données étudiant au montage du composant
+  useEffect(() => {
+    const initializeData = async () => {
+      // Attendre un peu pour laisser le temps à la sidebar de sauvegarder les données
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Récupérer les données étudiant
+      await fetchStudentData();
+    };
+
+    initializeData();
+  }, [fetchStudentData]);
+
+  // Écouter les changements dans localStorage
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "studentData" && e.newValue) {
+        console.log("Changement détecté dans localStorage Cards:", e.newValue);
+        const parsedData = JSON.parse(e.newValue);
+        setStudentData(parsedData);
+      }
+    };
+
+    // Écouter les changements de localStorage depuis d'autres onglets/fenêtres
+    window.addEventListener("storage", handleStorageChange);
+
+    // Vérifier périodiquement les changements dans le même onglet
+    const checkInterval = setInterval(() => {
+      const currentData = localStorage.getItem("studentData");
+      if (currentData && currentData !== JSON.stringify(studentData)) {
+        console.log(
+          "Changement détecté dans localStorage Cards (polling):",
+          currentData
+        );
+        const parsedData = JSON.parse(currentData);
+        setStudentData(parsedData);
+      }
+    }, 1000); // Vérifier toutes les secondes
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(checkInterval);
+    };
+  }, [studentData]);
+
+  // Récupérer les médailles quand les données étudiant sont disponibles
+  useEffect(() => {
+    if (studentData?.data?.id && projectId) {
+      fetchMedals();
+    }
+  }, [studentData?.data?.id, projectId, fetchMedals]);
 
   // Gérer les clics en dehors de la carte étendue
   useEffect(() => {
@@ -245,38 +419,56 @@ function Cards({
                 )}
 
                 {/* Médailles - Affichées uniquement pour les étudiants */}
-                {userRole === "student" && trophies && trophies.length > 0 && (
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-[#0E58D8] font-semibold">
-                        Médailles
-                      </h4>
-                      <span className="text-xs text-[#0E58D8] bg-blue-50 px-2 py-1 rounded-full font-medium">
-                        {trophies.length} total
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {trophies.slice(0, 4).map((trophy, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg"
-                        >
-                          <FontAwesomeIcon
-                            icon={faMedal}
-                            className={
-                              trophy.obtained
-                                ? "text-yellow-400"
-                                : "text-gray-300"
-                            }
-                          />
-                          <span className="text-xs text-blue-900 truncate max-w-[120px]">
-                            {trophy.name}
+                {userRole === "student" &&
+                  (() => {
+                    const medalsList = Array.isArray(medals) ? medals : [];
+
+                    if (medalsList.length === 0) {
+                      return null;
+                    }
+
+                    // Convertir le format des médailles pour l'affichage
+                    const displayMedals = medalsList
+                      .slice(0, 4)
+                      .map((medal: any) => ({
+                        name: medal.name || "Médaille",
+                        obtained: medal.state === true,
+                        description: medal.description || "Médaille du projet",
+                      }));
+
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-[#0E58D8] font-semibold">
+                            Médailles
+                          </h4>
+                          <span className="text-xs text-[#0E58D8] bg-blue-50 px-2 py-1 rounded-full font-medium">
+                            {medalsList.length} total
                           </span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                        <div className="grid grid-cols-2 gap-2">
+                          {displayMedals.map((medal, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg"
+                            >
+                              <FontAwesomeIcon
+                                icon={faMedal}
+                                className={
+                                  medal.obtained
+                                    ? "text-yellow-400"
+                                    : "text-gray-300"
+                                }
+                              />
+                              <span className="text-xs text-blue-900 truncate max-w-[120px]">
+                                {medal.name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                 {/* Actions */}
                 <div>
@@ -459,36 +651,56 @@ function Cards({
             {/* Colonne droite */}
             <div className="space-y-4">
               {/* Médailles - Affichées uniquement pour les étudiants */}
-              {userRole === "student" && trophies && trophies.length > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-[#0E58D8] font-semibold">Médailles</h4>
-                    <span className="text-xs text-[#0E58D8] bg-blue-50 px-2 py-1 rounded-full font-medium">
-                      {trophies.length} total
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {trophies.slice(0, 5).map((trophy, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg"
-                      >
-                        <FontAwesomeIcon
-                          icon={faMedal}
-                          className={
-                            trophy.obtained
-                              ? "text-yellow-400"
-                              : "text-gray-300"
-                          }
-                        />
-                        <span className="text-xs text-blue-900 truncate max-w-[120px]">
-                          {trophy.name}
+              {userRole === "student" &&
+                (() => {
+                  const medalsList = Array.isArray(medals) ? medals : [];
+
+                  if (medalsList.length === 0) {
+                    return null;
+                  }
+
+                  // Convertir le format des médailles pour l'affichage
+                  const displayMedals = medalsList
+                    .slice(0, 5)
+                    .map((medal: any) => ({
+                      name: medal.name || "Médaille",
+                      obtained: medal.state === true,
+                      description: medal.description || "Médaille du projet",
+                    }));
+
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-[#0E58D8] font-semibold">
+                          Médailles
+                        </h4>
+                        <span className="text-xs text-[#0E58D8] bg-blue-50 px-2 py-1 rounded-full font-medium">
+                          {medalsList.length} total
                         </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      <div className="grid grid-cols-2 gap-2">
+                        {displayMedals.map((medal, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg"
+                          >
+                            <FontAwesomeIcon
+                              icon={faMedal}
+                              className={
+                                medal.obtained
+                                  ? "text-yellow-400"
+                                  : "text-gray-300"
+                              }
+                            />
+                            <span className="text-xs text-blue-900 truncate max-w-[120px]">
+                              {medal.name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
               {/* Actions */}
               <div>
