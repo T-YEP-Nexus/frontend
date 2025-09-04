@@ -27,6 +27,11 @@ import ProjectHeader from "@/components/Projects/ProjectHeader/ProjectHeader";
 import AdminButton from "@/components/admin/buttons/AdminButton";
 import AdminLoading from "@/components/admin/AdminLoading";
 import DateTimelineSelector from "@/components/ui/DateTimelineSelector";
+import { uploadFileToSupabase, UploadResult } from "@/lib/supabaseStorage";
+import { Upload, FileUp, CheckCircle2, XCircle } from "lucide-react";
+
+
+
 
 interface Medal {
   name: string;
@@ -251,6 +256,62 @@ export default function CreateProjectPage() {
       ),
     }));
   };
+
+const [uploadingFiles, setUploadingFiles] = useState<Record<number, boolean>>({});
+const [uploadErrors, setUploadErrors] = useState<Record<number, string>>({});
+const [uploadSuccess, setUploadSuccess] = useState<Record<number, string>>({});
+
+// Fonction pour gérer l'upload de fichier
+const handleFileUpload = async (index: number, file: File) => {
+  if (!file) return;
+
+  setUploadingFiles(prev => ({ ...prev, [index]: true }));
+  setUploadErrors(prev => ({ ...prev, [index]: '' }));
+  setUploadSuccess(prev => ({ ...prev, [index]: '' }));
+
+  try {
+    // Upload vers Supabase avec un dossier spécifique pour les projets
+    const result: UploadResult = await uploadFileToSupabase(
+      file,
+      'project-storage', // nom de votre bucket
+      'projects/' // dossier dans le bucket
+    );
+
+    if (result.success && result.url) {
+      // Mettre à jour la ressource avec l'URL obtenue
+      setFormData(prev => ({
+        ...prev,
+        resources: prev.resources.map((resource, i) =>
+          i === index 
+            ? { 
+                ...resource, 
+                url: result.url!,
+                name: resource.name || file.name, // Utilise le nom du fichier si pas de nom
+                file: file 
+              } 
+            : resource
+        ),
+      }));
+
+      setUploadSuccess(prev => ({ 
+        ...prev, 
+        [index]: `Fichier uploadé avec succès: ${result.fileName}` 
+      }));
+    } else {
+      setUploadErrors(prev => ({ 
+        ...prev, 
+        [index]: result.error || 'Erreur lors de l\'upload' 
+      }));
+    }
+  } catch (error) {
+    setUploadErrors(prev => ({ 
+      ...prev, 
+      [index]: error instanceof Error ? error.message : 'Erreur inconnue' 
+    }));
+  } finally {
+    setUploadingFiles(prev => ({ ...prev, [index]: false }));
+  }
+};
 
   // Validation du formulaire
   const validateForm = (): boolean => {
@@ -568,126 +629,116 @@ export default function CreateProjectPage() {
             </div>
           </div> */}
 
-          {/* Section Ressources générales */}
           <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl p-6 border-2 border-emerald-200/50">
-            <h3 className="text-xl font-bold text-emerald-900 flex items-center gap-3 mb-6">
-              <div className="p-2 bg-gradient-to-br from-emerald-200 to-emerald-300 rounded-xl">
-                <FileText className="w-5 h-5 text-emerald-700" />
-              </div>
-              Ressources du projet
-            </h3>
-            <div className="space-y-4">
-              {formData.resources.map((resource, index) => (
-                <div
-                  key={index}
-                  className="space-y-3 p-4 border-2 border-emerald-200 rounded-xl bg-emerald-50/50 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <h5 className="text-sm font-semibold text-emerald-900">
-                      Ressource {index + 1}
-                    </h5>
-                    <Button
-                      type="button"
-                      onClick={() => removeResource(index)}
-                      className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+  <h3 className="text-xl font-bold text-emerald-900 flex items-center gap-3 mb-6">
+    <div className="p-2 bg-gradient-to-br from-emerald-200 to-emerald-300 rounded-xl">
+      <FileText className="w-5 h-5 text-emerald-700" />
+    </div>
+    Ressources du projet
+  </h3>
+  <div className="space-y-4">
+    {formData.resources.map((resource, index) => (
+      <div
+        key={index}
+        className="space-y-3 p-4 border-2 border-emerald-200 rounded-xl bg-emerald-50/50 group"
+      >
+        <div className="flex items-center justify-between">
+          <h5 className="text-sm font-semibold text-emerald-900">
+            Ressource {index + 1}
+          </h5>
+          <Button
+            type="button"
+            onClick={() => removeResource(index)}
+            className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="group">
-                      <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                        Nom de la ressource *
-                      </label>
-                      <input
-                        type="text"
-                        value={resource.name}
-                        onChange={(e) =>
-                          updateResource(index, "name", e.target.value)
-                        }
-                        className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
-                        placeholder="Ex: Documentation du projet"
-                        required
-                      />
-                    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Nom de la ressource */}
+          <div className="group">
+            <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
+              Nom de la ressource *
+            </label>
+            <input
+              type="text"
+              value={resource.name}
+              onChange={(e) =>
+                updateResource(index, "name", e.target.value)
+              }
+              className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
+              placeholder="Ex: Documentation du projet"
+              required
+            />
+          </div>
 
-                    <div className="group">
-                      <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                        URL de la ressource
-                      </label>
-                      <input
-                        type="url"
-                        value={resource.url}
-                        onChange={(e) =>
-                          updateResource(index, "url", e.target.value)
-                        }
-                        className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
-                        placeholder="https://..."
-                      />
-                    </div>
-
-                    {/* <div className="group">
-                      <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                                Fichier de la ressource
-                              </label>
-                              <input
-                                type="file"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                            updateResourceFile(index, file);
-                                  }
-                                }}
-                                accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif"
-                        className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 file:cursor-pointer"
-                              />
-                              {resource.file && (
-                        <p className="text-xs text-emerald-600 mt-1">
-                                  Fichier sélectionné : {resource.file.name}
-                                </p>
-                              )}
-                    </div> */}
-
-                    <div className="group">
-                      <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                        Type de fichier accepté
-                      </label>
-                      <div className="px-4 py-3 border-2 border-emerald-200 rounded-xl bg-emerald-50/30 text-emerald-700 text-xs">
-                        PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
-                      </div>
-                    </div>
-
-                    {/* <div className="group md:col-span-2">
-                      <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
-                                Description de la ressource *
-                              </label>
-                              <textarea
-                                value={resource.description}
-                                onChange={(e) =>
-                          updateResource(index, "description", e.target.value)
-                                }
-                                rows={2}
-                        className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg resize-none cursor-text"
-                                placeholder="Description de la ressource..."
-                                required
-                              />
-                    </div> */}
-                  </div>
+          {/* Upload de fichier OU URL manuelle */}
+          <div className="group">
+            <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
+              Fichier de la ressource
+            </label>
+            <div className="relative">
+              <input
+                type="file"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    handleFileUpload(index, file);
+                  }
+                }}
+                accept=".pdf,.doc,.docx,.txt,.md,.jpg,.jpeg,.png,.gif"
+                disabled={uploadingFiles[index]}
+                className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              
+              {/* Indicateur de chargement */}
+              {uploadingFiles[index] && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
                 </div>
-              ))}
-
-              <div className="flex justify-center">
-                <AdminButton
-                  type="button"
-                  onClick={() => addResource("project")}
-                >
-                  <Plus className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
-                  Ajouter une ressource
-                </AdminButton>
-              </div>
+              )}
             </div>
           </div>
+
+          {/* URL manuelle (si pas de fichier uploadé) */}
+          <div className="group md:col-span-2">
+            <label className="block text-sm font-semibold text-emerald-900 mb-2 group-hover:text-emerald-700 transition-colors duration-300 cursor-pointer">
+              URL de la ressource
+            </label>
+            <input
+              type="url"
+              value={resource.url}
+              onChange={(e) =>
+                updateResource(index, "url", e.target.value)
+              }
+              className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl focus:ring-4 focus:ring-emerald-100 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all duration-300 hover:border-emerald-400 hover:shadow-md focus:shadow-lg cursor-text"
+              placeholder="https://... (généré automatiquement lors de l'upload ou à saisir manuellement)"
+              readOnly={uploadingFiles[index]}
+            />
+          </div>
+
+          {/* Types de fichiers acceptés */}
+          <div className="group md:col-span-2">
+            <div className="px-4 py-2 border-2 border-emerald-200 rounded-xl bg-emerald-50/30 text-emerald-700 text-xs">
+              Types acceptés: PDF, DOC, DOCX, TXT, MD, JPG, PNG, GIF
+            </div>
+          </div>
+        </div>
+      </div>
+    ))}
+
+    <div className="flex justify-center">
+      <AdminButton
+        type="button"
+        onClick={() => addResource("project")}
+      >
+        <Plus className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
+        Ajouter une ressource
+      </AdminButton>
+    </div>
+  </div>
+</div>
 
           {/* Section Hot Topics et Compétences - COMMENTÉE
           <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-6 border-2 border-amber-200/50">
