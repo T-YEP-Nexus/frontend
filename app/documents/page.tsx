@@ -1028,8 +1028,8 @@ const DocumentsPage = () => {
     );
   }
 
-  // Page pour les admins
-  if (userRole === "admin") {
+  // Page pour les admins et advisors
+  if (userRole === "admin" || userRole === "advisor") {
     // Fonction pour gérer l'upload de documents pour l'étudiant sélectionné
     const handleAdminUploadDocument = (doc: Document) => {
       setStudentDocuments((prev: Document[]) => [doc, ...prev]);
@@ -1053,7 +1053,11 @@ const DocumentsPage = () => {
       <div className="min-h-screen px-4 sm:px-6 lg:px-12 py-4 sm:py-6 lg:py-8 overflow-x-hidden">
         <Header
           title="Gestion des Documents"
-          description="Sélectionnez un étudiant pour gérer ses documents"
+          description={
+            userRole === "advisor"
+              ? "Sélectionnez un étudiant pour consulter et gérer ses documents"
+              : "Sélectionnez un étudiant pour gérer ses documents"
+          }
         />
 
         <div className="flex-1 p-0 pr-0 flex flex-col">
