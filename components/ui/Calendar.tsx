@@ -375,11 +375,10 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
             onRegister: async (id: number) => {
               try {
                 await registerToEvent(id);
-                // Mise à jour optimiste du state local
                 setEvents(prevEvents => 
                   prevEvents.map(event => 
                     event.id === id 
-                      ? { ...event, registration_id: Date.now() } // ID temporaire
+                      ? { ...event, registration_id: Date.now() }
                       : event
                   )
                 );
@@ -391,7 +390,6 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
             onRegisterSlot: async (id: number, slotIndex: number) => {
               try {
                 await registerToSlot(id, slotIndex);
-                // Mise à jour optimiste du state local
                 setEvents(prevEvents => 
                   prevEvents.map(event => 
                     event.id === id 
@@ -415,7 +413,6 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
             onUnregister: async (id: number) => {
               try {
                 await unregisterFromEvent(id);
-                // Mise à jour optimiste du state local
                 setEvents(prevEvents => 
                   prevEvents.map(event => 
                     event.id === id 
@@ -431,7 +428,6 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
             onUnregisterSlot: async (id: number, slotIndex: number) => {
               try {
                 await unregisterFromSlot(id, slotIndex);
-                // Mise à jour optimiste du state local
                 setEvents(prevEvents => 
                   prevEvents.map(event => 
                     event.id === id 
@@ -476,7 +472,6 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
   const handleRegisterSlot = async (eventId: number, slotIndex: number) => {
     try {
       await registerToSlot(eventId, slotIndex);
-      // Mise à jour optimiste du state local
       setEvents(prevEvents => 
         prevEvents.map(event => 
           event.id === eventId 
@@ -501,7 +496,6 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
   const handleUnregisterSlot = async (eventId: number, slotIndex: number) => {
     try {
       await unregisterFromSlot(eventId, slotIndex);
-      // Mise à jour optimiste du state local
       setEvents(prevEvents => 
         prevEvents.map(event => 
           event.id === eventId 
@@ -536,17 +530,14 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
     }
 
     try {
-      // Trouver l'événement original pour récupérer ses slots
       const originalEvent = backendEvents.find(e => e.id === eventId);
       let updatedSlots = originalEvent?.slots;
 
-      // Si l'événement a des slots, recalculer leurs horaires
       if (originalEvent && originalEvent.slots && Array.isArray(originalEvent.slots)) {
         const originalStartTime = new Date(originalEvent.event_datetime);
         const newStartTime = newStartDate;
         const timeDifference = newStartTime.getTime() - originalStartTime.getTime();
 
-        // Recalculer chaque slot avec le décalage horaire
         updatedSlots = originalEvent.slots.map((slot: any) => ({
           ...slot,
           start: new Date(new Date(slot.start).getTime() + timeDifference).toISOString(),
@@ -559,7 +550,6 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
         console.log(`   Décalage: ${timeDifference / (1000 * 60)} minutes`);
       }
 
-      // Mise à jour optimiste de l'interface
       setEvents(prevEvents => 
         prevEvents.map(event => 
           event.id === eventId 
@@ -572,12 +562,10 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
         )
       );
 
-      // Envoyer la mise à jour au backend avec les nouveaux slots
       const updateData: any = {
         start: newStartDate.toISOString(),
       };
 
-      // Inclure les slots recalculés s'ils existent
       if (updatedSlots) {
         updateData.slots = updatedSlots;
       }
@@ -758,7 +746,6 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
           eventContent={(eventInfo) => {
             const event = eventInfo.event;
 
-            // Tronquer le titre si trop long
             const title =
               event.title.length > 20
                 ? event.title.substring(0, 20) + "..."

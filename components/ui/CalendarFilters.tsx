@@ -41,7 +41,6 @@ const CalendarFilters: React.FC<CalendarFiltersProps> = ({
   };
 
   const togglePromotion = (promotionId: string) => {
-    // Protection supplémentaire : seuls les admins/advisors peuvent utiliser ce filtre
     if (userRole !== "admin" && userRole !== "advisor") {
       console.log("Protection : accès refusé au filtre de promotion");
       return;
