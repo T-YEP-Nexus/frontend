@@ -55,8 +55,6 @@ const CalendarPage = () => {
     };
   }, [filterOpen]);
 
-  // Supprime le double chargement: on laisse le composant Calendar gérer son propre loading
-
   return (
     <div className="min-h-screen px-8 sm:px-12 lg:px-20 py-6 sm:py-8 lg:py-12">
       <Header

@@ -79,7 +79,6 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
     if (open) {
       setFormError(null);
       if (eventToEdit) {
-        // Gestion des dates
         if (eventToEdit.start) {
           const startDate = new Date(eventToEdit.start);
           const localStartString = new Date(
@@ -126,7 +125,6 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
 
         setAllowMultipleUsers(!!eventToEdit.allow_multiple_users);
       } else {
-        // Reset form for new event
         setTitle("");
         setStart(defaultStart || "");
         setEnd(defaultEnd || "");

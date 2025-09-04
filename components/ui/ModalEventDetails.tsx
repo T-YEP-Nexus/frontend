@@ -46,7 +46,7 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
   onEdit,
   onDelete,
 }) => {
-  // Protection supplémentaire contre les données invalides
+
   if (!open || !event || typeof event !== "object") {
     console.log("ModalEventDetails: Données invalides", { open, event });
     return null;
@@ -140,15 +140,12 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
 
   const isAdmin = userRole === "admin" || userRole === "advisor";
 
-  // Ajouter des états pour les noms
   const [promotionNames, setPromotionNames] = useState<string[]>([]);
   const [creatorName, setCreatorName] = useState<string>("");
 
-  // Ajouter useEffect pour récupérer les noms
   useEffect(() => {
     const fetchNames = async () => {
       if (event) {
-        // Récupérer les noms des promotions
         if (event.target_promotions && event.target_promotions.length > 0) {
           console.log(
             "Tentative de récupération des noms de promotions:",
@@ -180,7 +177,6 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
           }
         }
 
-        // Récupérer le nom du créateur
         if (event.id_creator) {
           try {
             console.log(`Appel API pour créateur: ${event.id_creator}`);
@@ -191,10 +187,7 @@ const ModalEventDetails: React.FC<ModalEventDetailsProps> = ({
             if (response.ok) {
               const data = await response.json();
               console.log(`Données créateur:`, data);
-              // L'auth-service retourne directement l'utilisateur, pas de profile imbriqué
               if (data.data) {
-                // Utiliser l'email comme nom du créateur pour l'instant
-                // Ou on pourrait faire un appel supplémentaire au profile-service
                 const creatorEmail = data.data.email;
                 console.log(`Email du créateur:`, creatorEmail);
                 setCreatorName(creatorEmail);
