@@ -31,6 +31,8 @@ const EditProfilePage = () => {
   const { userData, loading, error, updateUserData } =
     useUserData(currentUserId);
   const [isSaving, setIsSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // État du formulaire
   const [formData, setFormData] = useState({
@@ -71,6 +73,11 @@ const EditProfilePage = () => {
       ...prev,
       [name]: value,
     }));
+
+    // Effacer les messages d'erreur quand l'utilisateur commence à modifier
+    if (errorMessage) {
+      setErrorMessage("");
+    }
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,35 +91,35 @@ const EditProfilePage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    setSuccessMessage("");
+    setErrorMessage("");
 
     try {
+      console.log(
+        "Tentative de mise à jour du profil avec les données:",
+        formData
+      );
       await updateUserData(formData);
 
-      // Debug: afficher le rôle pour vérifier
-      console.log("=== DEBUG REDIRECTION ===");
-      console.log("userData:", userData);
-      console.log("userData?.role:", userData?.role);
-      console.log(
-        "Condition admin/advisor:",
-        userData?.role === "admin" || userData?.role === "advisor"
-      );
-      console.log(
-        "Redirection vers:",
-        userData?.role === "admin" || userData?.role === "advisor"
-          ? "/admin/profile"
-          : "/profile"
-      );
-      console.log("========================");
+      setSuccessMessage("Profil mis à jour avec succès !");
 
-      const redirectUrl =
-        userData?.role === "admin" || userData?.role === "advisor"
-          ? "/admin/profile"
-          : "/profile";
+      // Attendre un peu avant la redirection pour que l'utilisateur voie le message de succès
+      setTimeout(() => {
+        const redirectUrl =
+          userData?.role === "admin" || userData?.role === "advisor"
+            ? "/admin/profile"
+            : "/profile";
 
-      console.log("Redirection forcée vers:", redirectUrl);
-      window.location.href = redirectUrl;
+        console.log("Redirection vers:", redirectUrl);
+        window.location.href = redirectUrl;
+      }, 1500);
     } catch (error) {
       console.error("Erreur lors de la mise à jour:", error);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Une erreur est survenue lors de la mise à jour du profil"
+      );
     } finally {
       setIsSaving(false);
     }
@@ -191,6 +198,28 @@ const EditProfilePage = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            {/* Messages de succès et d'erreur */}
+            {successMessage && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <p className="text-green-800 text-sm font-medium">
+                    {successMessage}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {errorMessage && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <p className="text-red-800 text-sm font-medium">
+                    {errorMessage}
+                  </p>
+                </div>
+              </div>
+            )}
             {/* Informations de base */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
