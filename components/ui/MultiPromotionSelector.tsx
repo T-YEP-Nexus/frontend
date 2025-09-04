@@ -55,7 +55,7 @@ const MultiPromotionSelector: React.FC<MultiPromotionSelectorProps> = ({
       onPromotionsChange(selectedPromotions.filter(id => id !== promotionId));
     } else {
       if (maxSelections && selectedPromotions.length >= maxSelections) {
-        return; // Ne pas dépasser le maximum
+        return; 
       }
       onPromotionsChange([...selectedPromotions, promotionId]);
     }

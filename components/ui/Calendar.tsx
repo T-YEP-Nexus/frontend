@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
+
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -12,6 +13,7 @@ import {
   EventClickArg,
   EventDropArg,
 } from "@fullcalendar/core";
+
 import ModalEventForm from "./ModalEventForm";
 import ModalDeleteEvent from "./ModalDeleteEvent";
 import ModalEventDetails from "./ModalEventDetails";
@@ -159,14 +161,12 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
     }
   }, [effectiveRole, selectedPromotions]);
 
-  // Gestion responsive: écoute le redimensionnement
   useEffect(() => {
     const onResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Adapter automatiquement la vue selon la largeur
   useEffect(() => {
     if (!calendarRef.current) return;
     const api = calendarRef.current.getApi();
@@ -440,16 +440,6 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
       dropInfo.revert();
     }
   };
-
-  //   if (loading || roleLoading) {
-  //     return (
-  //       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-  //         <div className="flex items-center justify-center h-[600px]">
-  //           <AdminLoading message="Chargement des événements..." />
-  //         </div>
-  //       </div>
-  //     );
-  //   }
 
   if (error) {
     return (

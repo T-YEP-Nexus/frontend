@@ -38,14 +38,12 @@ const SlotManager: React.FC<SlotManagerProps> = ({
   const [customSlotMaxUsers, setCustomSlotMaxUsers] = useState(maxUsersPerSlot);
 
   useEffect(() => {
-    // Générer automatiquement les créneaux selon la durée
     if (eventStart && eventEnd && slotDuration > 0) {
       try {
         const generatedSlots: Slot[] = [];
         const startDate = new Date(eventStart);
         const endDate = new Date(eventEnd);
-        
-        // Validation des dates
+
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
           console.warn('Dates invalides pour la génération de slots:', { eventStart, eventEnd });
           return;
@@ -72,7 +70,6 @@ const SlotManager: React.FC<SlotManagerProps> = ({
           current = slotEnd;
         }
         
-        // Validation des slots générés
         const validSlots = generatedSlots.filter(slot => slot && slot.id);
         console.log('Slots générés:', validSlots);
         onSlotsChange(validSlots);
@@ -87,14 +84,12 @@ const SlotManager: React.FC<SlotManagerProps> = ({
     if (!customSlotStart || !customSlotEnd || !eventStart) return;
     
     try {
-      // Construire des dates complètes en combinant la date de l'événement avec les heures spécifiées
       const eventDate = new Date(eventStart);
       if (isNaN(eventDate.getTime())) {
         console.error('Date de début d\'événement invalide:', eventStart);
         return;
       }
       
-      // Extraire les heures et minutes des inputs time
       const [startHour, startMinute] = customSlotStart.split(':').map(Number);
       const [endHour, endMinute] = customSlotEnd.split(':').map(Number);
       
@@ -103,7 +98,6 @@ const SlotManager: React.FC<SlotManagerProps> = ({
         return;
       }
       
-      // Créer des dates complètes pour le jour de l'événement
       const startDate = new Date(eventDate);
       startDate.setHours(startHour, startMinute, 0, 0);
       
@@ -127,7 +121,6 @@ const SlotManager: React.FC<SlotManagerProps> = ({
       const updatedSlots = [...slots, newSlot];
       onSlotsChange(updatedSlots);
       
-      // Reset form
       setCustomSlotStart("");
       setCustomSlotEnd("");
       setCustomSlotMaxUsers(maxUsersPerSlot);
@@ -251,7 +244,6 @@ const SlotManager: React.FC<SlotManagerProps> = ({
       <div className="space-y-2 max-h-60 overflow-y-auto">
         {slots.map((slot, index) => {
           const status = getSlotStatus(slot);
-          // Protection contre slot.id undefined
           if (!slot || !slot.id) {
             console.warn('Slot invalide détecté:', slot);
             return null;

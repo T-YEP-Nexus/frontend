@@ -47,16 +47,12 @@ export function useProjectsData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<null | string>(null);
 
-  // États pour la création de projets
   const [creating, setCreating] = useState(false);
   const [creationError, setCreationError] = useState<string | null>(null);
   const [creationResult, setCreationResult] = useState<any>(null);
 
   useEffect(() => {
     const userId = getUserIdFromToken();
-
-    // Vous devrez passer l'id_promotion ici
-    // fetchProjectsByPromotion(promotionId);
   }, []);
 
   const fetchActiveProjects = async () => {
@@ -82,7 +78,6 @@ export function useProjectsData() {
     }
   };
 
-  // Nouvelle fonction pour récupérer le profil par user ID
   const getProfileByUserId = async (userId: string) => {
     console.log("🔍 DEBUG - Récupération profil pour user:", userId);
     const response = await fetch(`http://localhost:3004/profile/user/${userId}`);
@@ -103,16 +98,13 @@ export function useProjectsData() {
     return result.data;
   };
 
-  // Nouvelle fonction pour récupérer l'étudiant par profile ID
   const getStudentByProfileId = async (profileId: string) => {
     console.log("🔍 DEBUG - Récupération étudiant pour profil:", profileId);
-    // Correct service: profile-service expose /student/profile/:id
     const response = await fetch(`http://localhost:3004/student/profile/${profileId}`);
 
     console.log("🔍 DEBUG - Réponse API étudiant:", response.status, response.ok);
 
     if (!response.ok) {
-      // Autoriser absence d'étudiant pour un profil (404)
       if (response.status === 404) {
         console.warn("ℹ️ Aucun étudiant pour le profil:", profileId);
         return null;
@@ -131,7 +123,6 @@ export function useProjectsData() {
     return result.data;
   };
 
-  // Nouvelle fonction pour récupérer la promotion par student ID
   const getPromotionIdByStudent = async (studentId: string) => {
     const response = await fetch(`http://localhost:3004/student/${studentId}`);
 
@@ -151,7 +142,6 @@ export function useProjectsData() {
     return result.data;
   };
 
-  // Fonction pour créer un projet et l'assigner automatiquement à tous les étudiants de la promotion
   const createProjectAndAssignToStudents = async (projectData: ProjectCreationData) => {
     try {
       console.log("🔍 DEBUG - Début création projet et assignation:", projectData);
@@ -600,6 +590,6 @@ export function useProjectsData() {
     creationResult,
     createAndAssignProject,
     resetCreationState,
-    fetchActiveProjects // Exposer la fonction
+    fetchActiveProjects
   };
 }

@@ -118,7 +118,7 @@ const ModalDeleteEvent: React.FC<ModalDeleteEventProps> = ({
           </button>
           <button
             className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-red-600 to-pink-600 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            onClick={onConfirm} // Appel direct de la prop onConfirm
+            onClick={onConfirm}
             disabled={loading}
           >
             <Trash2 className="w-4 h-4" />
