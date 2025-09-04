@@ -31,10 +31,18 @@ import { useUserData } from "@/hooks/useUserData";
 import { getUserIdFromToken, isTokenExpired } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import AdminLoading from "@/components/admin/AdminLoading";
+import { useProjectsData } from "@/hooks/useProjectsData";
 import DevelopmentBadge from "@/components/ui/DevelopmentBadge";
+import Link from "next/link";
 
 const ProfilePage = () => {
   const router = useRouter();
+  const {
+    projects: recentProjects,
+    loading: projectsLoading,
+    error: projectsError,
+    fetchProjectsForCurrentStudent,
+  } = useProjectsData();
   // État pour le modal d'image
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
@@ -79,6 +87,11 @@ const ProfilePage = () => {
       }
     }
   }, [userData, loading, error]);
+
+  // Charger dynamiquement les projets de la promotion de l'utilisateur
+  useEffect(() => {
+    fetchProjectsForCurrentStudent().catch(() => {});
+  }, []);
 
   // Gestion du changement d'image
   const handleImageChange = async (newImageUrl: string) => {
@@ -393,67 +406,35 @@ const ProfilePage = () => {
         {/* Colonne droite */}
         <div className="flex flex-col gap-6">
           {/* Projets récents */}
-          <ProfileSection
-            title="Projets récents"
-            icon={BookOpen}
-            showDevelopmentBadge={true}
-          >
+          <ProfileSection title="Projets récents" icon={BookOpen}>
             <div className="space-y-3">
-              {stats.recentProjects.length > 0 ? (
-                stats.recentProjects.map((project, index) => (
-                  <ProjectCard
-                    key={project.name}
-                    name={project.name}
-                    grade={project.grade}
-                    status={project.status}
-                  />
+              {projectsLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Chargement des projets...</p>
+                </div>
+              ) : projectsError ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">
+                    Impossible de charger vos projets
+                  </p>
+                </div>
+              ) : recentProjects && recentProjects.length > 0 ? (
+                recentProjects.slice(0, 5).map((project: any) => (
+                  <Link
+                    key={project.id}
+                    href={`/projects/${project.id}/details`}
+                    className="block"
+                  >
+                    <ProjectCard
+                      name={project.name}
+                      status={project.is_active ? "in-progress" : "pending"}
+                      className="cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-transform"
+                    />
+                  </Link>
                 ))
               ) : (
                 <div className="text-center py-8">
                   <p className="text-gray-500">Aucun projet récent</p>
-                </div>
-              )}
-            </div>
-          </ProfileSection>
-
-          {/* Médailles */}
-          <ProfileSection
-            title={`Badges (${stats.badges.filter((m) => m.obtained).length}/${
-              stats.badges.length
-            })`}
-            icon={Badge}
-            showDevelopmentBadge={true}
-          >
-            <div className="grid grid-cols-2 gap-4">
-              {stats.badges.length > 0 ? (
-                stats.badges.map((badge, index) => {
-                  // Mapping des icônes FontAwesome
-                  const getIcon = (iconName: string) => {
-                    switch (iconName) {
-                      case "faMedal":
-                        return faMedal;
-                      case "faCrown":
-                        return faCrown;
-                      case "faFire":
-                        return faFire;
-                      default:
-                        return faMedal;
-                    }
-                  };
-
-                  return (
-                    <MedalCard
-                      key={badge.name}
-                      name={badge.name}
-                      icon={getIcon(badge.icon)}
-                      index={index}
-                      obtained={badge.obtained}
-                    />
-                  );
-                })
-              ) : (
-                <div className="col-span-2 text-center py-8">
-                  <p className="text-gray-500">Aucun badge disponible</p>
                 </div>
               )}
             </div>
