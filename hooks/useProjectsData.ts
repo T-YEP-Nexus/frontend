@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getUserIdFromToken } from "@/lib/auth";
+import { getProjectWithDetails } from "@/lib/projectData";
 
 interface Project {
   id: string;
@@ -377,7 +378,22 @@ export function useProjectsData() {
 
       if (result.success) {
         console.log("🔍 DEBUG - Nombre de projets trouvés:", result.data?.length || 0);
-        setProjects(result.data);
+
+        // Récupérer les détails complets pour chaque projet (avec les vraies dates)
+        const projectsWithDetails = await Promise.all(
+          result.data.map(async (project: any) => {
+            try {
+              const projectDetails = await getProjectWithDetails(project.id);
+              return projectDetails || project; // Fallback sur le projet de base si pas de détails
+            } catch (error) {
+              console.warn(`⚠️ Impossible de récupérer les détails du projet ${project.id}:`, error);
+              return project; // Fallback sur le projet de base
+            }
+          })
+        );
+
+        console.log("🔍 DEBUG - Projets avec détails:", projectsWithDetails);
+        setProjects(projectsWithDetails);
       } else {
         throw new Error(result.message || "Erreur lors du chargement des projets");
       }
@@ -567,7 +583,22 @@ export function useProjectsData() {
 
       if (result.success) {
         console.log("🔍 DEBUG - Nombre total de projets:", result.data?.length || 0);
-        setProjects(result.data);
+
+        // Récupérer les détails complets pour chaque projet (avec les vraies dates)
+        const projectsWithDetails = await Promise.all(
+          result.data.map(async (project: any) => {
+            try {
+              const projectDetails = await getProjectWithDetails(project.id);
+              return projectDetails || project; // Fallback sur le projet de base si pas de détails
+            } catch (error) {
+              console.warn(`⚠️ Impossible de récupérer les détails du projet ${project.id}:`, error);
+              return project; // Fallback sur le projet de base
+            }
+          })
+        );
+
+        console.log("🔍 DEBUG - Projets avec détails:", projectsWithDetails);
+        setProjects(projectsWithDetails);
       } else {
         throw new Error(result.message || "Erreur lors du chargement des projets");
       }

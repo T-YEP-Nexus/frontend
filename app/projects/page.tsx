@@ -67,13 +67,17 @@ export default function Page() {
       ? Math.min(project.ressources.length * 10, 100)
       : 0;
 
-    // Calculer les jours restants (exemple basé sur la date de création)
-    const createdDate = new Date(project.created_at);
+    // Utiliser les vraies dates du projet si disponibles, sinon fallback sur created_at
+    const startDate = project.assigned_at || project.created_at;
+    const endDate = project.due_date || project.created_at;
+
+    // Calculer les jours restants basés sur la vraie date de fin
+    const endDateObj = new Date(endDate);
     const now = new Date();
-    const daysSinceCreation = Math.floor(
-      (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
+    const daysRemaining = Math.max(
+      0,
+      Math.floor((endDateObj.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
     );
-    const daysRemaining = Math.max(0, 30 - daysSinceCreation); // Exemple: 30 jours de projet
 
     return {
       id: project.id,
@@ -81,20 +85,16 @@ export default function Page() {
       progress: progress,
       description: project.description,
       details: {
-        startDate: new Date(project.created_at).toLocaleDateString("fr-FR"),
-        endDate: new Date(
-          createdDate.getTime() + 30 * 24 * 60 * 60 * 1000
-        ).toLocaleDateString("fr-FR"),
+        startDate: startDate,
+        endDate: endDate,
         team: "Équipe à définir", // À adapter selon vos besoins
       },
       deadline: {
-        kickOff: new Date(project.created_at).toLocaleDateString("fr-FR"),
+        kickOff: startDate,
         followUp: new Date(
-          createdDate.getTime() + 15 * 24 * 60 * 60 * 1000
+          new Date(startDate).getTime() + 15 * 24 * 60 * 60 * 1000
         ).toLocaleDateString("fr-FR"),
-        keynote: new Date(
-          createdDate.getTime() + 30 * 24 * 60 * 60 * 1000
-        ).toLocaleDateString("fr-FR"),
+        keynote: endDate,
         daysRemaining: daysRemaining,
       },
       documentation: {

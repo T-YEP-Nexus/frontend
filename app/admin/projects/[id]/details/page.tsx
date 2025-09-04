@@ -92,7 +92,10 @@ export default function AdminProjectDetailsPage() {
 
         // Étudiants assignés à ce projet
         const assignmentsRes = await fetch(
-          `http://localhost:3003/project-students/project/${projectId}`
+          `http://localhost:3003/project-students/project/${projectId}`,
+          {
+            credentials: "include",
+          }
         );
         const assignmentsJson = assignmentsRes.ok
           ? await assignmentsRes.json()
@@ -106,13 +109,46 @@ export default function AdminProjectDetailsPage() {
 
         if (cp?.id_promotion) {
           const studentsRes = await fetch(
-            `http://localhost:3004/students/promotion/${cp.id_promotion}`
+            `http://localhost:3004/students/promotion/${cp.id_promotion}`,
+            {
+              credentials: "include",
+            }
           );
           const studentsJson = studentsRes.ok
             ? await studentsRes.json()
             : { success: false, data: [] };
           const students = studentsJson.success ? studentsJson.data : [];
-          setAllStudents(students);
+          console.log("Étudiants récupérés:", students);
+
+          // Récupérer les profils de chaque étudiant
+          const studentsWithProfiles = await Promise.all(
+            students.map(async (student: any) => {
+              try {
+                const profileRes = await fetch(
+                  `http://localhost:3004/profile/${student.id_user_profile}`,
+                  {
+                    credentials: "include",
+                  }
+                );
+                if (profileRes.ok) {
+                  const profileData = await profileRes.json();
+                  if (profileData.success) {
+                    return {
+                      ...student,
+                      profile: profileData.data,
+                    };
+                  }
+                }
+                return student;
+              } catch (error) {
+                console.error("Erreur récupération profil étudiant:", error);
+                return student;
+              }
+            })
+          );
+
+          console.log("Étudiants avec profils:", studentsWithProfiles);
+          setAllStudents(studentsWithProfiles);
         } else {
           setAllStudents([]);
         }
@@ -160,7 +196,13 @@ export default function AdminProjectDetailsPage() {
         cp?.details?.team ||
         (Array.isArray(cp?.students)
           ? cp.students
-              .map((s: any) => `${s.first_name} ${s.last_name}`)
+              .map((s: any) =>
+                s?.profile?.first_name && s?.profile?.last_name
+                  ? `${s.profile.first_name} ${s.profile.last_name}`
+                  : s?.first_name && s?.last_name
+                  ? `${s.first_name} ${s.last_name}`
+                  : `Étudia #${s.id}`
+              )
               .join(", ")
           : "-"),
       deadline: {
@@ -286,11 +328,13 @@ export default function AdminProjectDetailsPage() {
                       const found = allStudents.find(
                         (s) => String(s.id) === String(selectedStudent)
                       );
+                      const firstName =
+                        found?.profile?.first_name || found?.first_name || "";
+                      const lastName =
+                        found?.profile?.last_name || found?.last_name || "";
                       const label =
-                        found?.profile?.first_name && found?.profile?.last_name
-                          ? `${found.profile.first_name} ${found.profile.last_name}`
-                          : found?.first_name && found?.last_name
-                          ? `${found.first_name} ${found.last_name}`
+                        firstName && lastName
+                          ? `${firstName} ${lastName}`
                           : `Étudiant #${selectedStudent}`;
                       return label;
                     })()
@@ -322,30 +366,22 @@ export default function AdminProjectDetailsPage() {
                       const s = allStudents.find(
                         (st) => String(st.id) === String(as.id_student)
                       );
-                      return s?.profile?.first_name && s?.profile?.last_name
-                        ? `${s.profile.first_name} ${s.profile.last_name}`
-                        : s?.first_name && s?.last_name
-                        ? `${s.first_name} ${s.last_name}`
+                      console.log(
+                        "Assigned student data:",
+                        s,
+                        "for assignment:",
+                        as
+                      );
+                      const firstName =
+                        s?.profile?.first_name || s?.first_name || "";
+                      const lastName =
+                        s?.profile?.last_name || s?.last_name || "";
+                      return firstName && lastName
+                        ? `${firstName} ${lastName}`
+                        : s?.name
+                        ? s.name
                         : `Étudiant #${as.id_student}`;
                     })()}
-                  </button>
-                ))}
-
-                <div className="px-4 py-2 text-xs text-blue-700 bg-blue-50 border-y border-blue-100">
-                  Tous les étudiants
-                </div>
-                {allStudents.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => handleSelectGeneralStudent(s)}
-                    className="w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-300 cursor-pointer border-b border-blue-100 last:border-b-0"
-                  >
-                    {s.profile?.first_name && s.profile?.last_name
-                      ? `${s.profile.first_name} ${s.profile.last_name}`
-                      : s.first_name && s.last_name
-                      ? `${s.first_name} ${s.last_name}`
-                      : `Étudiant #${s.id}`}
                   </button>
                 ))}
               </div>
@@ -422,6 +458,7 @@ export default function AdminProjectDetailsPage() {
                         {
                           method: "PATCH",
                           headers: { "Content-Type": "application/json" },
+                          credentials: "include",
                           body: JSON.stringify({
                             advisor_comment: advisorComment,
                           }),
@@ -532,14 +569,30 @@ export default function AdminProjectDetailsPage() {
                   <Calendar className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Date de début</p>
-                    <p className="font-semibold text-gray-800">{startDate}</p>
+                    <p className="font-semibold text-gray-800">
+                      {startDate
+                        ? new Date(startDate).toLocaleDateString("fr-FR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })
+                        : "-"}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Date de fin</p>
-                    <p className="font-semibold text-gray-800">{endDate}</p>
+                    <p className="font-semibold text-gray-800">
+                      {endDate
+                        ? new Date(endDate).toLocaleDateString("fr-FR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })
+                        : "-"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -668,6 +721,7 @@ export default function AdminProjectDetailsPage() {
                         `http://localhost:3003/project-students/${selectedAssignmentId}/grade`,
                         {
                           method: "PATCH",
+                          credentials: "include",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({ score: newMedals }),
                         }
