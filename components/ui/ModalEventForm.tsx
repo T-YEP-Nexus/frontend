@@ -471,7 +471,7 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center">
+                  {/* <div className="flex items-center">
                     <label className="flex items-center gap-3 p-4 bg-white rounded-xl border-2 border-gray-200 cursor-pointer hover:border-indigo-300 transition-colors duration-200 w-full">
                       <input
                         type="checkbox"
@@ -488,7 +488,7 @@ const ModalEventForm: React.FC<ModalEventFormProps> = ({
                         </div>
                       </div>
                     </label>
-                  </div>
+                  </div> */}
                 </div>
                 <SlotManager
                   slots={slots}
