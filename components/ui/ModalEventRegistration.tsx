@@ -62,6 +62,7 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
           (slot) => slot.user === userId
         );
         setUserSlotIndex(userSlotIdx >= 0 ? userSlotIdx : null);
+        console.log('User slot index updated:', userSlotIdx, 'for user:', userId);
       }
     }
   }, [event]);
@@ -84,6 +85,7 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
     setError(null);
     try {
       await onRegisterSlot(Number(event.id), slotIdx);
+      // Fermer le modal avant le rafraîchissement
       onClose();
     } catch (err: any) {
       setError(err.message || "Une erreur s'est produite");
@@ -98,6 +100,7 @@ const ModalEventRegistration: React.FC<ModalEventRegistrationProps> = ({
     setError(null);
     try {
       await onUnregisterSlot(Number(event.id), userSlotIndex);
+      // Fermer le modal avant le rafraîchissement
       onClose();
     } catch (err: any) {
       setError(err.message || "Une erreur s'est produite");

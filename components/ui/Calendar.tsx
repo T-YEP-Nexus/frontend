@@ -338,7 +338,8 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
 
   const handleEventClick = async (clickInfo: EventClickArg) => {
     const eventId = Number(clickInfo.event.id);
-    const event = backendEvents.find((e) => e.id === eventId);
+    // Utiliser l'événement de l'état local qui est mis à jour en temps réel
+    const event = events.find((e) => e.id === eventId) || backendEvents.find((e) => e.id === eventId);
 
     if (!event) {
       console.error("Aucun événement trouvé pour cet id", eventId);
@@ -390,21 +391,8 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
             onRegisterSlot: async (id: number, slotIndex: number) => {
               try {
                 await registerToSlot(id, slotIndex);
-                setEvents(prevEvents => 
-                  prevEvents.map(event => 
-                    event.id === id 
-                      ? { 
-                          ...event, 
-                          registration_id: Date.now(),
-                          slots: event.slots?.map((slot: any, index: number) => 
-                            index === slotIndex 
-                              ? { ...slot, user: 'current_user' }
-                              : slot
-                          )
-                        }
-                      : event
-                  )
-                );
+                // Rafraîchir la page après inscription
+                window.location.reload();
               } catch (error) {
                 console.error("Erreur lors de l'inscription au créneau:", error);
                 refreshCalendarData();
@@ -428,21 +416,8 @@ const Calendar: React.FC<CalendarProps> = ({ role, onStudentRegisterOpen }) => {
             onUnregisterSlot: async (id: number, slotIndex: number) => {
               try {
                 await unregisterFromSlot(id, slotIndex);
-                setEvents(prevEvents => 
-                  prevEvents.map(event => 
-                    event.id === id 
-                      ? { 
-                          ...event, 
-                          registration_id: undefined,
-                          slots: event.slots?.map((slot: any, index: number) => 
-                            index === slotIndex 
-                              ? { ...slot, user: null }
-                              : slot
-                          )
-                        }
-                      : event
-                  )
-                );
+                // Rafraîchir la page après désinscription
+                window.location.reload();
               } catch (error) {
                 console.error("Erreur lors de la désinscription du créneau:", error);
                 refreshCalendarData();
