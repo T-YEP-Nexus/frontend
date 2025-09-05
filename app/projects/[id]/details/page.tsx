@@ -315,27 +315,27 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
         </div>
 
         {/* Barre de progression principale */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-3">
-              <h2 className="text-white text-xl font-semibold">
-                Progression globale
-              </h2>
-              <DevelopmentBadge>
+        <DevelopmentBadge>
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-3">
+                <h2 className="text-white text-xl font-semibold">
+                  Progression globale
+                </h2>
                 <div className="w-4 h-4"></div>
-              </DevelopmentBadge>
+              </div>
+              <span className="text-white font-bold text-2xl">
+                {project.progress}%
+              </span>
             </div>
-            <span className="text-white font-bold text-2xl">
-              {project.progress}%
-            </span>
+            <div className="w-full bg-white/20 rounded-full h-4">
+              <div
+                className="bg-white h-4 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${project.progress}%` }}
+              ></div>
+            </div>
           </div>
-          <div className="w-full bg-white/20 rounded-full h-4">
-            <div
-              className="bg-white h-4 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${project.progress}%` }}
-            ></div>
-          </div>
-        </div>
+        </DevelopmentBadge>
       </div>
 
       {/* Contenu principal */}
@@ -461,109 +461,113 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
             </MainCard>
 
             {/* Hot Topics & Compétences */}
-            <MainCard
-              title="Hot Topics & Compétences mobilisées"
-              icon={<AlertCircle className="w-8 h-8 text-blue-400" />}
-            >
-              <div className="space-y-4">
-                {project.hotTopics && project.hotTopics.length > 0 && (
-                  <div className="mb-4">
-                    <h3 className="font-semibold text-blue-700 mb-2">
-                      Hot Topics
-                    </h3>
-                    {project.hotTopics.map((topic, idx) => (
-                      <div
-                        key={idx}
-                        className="p-4 border-l-4 border-yellow-400 bg-yellow-50 rounded-lg mb-2"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <AlertCircle className="w-5 h-5 text-yellow-500" />
-                          <span className="font-semibold text-yellow-700">
-                            {topic.title}
-                          </span>
-                        </div>
-                        <p className="text-gray-700 text-sm">
-                          {topic.description}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {project.skills && project.skills.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold text-blue-700 mb-2">
-                      Compétences impliquées
-                    </h3>
-                    <ul className="flex flex-wrap gap-2">
-                      {project.skills.map((skill, idx) => (
-                        <li
+            <DevelopmentBadge>
+              <MainCard
+                title="Hot Topics & Compétences mobilisées"
+                icon={<AlertCircle className="w-8 h-8 text-blue-400" />}
+              >
+                <div className="space-y-4">
+                  {project.hotTopics && project.hotTopics.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="font-semibold text-blue-700 mb-2">
+                        Hot Topics
+                      </h3>
+                      {project.hotTopics.map((topic, idx) => (
+                        <div
                           key={idx}
-                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                          className="p-4 border-l-4 border-yellow-400 bg-yellow-50 rounded-lg mb-2"
                         >
-                          {skill}
-                        </li>
+                          <div className="flex items-center gap-2 mb-1">
+                            <AlertCircle className="w-5 h-5 text-yellow-500" />
+                            <span className="font-semibold text-yellow-700">
+                              {topic.title}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 text-sm">
+                            {topic.description}
+                          </p>
+                        </div>
                       ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </MainCard>
+                    </div>
+                  )}
+                  {project.skills && project.skills.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-blue-700 mb-2">
+                        Compétences impliquées
+                      </h3>
+                      <ul className="flex flex-wrap gap-2">
+                        {project.skills.map((skill, idx) => (
+                          <li
+                            key={idx}
+                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                          >
+                            {skill}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </MainCard>
+            </DevelopmentBadge>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-8">
             {/* Bloc Tâches & Jalons éditable */}
-            <MainCard
-              title="Tâches"
-              icon={<CheckCircle className="w-6 h-6 text-blue-400" />}
-            >
-              <div className="space-y-4">
-                {/* Zone de saisie */}
-                <div>
-                  <input
-                    type="text"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
-                    placeholder="Tapez une tâche et appuyez sur Entrée..."
-                    value={newTask}
-                    onChange={(e) => setNewTask(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                        addTask();
-                      }
-                    }}
-                  />
-                </div>
-                {/* Liste des tâches */}
-                <div
-                  ref={tasksContainerRef}
-                  className="space-y-2 max-h-64 overflow-y-auto"
-                >
-                  {tasks.length === 0 ? (
-                    <p className="text-gray-500 text-sm italic">
-                      Aucune tâche pour le moment
-                    </p>
-                  ) : (
-                    tasks.map((task, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-3 p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
-                      >
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        <span className="text-gray-700 text-sm flex-1">
-                          {task}
-                        </span>
-                        <button
-                          onClick={() => removeTask(index)}
-                          className="text-red-400 hover:text-red-600 text-sm font-bold w-6 h-6 rounded-full hover:bg-red-50 transition-all duration-200 cursor-pointer flex items-center justify-center"
+            <DevelopmentBadge>
+              <MainCard
+                title="Tâches"
+                icon={<CheckCircle className="w-6 h-6 text-blue-400" />}
+              >
+                <div className="space-y-4">
+                  {/* Zone de saisie */}
+                  <div>
+                    <input
+                      type="text"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
+                      placeholder="Tapez une tâche et appuyez sur Entrée..."
+                      value={newTask}
+                      onChange={(e) => setNewTask(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                          addTask();
+                        }
+                      }}
+                    />
+                  </div>
+                  {/* Liste des tâches */}
+                  <div
+                    ref={tasksContainerRef}
+                    className="space-y-2 max-h-64 overflow-y-auto"
+                  >
+                    {tasks.length === 0 ? (
+                      <p className="text-gray-500 text-sm italic">
+                        Aucune tâche pour le moment
+                      </p>
+                    ) : (
+                      tasks.map((task, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
                         >
-                          ×
-                        </button>
-                      </div>
-                    ))
-                  )}
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <span className="text-gray-700 text-sm flex-1">
+                            {task}
+                          </span>
+                          <button
+                            onClick={() => removeTask(index)}
+                            className="text-red-400 hover:text-red-600 text-sm font-bold w-6 h-6 rounded-full hover:bg-red-50 transition-all duration-200 cursor-pointer flex items-center justify-center"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            </MainCard>
+              </MainCard>
+            </DevelopmentBadge>
             <MainCard
               title="Informations générales"
               icon={<Users className="w-6 h-6 text-blue-400" />}
@@ -587,68 +591,63 @@ export default function ProjectDetails({ params }: { params: { id: string } }) {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Users className="w-5 h-5 text-gray-400" />
+              </div>
+            </MainCard>
+            <DevelopmentBadge>
+              <MainCard
+                title="Deadline"
+                icon={<Clock className="w-6 h-6 text-blue-400" />}
+              >
+                <div className="space-y-3">
                   <div>
-                    <p className="text-sm text-gray-500">Équipe</p>
+                    <p className="text-sm text-gray-500">Kick off</p>
                     <p className="font-semibold text-gray-800">
-                      {project.details.team}
+                      {project.deadline.kickOff}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Follow up</p>
+                    <p className="font-semibold text-gray-800">
+                      {project.deadline.followUp}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Keynote</p>
+                    <p className="font-semibold text-gray-800">
+                      {project.deadline.keynote}
+                    </p>
+                  </div>
+                  <div className="pt-3 border-t">
+                    <p className="text-sm text-gray-500">Jours restants</p>
+                    <p className="font-bold text-xl text-blue-600">
+                      {project.deadline.daysRemaining} jours
                     </p>
                   </div>
                 </div>
-              </div>
-            </MainCard>
-            <MainCard
-              title="Deadline"
-              icon={<Clock className="w-6 h-6 text-blue-400" />}
-            >
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-gray-500">Kick off</p>
-                  <p className="font-semibold text-gray-800">
-                    {project.deadline.kickOff}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Follow up</p>
-                  <p className="font-semibold text-gray-800">
-                    {project.deadline.followUp}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Keynote</p>
-                  <p className="font-semibold text-gray-800">
-                    {project.deadline.keynote}
-                  </p>
-                </div>
-                <div className="pt-3 border-t">
-                  <p className="text-sm text-gray-500">Jours restants</p>
-                  <p className="font-bold text-xl text-blue-600">
-                    {project.deadline.daysRemaining} jours
-                  </p>
-                </div>
-              </div>
-            </MainCard>
-            <MainCard
-              title="Équipe"
-              icon={<Users className="w-6 h-6 text-blue-400" />}
-            >
-              <div className="space-y-3">
-                {project.team.map((member, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-lg">
-                      {member.avatar}
+              </MainCard>
+            </DevelopmentBadge>
+            <DevelopmentBadge>
+              <MainCard
+                title="Équipe"
+                icon={<Users className="w-6 h-6 text-blue-400" />}
+              >
+                <div className="space-y-3">
+                  {project.team.map((member, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-lg">
+                        {member.avatar}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">
+                          {member.name}
+                        </p>
+                        <p className="text-sm text-gray-500">{member.role}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-800">
-                        {member.name}
-                      </p>
-                      <p className="text-sm text-gray-500">{member.role}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </MainCard>
+                  ))}
+                </div>
+              </MainCard>
+            </DevelopmentBadge>
           </div>
         </div>
       </div>
