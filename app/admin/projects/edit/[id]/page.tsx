@@ -58,6 +58,111 @@ interface EditFormData {
   created_at: string;
 }
 
+// Fonction pour mettre à jour un projet ET ses assignations
+const updateProjectAndAssignments = async (
+  projectId: string, 
+  updates: any
+): Promise<any> => {
+  const PROJECT_SERVICE_BASE_URL = 'http://localhost:3003';
+  
+  try {
+    // 1. Mettre à jour le projet de base
+    console.log("🔧 Étape 1: Mise à jour du projet de base");
+    const projectResponse = await fetch(`${PROJECT_SERVICE_BASE_URL}/projects/${projectId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        name: updates.name,
+        description: updates.description,
+        ressources: updates.ressources,
+        is_active: updates.is_active,
+        id_promotion: updates.id_promotion,
+      })
+    });
+
+    if (!projectResponse.ok) {
+      const errorResult = await projectResponse.json();
+      throw new Error(errorResult.message || `HTTP error! status: ${projectResponse.status}`);
+    }
+
+    const projectResult = await projectResponse.json();
+    console.log("✅ Projet de base mis à jour:", projectResult);
+
+    // 2. Récupérer toutes les assignations du projet
+    console.log("🔧 Étape 2: Récupération des assignations du projet");
+    const assignmentsResponse = await fetch(`${PROJECT_SERVICE_BASE_URL}/project-students/project/${projectId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!assignmentsResponse.ok) {
+      throw new Error(`Erreur lors de la récupération des assignations: ${assignmentsResponse.status}`);
+    }
+
+    const assignmentsResult = await assignmentsResponse.json();
+    console.log("✅ Assignations récupérées:", assignmentsResult);
+
+    if (!assignmentsResult.success || !assignmentsResult.data) {
+      throw new Error("Aucune assignation trouvée pour ce projet");
+    }
+
+    // 3. Mettre à jour chaque assignation
+    console.log("🔧 Étape 3: Mise à jour des assignations");
+    const updatePromises = assignmentsResult.data.map(async (assignment: any) => {
+      console.log(`🔄 Mise à jour assignation ID: ${assignment.id} pour étudiant: ${assignment.id_student}`);
+      
+      const assignmentUpdateData = {
+        assigned_at: updates.assigned_at,
+        due_date: updates.due_date,
+        advisor_comment: updates.advisor_comment,
+        score: updates.score,
+        max_score: updates.max_score,
+      };
+
+      console.log("📦 Données d'assignation à envoyer:", assignmentUpdateData);
+
+      const assignmentResponse = await fetch(`${PROJECT_SERVICE_BASE_URL}/project-students/${assignment.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(assignmentUpdateData)
+      });
+
+      if (!assignmentResponse.ok) {
+        const errorResult = await assignmentResponse.json();
+        throw new Error(`Erreur mise à jour assignation ${assignment.id}: ${errorResult.message}`);
+      }
+
+      const assignmentResult = await assignmentResponse.json();
+      console.log(`✅ Assignation ${assignment.id} mise à jour:`, assignmentResult);
+      return assignmentResult;
+    });
+
+    // Attendre que toutes les assignations soient mises à jour
+    const updatedAssignments = await Promise.all(updatePromises);
+    console.log("✅ Toutes les assignations mises à jour:", updatedAssignments);
+
+    // 4. Retourner le résultat combiné
+    return {
+      ...projectResult.data,
+      assignments_updated: updatedAssignments.length,
+      success: true
+    };
+
+  } catch (error: any) {
+    console.error("❌ Erreur dans updateProjectAndAssignments:", error);
+    throw error;
+  }
+};
+
 export default function EditProjectPage() {
   const router = useRouter();
   const params = useParams();
@@ -146,6 +251,7 @@ export default function EditProjectPage() {
 
         console.log("🔍 DEBUG - Projet récupéré:", projectData);
         console.log("🔍 DEBUG - Médailles du projet:", projectData.score);
+        console.log("🔍 DEBUG - Type des médailles:", typeof projectData.score);
         console.log("🔍 DEBUG - Promotions disponibles:", promotions);
 
         setProject(projectData);
@@ -161,11 +267,38 @@ export default function EditProjectPage() {
           projectData.id_promotion
         );
         console.log("🔍 DEBUG - Nom de la promotion trouvé:", promotionName);
-        console.log(
-          "🔍 DEBUG - assigned_at du projet:",
-          projectData.assigned_at
-        );
-        console.log("🔍 DEBUG - due_date du projet:", projectData.due_date);
+
+        // Traitement sécurisé des médailles
+        let processedScore: Medal[] = [{ name: "", description: "", state: false }];
+        
+        if (projectData.score) {
+          try {
+            // Si c'est une chaîne JSON, la parser
+            if (typeof projectData.score === 'string') {
+              const parsedScore = JSON.parse(projectData.score);
+              if (Array.isArray(parsedScore) && parsedScore.length > 0) {
+                processedScore = parsedScore.map((medal: any) => ({
+                  name: medal.name || "",
+                  description: medal.description || "",
+                  state: medal.state || false
+                }));
+              }
+            }
+            // Si c'est déjà un tableau
+            else if (Array.isArray(projectData.score) && projectData.score.length > 0) {
+              processedScore = projectData.score.map((medal: any) => ({
+                name: medal.name || "",
+                description: medal.description || "",
+                state: medal.state || false
+              }));
+            }
+          } catch (e) {
+            console.warn("Erreur lors du parsing des médailles:", e);
+            // Garder la valeur par défaut
+          }
+        }
+
+        console.log("🔍 DEBUG - Médailles traitées:", processedScore);
 
         const formDataToSet = {
           name: projectData.name || "",
@@ -174,10 +307,7 @@ export default function EditProjectPage() {
           assigned_at: projectData.assigned_at || "",
           due_date: projectData.due_date || "",
           advisor_comment: projectData.advisor_comment || null,
-          score:
-            projectData.score && projectData.score.length > 0
-              ? projectData.score
-              : [{ name: "", description: "", state: false }],
+          score: processedScore,
           resources:
             projectData.ressources && projectData.ressources.length > 0
               ? projectData.ressources.map((r) => ({
@@ -194,7 +324,7 @@ export default function EditProjectPage() {
                     category: "project" as "kickoff" | "bootstrap" | "project",
                   },
                 ],
-          max_score: projectData.max_score || "",
+          max_score: projectData.max_score || processedScore.length,
           is_active:
             projectData.is_active !== undefined ? projectData.is_active : true,
           created_at: projectData.created_at,
@@ -500,53 +630,73 @@ export default function EditProjectPage() {
         return;
       }
 
-      // Appel à la fonction utilitaire pour mettre à jour le projet
-      const { updateProject } = await import("@/lib/projectData");
-
-      console.log("🔍 DEBUG - Médailles à envoyer:", formData.score);
+      // AJOUT DE DEBUG DETAILLÉ
+      console.log("🚀 SAUVEGARDE - Données complètes du formulaire:");
+      console.log("- Nom:", formData.name);
+      console.log("- Description:", formData.description);
+      console.log("- Promotion ID:", promotionId);
+      console.log("- Date début:", formData.assigned_at);
+      console.log("- Date fin:", formData.due_date);
+      console.log("- Score (médailles):", formData.score);
+      console.log("- Score type:", typeof formData.score);
+      console.log("- Score JSON:", JSON.stringify(formData.score, null, 2));
+      console.log("- Max score:", formData.score.length);
+      console.log("- Is active:", formData.is_active);
+      console.log("- Advisor comment:", formData.advisor_comment);
 
       // Debug des ressources
-      console.log(
-        "🔍 DEBUG - Toutes les ressources du formulaire:",
-        formData.resources
-      );
       const validResources = formData.resources.filter(
         (r) => r.name.trim() && r.url.trim()
       );
-      console.log(
-        "🔍 DEBUG - Ressources valides (avec nom et URL):",
-        validResources
-      );
-
       const resourcesToSend = validResources.map((r) => ({
         filename: r.name.includes(".") ? r.name : `${r.name}.pdf`,
         url: r.url,
         uploaded_at: new Date().toISOString(),
       }));
-      console.log("🔍 DEBUG - Ressources finales à envoyer:", resourcesToSend);
+      console.log("- Ressources à envoyer:", resourcesToSend);
 
-      await updateProject(projectId, {
+      // Convertir les dates au format ISO pour l'API
+      const convertDateForAPI = (dateString: string): string => {
+        if (!dateString) return "";
+        try {
+          const date = new Date(dateString);
+          return date.toISOString();
+        } catch (error) {
+          console.warn('Erreur conversion date:', dateString, error);
+          return dateString;
+        }
+      };
+
+      // Préparation des données pour l'API
+      const updateData = {
         name: formData.name,
         description: formData.description,
         ressources: resourcesToSend,
-        assigned_at: formData.assigned_at,
-        due_date: formData.due_date,
-        score: formData.score,
-        max_score: Number(formData.max_score),
+        assigned_at: convertDateForAPI(formData.assigned_at),
+        due_date: convertDateForAPI(formData.due_date),
+        score: formData.score, // Envoyer directement le tableau
+        max_score: Number(formData.score.length),
         is_active: formData.is_active,
         id_promotion: promotionId,
         advisor_comment: formData.advisor_comment,
-      });
+      };
+
+      console.log("📦 DONNÉES FINALES ENVOYÉES À L'API:");
+      console.log(JSON.stringify(updateData, null, 2));
+
+      // Utiliser notre nouvelle fonction qui met à jour le projet ET les assignations
+      const result = await updateProjectAndAssignments(projectId, updateData);
+
+      console.log("✅ RÉPONSE DE L'API:", result);
 
       setSuccess("Projet modifié avec succès !");
-      console.log("Projet modifié avec les données:", formData);
 
       // Rediriger après 2 secondes
       setTimeout(() => {
         router.push("/admin/projects");
       }, 2000);
     } catch (err) {
-      console.error("Erreur lors de la sauvegarde:", err);
+      console.error("❌ ERREUR lors de la sauvegarde:", err);
       setError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
       setSaving(false);
