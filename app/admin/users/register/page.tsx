@@ -92,27 +92,7 @@ const RegisterPage = () => {
     error: promotionsError,
   } = usePromotionsData();
 
-  // Fonction pour récupérer les promotions
-  const getPromotionIdByName = async (name: string) => {
-    try {
-      const response = await fetch(
-        `http://localhost:3004/promotion/name/${name}`,
-        {
-          credentials: "include",
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Erreur lors de la récupération de la promotions");
-      }
-      const data = await response.json();
-      return data.data;
-    } catch (error) {
-      console.error("Erreur lors de la récupération de la promotions:", error);
-      return null;
-    }
-  };
-
-  // Fonction pour générer le numéro étudiant
+    // Fonction pour générer le numéro étudiant
   const generateStudentNumber = (
     lastName: string,
     promotion: string
@@ -122,63 +102,105 @@ const RegisterPage = () => {
     return `${firstThreeLetters}-${promotionUpper}`;
   };
 
-  const handleSubmitUser = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Fonction pour récupérer les promotions
+ const getPromotionIdByName = async (name: string) => {
+  try {
+    console.log("🔍 Recherche de la promotion:", name);
+    const response = await fetch(
+      `http://localhost:3004/promotion/name/${name}`,
+      {
+        credentials: "include",
+      }
+    );
+    
+    console.log("📡 Statut de la réponse:", response.status);
+    
+    if (!response.ok) {
+      throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log("📦 Données reçues de l'API:", JSON.stringify(data, null, 2));
+    
+    // Vérifiez la structure exacte de votre réponse API
+    // Peut-être que c'est data.id directement, ou data[0].id, ou autre chose
+    return data.data || data; // Essayez les deux
+  } catch (error) {
+    console.error("❌ Erreur lors de la récupération de la promotion:", error);
+    return null;
+  }
+};
 
-    if (!validateForm()) {
-      return;
+
+
+const handleSubmitUser = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!validateForm()) {
+    return;
+  }
+
+  setIsSaving(true);
+  setError(null);
+
+  try {
+    let promotionId = null;
+
+    if (formData.role === "student" && formData.promotion) {
+      console.log("🎓 Promotion sélectionnée:", formData.promotion);
+      const promotionData = await getPromotionIdByName(formData.promotion);
+      console.log("🔑 Données de promotion reçues:", promotionData);
+      
+      // Adaptez cette ligne selon la structure de votre réponse API
+      if (promotionData) {
+        // Testez différentes structures :
+        promotionId = promotionData.id || // Si c'est directement data.id
+                     promotionData[0]?.id || // Si c'est un tableau
+                     promotionData.data?.id || // Si c'est imbriqué
+                     null;
+        
+        console.log("🆔 ID de promotion extrait:", promotionId);
+      }
     }
 
-    setIsSaving(true);
-    setError(null);
+    // Préparer les données pour l'API
+    const apiData: NewUserInput = {
+      email: formData.email,
+      password: formData.password,
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      phone: formData.phone,
+      address: formData.address,
+      campus: formData.campus,
+      is_active: true,
+      roles_user: formData.role,
+      id_promotion: formData.promotion,
+      specialty: formData.specialty,
+      room: formData.room,
+      major: formData.major,
+      availability: formData.availability,
+    };
 
-    try {
-      let promotionId = null;
-
-      if (formData.role === "student" && formData.promotion) {
-        promotionId = await getPromotionIdByName(formData.promotion);
-      }
-
-      // Préparer les données pour l'API
-      const apiData: NewUserInput = {
-        email: formData.email,
-        password: formData.password,
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        phone: formData.phone,
-        address: formData.address,
-        campus: formData.campus,
-        is_active: true,
-        roles_user: formData.role,
-        id_promotion: promotionId?.[0]?.id || null,
-        specialty: formData.specialty,
-        room: formData.room,
-        major: formData.major,
-        availability: formData.availability,
-      };
-
-      // Ajouter les champs spécifiques selon le rôle
-      if (formData.role === "student") {
-        apiData.student_number = generateStudentNumber(
-          formData.last_name,
-          formData.promotion || ""
-        );
-      }
-
-      console.log("data envoyé", apiData);
-      console.log("La prom:", promotionId);
-      await createCompleteUser(apiData);
-      setSuccess(true);
-
-      // Redirection avec message de succès
-      router.push("/admin?message=user_created");
-    } catch (error: any) {
-      console.error("Erreur lors de la création:", error);
-      setError(error.message || "Erreur lors de la création du compte");
-    } finally {
-      setIsSaving(false);
+    // Ajouter les champs spécifiques selon le rôle
+    if (formData.role === "student") {
+      apiData.student_number = generateStudentNumber(
+        formData.last_name,
+        formData.promotion || ""
+      );
     }
-  };
+
+    console.log("📤 Données envoyées à l'API:", JSON.stringify(apiData, null, 2));
+    
+    await createCompleteUser(apiData);
+    setSuccess(true);
+
+  } catch (error: any) {
+    console.error("❌ Erreur lors de la création:", error);
+    setError(error.message || "Erreur lors de la création du compte");
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   const { userData, loading, error, updateProfileImageUrl } = useUserData(
     getUserIdFromToken()
